@@ -1,7 +1,5 @@
-import argparse
 import logging
 import os
-import sys
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,26 +26,29 @@ class FeatureMatcherCV2():
         self._matcher_name = None
         self._extractor = self._create_extractor()
 
-        self._img1 = None
-        self._img2 = None
-        self._kp1, self._des1 = None, None
-        self._kp2, self._des2 = None, None
+        self._images = {"img1": None, "img2": None}
+        self._keypoints = {
+            "kp1": None, "des1": None,
+            "kp2": None, "des2": None
+        }
         self._matches = []
         self._matches_mask = None
 
     def _create_extractor(self):
-        try:
-            method = getattr(cv, f"{self._method_name.upper()}_create")
-            logger.info(f"Creating {self._method_name} detector")
-            return method()
-        except AttributeError:
+        target_method = f"{self._method_name.upper()}_create"
+        method = getattr(cv, target_method, None)
+
+        if method is None:
             raise ValueError(f"Method {self._method_name} not found in OpenCV")
 
-    def load_images(self, img1_path, img2_path):
-        self._img1 = cv.imread(img1_path, cv.IMREAD_GRAYSCALE)
-        self._img2 = cv.imread(img2_path, cv.IMREAD_GRAYSCALE)
+        logger.info(f"Creating {self._method_name} detector")
+        return method()
 
-        if self._img1 is None or self._img2 is None:
+    def load_images(self, img1_path, img2_path):
+        self._images["img1"] = cv.imread(img1_path, cv.IMREAD_GRAYSCALE)
+        self._images["img2"] = cv.imread(img2_path, cv.IMREAD_GRAYSCALE)
+
+        if self._images["img1"] is None or self._images["img2"] is None:
             logger.error(f"Failed to load image for match from {img1_path} and {img2_path}")
             return False
 
@@ -55,28 +56,28 @@ class FeatureMatcherCV2():
         return True
 
     def _extract_features(self):
-        self._kp1, self._des1 = self._extractor.detectAndCompute(self._img1, None)
-        self._kp2, self._des2 = self._extractor.detectAndCompute(self._img2, None)
+        self._keypoints["kp1"], self._keypoints["des1"] = self._extractor.detectAndCompute(self._images["img1"], None)
+        self._keypoints["kp2"], self._keypoints["des2"] = self._extractor.detectAndCompute(self._images["img2"], None)
 
-        if self._des1 is None or self._des2 is None:
+        if self._keypoints["des1"] is None or self._keypoints["des2"] is None:
             raise ValueError(f"No descriptors found to match")
         logger.info("Descriptors extracted successfully")
 
     def _bf_matcher(self):
         bf = cv.BFMatcher(self._extractor.defaultNorm())
 
-        self._matches = bf.knnMatch(self._des1, self._des2, k=2)
+        self._matches = bf.knnMatch(self._keypoints["des1"], self._keypoints["des2"], k=2)
         self._matches_mask = [[0, 0] for _ in range(len(self._matches))]
         self._filter_matches()
 
     def _flann_matcher(self):
         if self._extractor.defaultNorm() == cv.NORM_L2:
             index_params = {"algorithm": 1, "trees": 5}
-            d1, d2 = self._des1.astype(np.float32), self._des2.astype(np.float32)
+            d1, d2 = self._keypoints["des1"].astype(np.float32), self._keypoints["des2"].astype(np.float32)
         else:
             index_params = {"algorithm": 6, "table_number": 6,
                             "key_size": 12, "multi_probe_level": 1}
-            d1, d2 = self._des1, self._des2
+            d1, d2 = self._keypoints["des1"], self._keypoints["des2"]
 
         flann = cv.FlannBasedMatcher(index_params, {"checks": 50})
         self._matches = flann.knnMatch(d1, d2, k=2)
@@ -111,8 +112,8 @@ class FeatureMatcherCV2():
 
         draw_params = {"matchColor": (0, 255, 0), "singlePointColor": (255, 0, 0),
             "matchesMask": self._matches_mask, "flags": cv.DrawMatchesFlags_DEFAULT}
-        res_img = cv.drawMatchesKnn(self._img1, self._kp1, self._img2, self._kp2,
-                                 self._matches, None, **draw_params)
+        res_img = cv.drawMatchesKnn(self._images["img1"], self._keypoints["kp1"], self._images["img2"],
+                                    self._keypoints["kp2"], self._matches, None, **draw_params)
 
         if save:
             save_name = f"match_cv_res_{self._method_name}_{self._matcher_name}.jpg"
@@ -124,3 +125,4 @@ class FeatureMatcherCV2():
         plt.imshow(res_img)
         plt.axis('off')
         plt.show()
+
