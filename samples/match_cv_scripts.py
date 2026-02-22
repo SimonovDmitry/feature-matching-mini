@@ -1,10 +1,10 @@
-import sys
-import os
-import numpy as np
-import cv2 as cv
 import argparse
 import logging
+import os
+import sys
+import cv2 as cv
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,7 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(os.path.join(BASE_DIR, "opencv_sample.log"),
+        logging.FileHandler(os.path.join(BASE_DIR, "match_cv.log"),
                             mode='a', encoding='utf-8'),
         logging.StreamHandler()
     ],
@@ -33,7 +33,7 @@ class FeatureMatcherCV2():
         self._kp1, self._des1 = None, None
         self._kp2, self._des2 = None, None
         self._matches = []
-        self._matchesMask = None
+        self._matches_mask = None
 
     def _create_extractor(self):
         try:
@@ -66,28 +66,29 @@ class FeatureMatcherCV2():
         bf = cv.BFMatcher(self._extractor.defaultNorm())
 
         self._matches = bf.knnMatch(self._des1, self._des2, k=2)
-        self._matchesMask = [[0, 0] for _ in range(len(self._matches))]
+        self._matches_mask = [[0, 0] for _ in range(len(self._matches))]
         self._filter_matches()
 
     def _flann_matcher(self):
         if self._extractor.defaultNorm() == cv.NORM_L2:
-            index_params = dict(algorithm=1, trees=5)
+            index_params = {"algorithm": 1, "trees": 5}
             d1, d2 = self._des1.astype(np.float32), self._des2.astype(np.float32)
         else:
-            index_params = dict(algorithm=6, table_number=6, key_size=12, multi_probe_level=1)
+            index_params = {"algorithm": 6, "table_number": 6,
+                            "key_size": 12, "multi_probe_level": 1}
             d1, d2 = self._des1, self._des2
 
-        flann = cv.FlannBasedMatcher(index_params, dict(checks=50))
+        flann = cv.FlannBasedMatcher(index_params, {"checks": 50})
         self._matches = flann.knnMatch(d1, d2, k=2)
         self._filter_matches()
 
     def _filter_matches(self, ratio = 0.75):
-        self._matchesMask = [[0, 0] for _ in range(len(self._matches))]
+        self._matches_mask = [[0, 0] for _ in range(len(self._matches))]
 
         count_matches = 0
         for i, (m, n) in enumerate(self._matches):
             if m.distance < ratio * n.distance:
-                self._matchesMask[i] = [1, 0]
+                self._matches_mask[i] = [1, 0]
                 count_matches += 1
         logger.info(f"Found {count_matches} good matches")
 
@@ -104,17 +105,17 @@ class FeatureMatcherCV2():
             raise ValueError(f"The {matcher_name} matcher is not implemented")
 
     def visualize_matching(self, save = False):
-        if not self._matches or self._matchesMask is None:
+        if not self._matches or self._matches_mask is None:
             logger.info("No data to display")
             return
 
-        draw_params = dict(matchColor=(0, 255, 0), singlePointColor=(255, 0, 0),
-            matchesMask=self._matchesMask, flags=cv.DrawMatchesFlags_DEFAULT)
+        draw_params = {"matchColor": (0, 255, 0), "singlePointColor": (255, 0, 0),
+            "matchesMask": self._matches_mask, "flags": cv.DrawMatchesFlags_DEFAULT}
         res_img = cv.drawMatchesKnn(self._img1, self._kp1, self._img2, self._kp2,
                                  self._matches, None, **draw_params)
 
         if save:
-            save_name = f"match_res_{self._method_name}_{self._matcher_name}.jpg"
+            save_name = f"match_cv_res_{self._method_name}_{self._matcher_name}.jpg"
             save_path = os.path.join(BASE_DIR, save_name)
             cv.imwrite(save_path, res_img)
             logger.info(f"The result of the match is saved in {save_path}")
@@ -123,48 +124,3 @@ class FeatureMatcherCV2():
         plt.imshow(res_img)
         plt.axis('off')
         plt.show()
-
-
-def parser():
-    parser = argparse.ArgumentParser(
-        description="Matching points in two images using OpenCV algorithms",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('-met', '--method', type=str, default='sift',
-        help='Algorithm for detecting and creating descriptors of key points')
-    parser.add_argument('-mat' ,'--matcher', type=str, default='bf',
-        help='Matching algorithm')
-
-    parser.add_argument('-i1', '--image1', type=str, required=True,
-        help='Path to the first image')
-    parser.add_argument('-i2', '--image2', type=str, required=True,
-        help='Path to the second image')
-    parser.add_argument('-s', '--save', action='store_true',
-        default = False, help='Save the result in JPG format')
-
-    return parser.parse_args()
-
-
-def main():
-    args = parser()
-
-    try:
-        logger.info(f"Launching opencv_sample")
-        matcher = FeatureMatcherCV2(args.method)
-        if not matcher.load_images(args.image1, args.image2):
-            return 1
-
-        matcher.run_matching(args.matcher)
-        matcher.visualize_matching(save = args.save)
-        logger.info("The opencv_sample program has completed successfully")
-        return 0
-
-    except Exception as e:
-        logger.exception(f"An error occurred during execution: {e}")
-        return 1
-
-
-if __name__ == '__main__':
-    sys.exit(main() or 0)
-
-
