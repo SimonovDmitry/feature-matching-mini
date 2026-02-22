@@ -56,8 +56,10 @@ class FeatureMatcherCV2():
         return True
 
     def _extract_features(self):
-        self._keypoints["kp1"], self._keypoints["des1"] = self._extractor.detectAndCompute(self._images["img1"], None)
-        self._keypoints["kp2"], self._keypoints["des2"] = self._extractor.detectAndCompute(self._images["img2"], None)
+        self._keypoints["kp1"], self._keypoints["des1"] = self._extractor.detectAndCompute(
+            self._images["img1"], None)
+        self._keypoints["kp2"], self._keypoints["des2"] = self._extractor.detectAndCompute(
+            self._images["img2"], None)
 
         if self._keypoints["des1"] is None or self._keypoints["des2"] is None:
             raise ValueError(f"No descriptors found to match")
@@ -73,7 +75,8 @@ class FeatureMatcherCV2():
     def _flann_matcher(self):
         if self._extractor.defaultNorm() == cv.NORM_L2:
             index_params = {"algorithm": 1, "trees": 5}
-            d1, d2 = self._keypoints["des1"].astype(np.float32), self._keypoints["des2"].astype(np.float32)
+            d1, d2 = (self._keypoints["des1"].astype(np.float32),
+                      self._keypoints["des2"].astype(np.float32))
         else:
             index_params = {"algorithm": 6, "table_number": 6,
                             "key_size": 12, "multi_probe_level": 1}
@@ -112,8 +115,9 @@ class FeatureMatcherCV2():
 
         draw_params = {"matchColor": (0, 255, 0), "singlePointColor": (255, 0, 0),
             "matchesMask": self._matches_mask, "flags": cv.DrawMatchesFlags_DEFAULT}
-        res_img = cv.drawMatchesKnn(self._images["img1"], self._keypoints["kp1"], self._images["img2"],
-                                    self._keypoints["kp2"], self._matches, None, **draw_params)
+        res_img = cv.drawMatchesKnn(self._images["img1"], self._keypoints["kp1"],
+                                    self._images["img2"],self._keypoints["kp2"], self._matches,
+                                    None, **draw_params)
 
         if save:
             save_name = f"match_cv_res_{self._method_name}_{self._matcher_name}.jpg"
@@ -125,4 +129,3 @@ class FeatureMatcherCV2():
         plt.imshow(res_img)
         plt.axis('off')
         plt.show()
-
