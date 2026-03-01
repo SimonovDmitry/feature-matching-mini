@@ -1,15 +1,17 @@
 import argparse
 import sys
-from match_cv_scripts import FeatureMatcherCV2, logger
+from match_cv_scripts import FeatureMatcherCV2, logger, FEATURE_METHODS
+
 
 def parser():
     arg_parser = argparse.ArgumentParser(
         description="Matching points in two images using OpenCV algorithms",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    arg_parser.add_argument('-met', '--method', type=str, default='sift',
+    arg_parser.add_argument('-met', '--method', type=str, default='SIFT',
+        choices=FEATURE_METHODS,
         help='Algorithm for detecting and creating descriptors of key points')
-    arg_parser.add_argument('-mat' ,'--matcher', type=str, default='bf',
+    arg_parser.add_argument('-mat' ,'--matcher', type=str, default='BF',
         help='Matching algorithm')
 
     arg_parser.add_argument('-i1', '--image1', type=str, required=True,

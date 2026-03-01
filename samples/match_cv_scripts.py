@@ -4,7 +4,6 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 logging.basicConfig(
@@ -20,8 +19,17 @@ logging.basicConfig(
 
 logger = logging.getLogger("FeatureMatcher")
 
+
+FEATURE_METHODS = {
+    'SIFT': cv.SIFT_create,
+    'ORB':  cv.ORB_create,
+    'KAZE': cv.KAZE_create,
+    'AKAZE': cv.AKAZE_create,
+    'BRISK': cv.BRISK_create,
+}
+
 class FeatureMatcherCV2():
-    def __init__(self, method_name = 'sift'):
+    def __init__(self, method_name = 'SIFT'):
         self._method_name = method_name
         self._matcher_name = None
         self._extractor = self._create_extractor()
@@ -35,14 +43,11 @@ class FeatureMatcherCV2():
         self._matches_mask = None
 
     def _create_extractor(self):
-        target_method = f"{self._method_name.upper()}_create"
-        method = getattr(cv, target_method, None)
-
-        if method is None:
+        if self._method_name.strip() not in FEATURE_METHODS:
             raise ValueError(f"Method {self._method_name} not found in OpenCV")
 
         logger.info(f"Creating {self._method_name} detector")
-        return method()
+        return FEATURE_METHODS[self._method_name]()
 
     def load_images(self, img1_path, img2_path):
         self._images["img1"] = cv.imread(img1_path, cv.IMREAD_GRAYSCALE)
@@ -96,11 +101,11 @@ class FeatureMatcherCV2():
                 count_matches += 1
         logger.info(f"Found {count_matches} good matches")
 
-    def run_matching(self, matcher_name = 'bf'):
-        self._matcher_name = matcher_name.lower()
+    def run_matching(self, matcher_name = 'BF'):
+        self._matcher_name = matcher_name
         self._extract_features()
 
-        method_name = f"_{self._matcher_name}_matcher"
+        method_name = f"_{self._matcher_name.lower()}_matcher"
         matcher_func = getattr(self, method_name, None)
         if matcher_func and callable(matcher_func):
             logger.info(f"Starting {self._matcher_name.upper()} matching via dynamic discovery")
