@@ -9,17 +9,17 @@ def parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     arg_parser.add_argument('-met', '--method', type=str, default='SIFT',
-        choices=FEATURE_METHODS,
-        help='Algorithm for detecting and creating descriptors of key points')
-    arg_parser.add_argument('-mat' ,'--matcher', type=str, default='BF',
-        help='Matching algorithm')
+                            choices=FEATURE_METHODS,
+                            help='Algorithm for detecting and creating descriptors of key points')
+    arg_parser.add_argument('-mat', '--matcher', type=str, default='BF',
+                            help='Matching algorithm')
 
     arg_parser.add_argument('-i1', '--image1', type=str, required=True,
-        help='Path to the first image')
+                            help='Path to the first image')
     arg_parser.add_argument('-i2', '--image2', type=str, required=True,
-        help='Path to the second image')
+                            help='Path to the second image')
     arg_parser.add_argument('-s', '--save', action='store_true',
-        default = False, help='Save the result in JPG format')
+                            default=False, help='Save the result in JPG format')
 
     return arg_parser.parse_args()
 
@@ -28,13 +28,13 @@ def main():
     args = parser()
 
     try:
-        logger.info(f"Launching opencv_sample")
+        logger.info("Launching opencv_sample")
         matcher = FeatureMatcherCV2(args.method)
         if not matcher.load_images(args.image1, args.image2):
             return 1
 
         matcher.run_matching(args.matcher)
-        matcher.visualize_matching(save = args.save)
+        matcher.visualize_matching(save=args.save)
         logger.info("The opencv_sample program has completed successfully")
         return 0
 

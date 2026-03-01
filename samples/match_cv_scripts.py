@@ -22,14 +22,15 @@ logger = logging.getLogger("FeatureMatcher")
 
 FEATURE_METHODS = {
     'SIFT': cv.SIFT_create,
-    'ORB':  cv.ORB_create,
+    'ORB': cv.ORB_create,
     'KAZE': cv.KAZE_create,
     'AKAZE': cv.AKAZE_create,
     'BRISK': cv.BRISK_create,
 }
 
+
 class FeatureMatcherCV2():
-    def __init__(self, method_name = 'SIFT'):
+    def __init__(self, method_name='SIFT'):
         self._method_name = method_name
         self._matcher_name = None
         self._extractor = self._create_extractor()
@@ -67,7 +68,7 @@ class FeatureMatcherCV2():
             self._images["img2"], None)
 
         if self._keypoints["des1"] is None or self._keypoints["des2"] is None:
-            raise ValueError(f"No descriptors found to match")
+            raise ValueError("No descriptors found to match")
         logger.info("Descriptors extracted successfully")
 
     def _bf_matcher(self):
@@ -91,7 +92,7 @@ class FeatureMatcherCV2():
         self._matches = flann.knnMatch(d1, d2, k=2)
         self._filter_matches()
 
-    def _filter_matches(self, ratio = 0.75):
+    def _filter_matches(self, ratio=0.75):
         self._matches_mask = [[0, 0] for _ in range(len(self._matches))]
 
         count_matches = 0
@@ -101,7 +102,7 @@ class FeatureMatcherCV2():
                 count_matches += 1
         logger.info(f"Found {count_matches} good matches")
 
-    def run_matching(self, matcher_name = 'BF'):
+    def run_matching(self, matcher_name='BF'):
         self._matcher_name = matcher_name
         self._extract_features()
 
@@ -113,16 +114,16 @@ class FeatureMatcherCV2():
         else:
             raise ValueError(f"The {matcher_name} matcher is not implemented")
 
-    def visualize_matching(self, save = False):
+    def visualize_matching(self, save=False):
         if not self._matches or self._matches_mask is None:
             logger.info("No data to display")
             return
 
         draw_params = {"matchColor": (0, 255, 0), "singlePointColor": (255, 0, 0),
-            "matchesMask": self._matches_mask, "flags": cv.DrawMatchesFlags_DEFAULT}
+                        "matchesMask": self._matches_mask, "flags": cv.DrawMatchesFlags_DEFAULT}
         res_img = cv.drawMatchesKnn(self._images["img1"], self._keypoints["kp1"],
-                                    self._images["img2"],self._keypoints["kp2"], self._matches,
-                                    None, **draw_params)
+                                    self._images["img2"], self._keypoints["kp2"],
+                                    self._matches, None, **draw_params)
 
         if save:
             save_name = f"match_cv_res_{self._method_name}_{self._matcher_name}.jpg"
