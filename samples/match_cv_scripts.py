@@ -119,8 +119,12 @@ class FeatureMatcherCV2():
             logger.info("No data to display")
             return
 
-        draw_params = {"matchColor": (0, 255, 0), "singlePointColor": (255, 0, 0),
-                        "matchesMask": self._matches_mask, "flags": cv.DrawMatchesFlags_DEFAULT}
+        draw_params = {
+            "matchColor": (0, 255, 0),
+            "singlePointColor": (255, 0, 0),
+            "matchesMask": self._matches_mask,
+            "flags": cv.DrawMatchesFlags_DEFAULT
+        }
         res_img = cv.drawMatchesKnn(self._images["img1"], self._keypoints["kp1"],
                                     self._images["img2"], self._keypoints["kp2"],
                                     self._matches, None, **draw_params)
