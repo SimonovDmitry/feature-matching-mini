@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import cv2 as cv
 
+
 class BaseMatcher(ABC):
     @abstractmethod
     def match(self, img1, img2, kp1,
@@ -13,7 +14,7 @@ class BaseMatcher(ABC):
 
     @abstractmethod
     def knn_match(self, img1, img2, kp1,
-                kp2, des1, des2, method):
+                  kp2, des1, des2, method):
         pass
 
 
@@ -26,19 +27,17 @@ class BFMatcher(BaseMatcher):
 
         return bf
 
-
     def match(self, img1, img2, kp1,
               kp2, des1, des2, method):
         bf = self.create_matcher(method)
         matches = bf.match(des1, des2)
         matches = sorted(matches, key=lambda x: x.distance)
         res = cv.drawMatches(img1, kp1, img2, kp2, matches[:20], None,
-                              flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+                             flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         return res
 
-
     def knn_match(self, img1, img2, kp1,
-                kp2, des1, des2, method):
+                  kp2, des1, des2, method):
         bf = self.create_matcher(method)
         matches = bf.knnMatch(des1, des2, k=2)
         good = []
@@ -67,19 +66,17 @@ class FLANNMatcher(BaseMatcher):
         flann = cv.FlannBasedMatcher(index_params, search_params)
         return flann
 
-
     def match(self, img1, img2, kp1,
               kp2, des1, des2, method):
         flann = self.create_matcher(method)
         matches = flann.match(des1, des2)
         matches = sorted(matches, key=lambda x: x.distance)
         res = cv.drawMatches(img1, kp1, img2, kp2, matches[:20], None,
-                                flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+                             flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         return res
 
-
     def knn_match(self, img1, img2, kp1,
-                kp2, des1, des2, method):
+                  kp2, des1, des2, method):
         flann = self.create_matcher(method)
         matches = flann.knnMatch(des1, des2, k=2)
         matches_mask = [[0, 0] for i in range(len(matches))]
@@ -96,8 +93,8 @@ class FLANNMatcher(BaseMatcher):
 
 class Matchers:
     _matchers = {
-        'bf' : BFMatcher,
-        'flann' : FLANNMatcher
+        'bf': BFMatcher,
+        'flann': FLANNMatcher
     }
 
     def select_matcher(self, matcher):
@@ -107,12 +104,12 @@ class Matchers:
         return matcher_class()
 
     def apply_matcher(self, img1, img2, kp1,
-                kp2, des1, des2, method, matcher, knn):
+                      kp2, des1, des2, method, matcher, knn):
         matcher_instance = self.select_matcher(matcher)
         if knn:
             result = matcher_instance.knn_match(img1, img2, kp1,
-                kp2, des1, des2, method)
+                                                kp2, des1, des2, method)
         else:
             result = matcher_instance.match(img1, img2, kp1,
-                kp2, des1, des2, method)
+                                            kp2, des1, des2, method)
         return result

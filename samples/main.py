@@ -6,12 +6,13 @@ import cv2 as cv
 from descriptors import Descriptors
 from matchers import Matchers
 
-logging.basicConfig(level=logging.INFO, force = True)
+logging.basicConfig(level=logging.INFO, force=True)
+
 
 def cli_argument_parser():
     parser = argparse.ArgumentParser(
-        prog = 'Feature matching',
-        description = 'Draw key points and matches'
+        prog='Feature matching',
+        description='Draw key points and matches'
     )
     parser.add_argument('-i1', '--image1',
                         required=True,
@@ -34,7 +35,7 @@ def cli_argument_parser():
                         help='Selecting a matcher',
                         type=str)
     parser.add_argument('--knn',
-                        action = 'store_true',
+                        action='store_true',
                         help='Using knn matcher')
     args = parser.parse_args()
     return args
@@ -59,7 +60,8 @@ def main():
         kp1, des1, kp2, des2 = method_instance.apply_method(image1, image2, args.method)
         matcher_instance = Matchers()
         result = matcher_instance.apply_matcher(image1, image2, kp1,
-                                            kp2, des1, des2, args.method, args.matcher, args.knn)
+                                                kp2, des1, des2, args.method,
+                                                args.matcher, args.knn)
         cv.imshow("image", result)
         cv.waitKey(0)
         cv.destroyAllWindows()
@@ -67,6 +69,6 @@ def main():
         logging.error(e)
         sys.exit(1)
 
+
 if __name__ == '__main__':
     sys.exit(main() or 0)
-    

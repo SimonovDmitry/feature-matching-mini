@@ -24,6 +24,7 @@ class SIFT(BaseDescriptors):
     def create_method(self):
         return cv.SIFT_create()
 
+
 class ORB(BaseDescriptors):
     def __init__(self):
         super().__init__()
@@ -31,6 +32,7 @@ class ORB(BaseDescriptors):
 
     def create_method(self):
         return cv.ORB_create()
+
 
 class Descriptors:
     _descriptors = {
