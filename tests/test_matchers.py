@@ -116,8 +116,6 @@ class TestBFMatcher:
         if matches:
             assert len(matches) == len(des1)
 
-
-
     def test_bf_reproducibility(self, mock_logger, mock_descriptor, test_descriptors):
         matcher = BFMatcher(mock_logger, mock_descriptor, mode="knn")
         des1, des2 = test_descriptors

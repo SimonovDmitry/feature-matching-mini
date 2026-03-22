@@ -39,6 +39,7 @@ def read_image(path: str, input_type: str = 'numpy') -> ndarray | torch.Tensor:
         tensor = torch.from_numpy(image_rgb).permute(2, 0, 1)
         return tensor.float() / 255.0
 
+
 def save_image(img: ndarray | torch.Tensor, save_path: str, input_type: str = 'numpy') -> bool:
     if img is None:
         raise ValueError('Empty image')
