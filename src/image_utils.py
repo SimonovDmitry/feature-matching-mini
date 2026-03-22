@@ -8,13 +8,11 @@ def tensor_to_opencv(tensor):
     img_numpy = tensor.detach().cpu().numpy()
     if img_numpy.ndim == 2:
         img_numpy = img_numpy[:, :, np.newaxis]
-    if img_numpy.shape[0] in [1, 3, 4]:
+    if img_numpy.shape[0] in [1, 3]:
         img_numpy = np.transpose(img_numpy, (1, 2, 0))
-    if img_numpy.dtype in [np.float16, np.float32, np.float64]:
-        if img_numpy.max() <= 1.0:
-            img_numpy = (img_numpy * 255).astype(np.uint8)
-        else:
-            img_numpy = img_numpy.astype(np.uint8)
+    if img_numpy.max() <= 1.0:
+        img_numpy = img_numpy * 255
+    img_numpy = img_numpy.astype(np.uint8)
     if img_numpy.shape[2] == 3:
         img_opencv = cv.cvtColor(img_numpy, cv.COLOR_RGB2BGR)
     else:
@@ -63,16 +61,19 @@ def show_image(img: ndarray | torch.Tensor, title: str = 'Result',
         img_to_show = img
     else:
         img_to_show = tensor_to_opencv(img)
+    img_height, img_width = img_to_show.shape[:2]
+
+    cv.namedWindow('temp', cv.WINDOW_NORMAL)
+    cv.setWindowProperty('temp', cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
+    screen_width = cv.getWindowImageRect('temp')[2]
+    screen_height = cv.getWindowImageRect('temp')[3]
+    cv.destroyWindow('temp')
+
+    win_width = min(img_width, screen_width)
+    win_height = min(img_height, screen_height)
 
     cv.namedWindow(title, cv.WINDOW_NORMAL)
+    cv.resizeWindow(title, win_width, win_height)
     cv.imshow(title, img_to_show)
     cv.waitKey(0)
     cv.destroyAllWindows()
-
-def load_image(load_path: str) -> ndarray:
-    img = cv.imread(str(load_path))
-
-    if img is None:
-        raise ValueError('Empty image')
-
-    return img

@@ -18,10 +18,6 @@ class FeatureMatcherCV2:
         self._matcher_mode = matcher_mode
         self._logger = logger
 
-        if self._logger:
-            logger.info(f"Config: Detector: {self._detector}, Descriptor: {self._descriptor},"
-                        f" Matcher: {self._matcher}, Matcher Mode: {self._matcher_mode}")
-
     def visualize_matches(self, img1: np.ndarray, kp1: tuple[cv.KeyPoint, ...], img2: np.ndarray,
                           kp2: tuple[cv.KeyPoint, ...], matches: Any) -> np.ndarray:
         if not matches or len(matches) == 0:
@@ -43,7 +39,11 @@ class FeatureMatcherCV2:
             -> tuple[tuple[cv.KeyPoint, ...], tuple[cv.KeyPoint, ...], list[DMatch] | list[list[DMatch]]]:
         detector = Detector.create(detector_name=self._detector, logger=self._logger)
         kp1 = detector.detect(img1)
-        kp2 = detector.detect(img1)
+        kp2 = detector.detect(img2)
+
+        if kp1 is None or kp2 is None:
+            self._logger.warning("Failed to detect key points")
+            return kp1 or (), kp2 or (), []
 
         descriptor = Descriptor.create(descriptor_name=self._descriptor, logger=self._logger)
         kp1, des1 = descriptor.compute(img1, kp1)

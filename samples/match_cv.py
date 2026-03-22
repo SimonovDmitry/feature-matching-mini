@@ -2,13 +2,12 @@ import argparse
 import sys
 import logging
 from pathlib import Path
-import cv2 as cv
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
 from src.feature_matcher import FeatureMatcherCV2
-from src.image_utils import load_image, save_image, show_image
+from src.image_utils import read_image, save_image, show_image
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
@@ -42,7 +41,7 @@ def parser() -> argparse.ArgumentParser:
     arg_parser.add_argument('-i2', '--image2', type=Path, required=True,
                             help='Path to the second image')
 
-    arg_parser.add_argument('-s', '--save', type=str, default='',
+    arg_parser.add_argument('-s', '--save', type=Path, default='',
                             help='Path to save result image')
     arg_parser.add_argument('-v', '--show', action='store_true',
                            help='Show the matching result in a window')
@@ -61,8 +60,8 @@ def main() -> int:
         logger.info("Starting Feature Matching Pipeline")
         logger.info(f"Comparing pair: {args.image1} and {args.image2}")
 
-        img1 = load_image(str(args.image1))
-        img2 = load_image(str(args.image2))
+        img1 = read_image(str(args.image1))
+        img2 = read_image(str(args.image2))
 
 
         feature_matcher = FeatureMatcherCV2(detector=args.detector, descriptor=args.descriptor,
@@ -72,7 +71,7 @@ def main() -> int:
         res_img = feature_matcher.visualize_matches(img1, kp1, img2, kp2, matches)
 
         if args.save:
-            save_image(res_img, save_path=args.save)
+            save_image(res_img, save_path=str(args.save))
             logger.info(f"Result successfully saved to: {args.save}")
 
         if args.show:
