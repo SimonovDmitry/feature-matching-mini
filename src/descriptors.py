@@ -88,5 +88,3 @@ class BRISKDescriptor(OpenCVDescriptor):
 class KAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name: str, logger: Logger, **kwargs: Any) -> None:
         super().__init__(descriptor_name, logger, cv.KAZE_create(**kwargs))
-
-
