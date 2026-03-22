@@ -24,6 +24,7 @@ def load_img():
         return img
     return _load
 
+
 class TestDetectorRegistry:
     def test_registration_completeness(self):
         expected_algos = {"sift", "orb", "akaze", "fast", "brisk", "kaze"}

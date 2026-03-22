@@ -25,12 +25,12 @@ class FeatureMatcherCV2:
             return np.hstack((img1, img2))
 
         draw_params = dict(matchColor=(0, 255, 0), singlePointColor=(0, 0, 255),
-            flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+                            flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 
         if self._matcher_mode == 'simple':
             return cv.drawMatches(img1, kp1, img2, kp2, matches, None, **draw_params)
 
-        if  self._matcher_mode == 'knn':
+        if self._matcher_mode == 'knn':
             return cv.drawMatchesKnn(img1, kp1, img2, kp2, matches, None, **draw_params)
 
         return np.hstack((img1, img2))
@@ -54,12 +54,7 @@ class FeatureMatcherCV2:
             return kp1, kp2, []
 
         matcher = Matcher.create(matcher_name=self._matcher, descriptor_method=descriptor,
-            mode=self._matcher_mode, logger=self._logger)
+                                    mode=self._matcher_mode, logger=self._logger)
         matches = matcher.match(des1, des2)
 
         return kp1, kp2, matches
-
-
-
-
-

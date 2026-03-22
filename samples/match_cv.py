@@ -44,7 +44,7 @@ def parser() -> argparse.ArgumentParser:
     arg_parser.add_argument('-s', '--save', type=Path, default='',
                             help='Path to save result image')
     arg_parser.add_argument('-v', '--show', action='store_true',
-                           help='Show the matching result in a window')
+                            help='Show the matching result in a window')
 
     return arg_parser.parse_args()
 
@@ -63,9 +63,9 @@ def main() -> int:
         img1 = read_image(str(args.image1))
         img2 = read_image(str(args.image2))
 
-
         feature_matcher = FeatureMatcherCV2(detector=args.detector, descriptor=args.descriptor,
-            matcher=args.matcher, matcher_mode=args.matcher_mode, logger=logger)
+                                            matcher=args.matcher, matcher_mode=args.matcher_mode,
+                                            logger=logger)
 
         kp1, kp2, matches = feature_matcher.match(img1, img2)
         res_img = feature_matcher.visualize_matches(img1, kp1, img2, kp2, matches)

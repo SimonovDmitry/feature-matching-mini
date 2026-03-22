@@ -34,14 +34,14 @@ class Detector(ABC):
         pass
 
 
-class OpenCVDetector(Detector, register = False):
+class OpenCVDetector(Detector, register=False):
     def __init__(self, detector_name: str, logger: Logger, extractor: cv.Feature2D) -> None:
         super().__init__(logger, detector_name)
         self._extractor = extractor
 
     def detect(self, img: np.ndarray) -> tuple[cv.KeyPoint, ...]:
         if img is None:
-            self._logger.error(f"Input image is None. Detection aborted.")
+            self._logger.error("Input image is None. Detection aborted.")
             return ()
 
         self._logger.info(f"Detecting keypoints with {self._detector_name}")
@@ -82,8 +82,3 @@ class BRISKDetector(OpenCVDetector):
 class KAZEDetector(OpenCVDetector):
     def __init__(self, detector_name: str, logger: Logger, **kwargs: Any) -> None:
         super().__init__(detector_name, logger, cv.KAZE_create(**kwargs))
-
-
-
-
-

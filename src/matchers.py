@@ -7,6 +7,7 @@ from logging import Logger
 from typing import Any, List, Dict
 from src.descriptors import Descriptor
 
+
 class Matcher(ABC):
     _METHODS = {
         'bf': 'BFMatcher',
@@ -102,9 +103,9 @@ class FLANNMatcher(Matcher):
         return cv.FlannBasedMatcher(self.index_params, self.search_params)
 
     def _simple_match(self, des1: ndarray, des2: ndarray) -> List[DMatch]:
-            flann = self._init_matcher()
-            return flann.match(des1, des2)
+        flann = self._init_matcher()
+        return flann.match(des1, des2)
 
     def _knn_match(self, des1: ndarray, des2: ndarray, k: int = 2) -> List[List[DMatch]]:
-            flann = self._init_matcher()
-            return flann.knnMatch(des1, des2, k)
+        flann = self._init_matcher()
+        return flann.knnMatch(des1, des2, k)

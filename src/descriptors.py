@@ -52,7 +52,7 @@ class OpenCVDescriptor(Descriptor, register=False):
     def compute(self, img: np.ndarray, kp: tuple[cv.KeyPoint, ...]) \
             -> tuple[tuple[cv.KeyPoint, ...], np.ndarray | None]:
         if img is None:
-            self._logger.error(f"Input image is None. Detection aborted.")
+            self._logger.error("Input image is None. Detection aborted.")
             return ()
 
         self._logger.info(f"Computing {self._descriptor_name} descriptors")
@@ -88,5 +88,3 @@ class BRISKDescriptor(OpenCVDescriptor):
 class KAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name: str, logger: Logger, **kwargs: Any) -> None:
         super().__init__(descriptor_name, logger, cv.KAZE_create(**kwargs))
-
-

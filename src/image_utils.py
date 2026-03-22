@@ -4,6 +4,7 @@ import numpy as np
 from numpy import ndarray
 import torch
 
+
 def tensor_to_opencv(tensor):
     img_numpy = tensor.detach().cpu().numpy()
     if img_numpy.ndim == 2:
@@ -19,6 +20,7 @@ def tensor_to_opencv(tensor):
         img_opencv = img_numpy
 
     return img_opencv
+
 
 def read_image(path: str, input_type: str = 'numpy') -> ndarray | torch.Tensor:
     if path is None:
@@ -51,6 +53,7 @@ def save_image(img: ndarray | torch.Tensor, save_path: str, input_type: str = 'n
         success = cv.imwrite(save_path, img_np)
 
     return success
+
 
 def show_image(img: ndarray | torch.Tensor, title: str = 'Result',
                input_type: str = 'numpy') -> None:
