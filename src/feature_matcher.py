@@ -7,19 +7,22 @@ from src.matchers import Matcher
 
 class FeatureMatcherCV2:
     _DETECTOR_DESCRIPTOR_COMPATIBILITY = {
-    'sift': ['sift','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'orb': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'fast':['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'akaze': ['sift','orb','akaze','brisk','kaze','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'brisk': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'kaze': ['sift','orb','brisk','kaze','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'gftt': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'mser': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'agast': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'blob': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'star': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'harrislaplace': ['sift','orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc'],
-    'msd': ['orb','brisk','brief','freak','daisy','latch','beblid','teblid','vgg','boostdesc']
+        'sift': ['sift', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'orb': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'fast':['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'akaze':['sift','orb','akaze','brisk','kaze','brief','freak','daisy','latch','beblid','teblid','vgg',
+                 'boostdesc'],
+        'brisk': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'kaze': ['sift', 'orb', 'brisk', 'kaze', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                 'boostdesc'],
+        'gftt': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'mser': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'agast': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'blob': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'star': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'harrislaplace': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                          'boostdesc'],
+        'msd': ['orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc']
     }
 
     def __init__(self, logger, detector='sift', descriptor='sift',
