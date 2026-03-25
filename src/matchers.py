@@ -1,11 +1,5 @@
-from __future__ import annotations
 from abc import ABC, abstractmethod
 import cv2 as cv
-from cv2 import DMatch
-from numpy import ndarray
-from logging import Logger
-from typing import Any, List, Dict
-from src.descriptors import Descriptor
 
 
 class Matcher(ABC):
@@ -19,7 +13,7 @@ class Matcher(ABC):
         'simple': '_simple_match'
     }
 
-    def __init__(self, logger: Logger, descriptor_method: Descriptor, mode: str = 'simple', **kwargs: Any) -> None:
+    def __init__(self, logger, descriptor_method, mode = 'simple', **kwargs):
         self._descriptor_method = descriptor_method
         self._mode = self._MODES.get(mode.lower())
         if not self._mode:
@@ -27,14 +21,14 @@ class Matcher(ABC):
         self.logger = logger
 
     @staticmethod
-    def create(matcher_name: str, logger: Logger, descriptor_method: Descriptor, mode: str, **kwargs: Any) -> Matcher:
+    def create(matcher_name, logger, descriptor_method, mode, **kwargs):
         matcher_class_name = Matcher._METHODS.get(matcher_name.lower())
         if not matcher_class_name:
             raise ValueError(f"Matcher '{matcher_name}' not found ")
         matcher_class = globals()[matcher_class_name]
         return matcher_class(logger, descriptor_method, mode, **kwargs)
 
-    def match(self, des1: ndarray, des2: ndarray, k: int = 2) -> Any:
+    def match(self, des1, des2, k = 2):
         mode_match = getattr(self, self._mode)
         if self._mode == '_knn_match':
             return mode_match(des1, des2, k)
@@ -55,23 +49,23 @@ class Matcher(ABC):
 
 
 class BFMatcher(Matcher):
-    def __init__(self, logger: Logger, descriptor_method: Descriptor, mode: str = 'simple', **kwargs: Any) -> None:
+    def __init__(self, logger, descriptor_method, mode = 'simple', **kwargs):
         super().__init__(logger, descriptor_method, mode, **kwargs)
 
-    def _init_matcher(self) -> cv.BFMatcher:
+    def _init_matcher(self):
         return cv.BFMatcher(self._descriptor_method.default_norm)
 
-    def _simple_match(self, des1: ndarray, des2: ndarray) -> List[DMatch]:
+    def _simple_match(self, des1, des2):
         bf = self._init_matcher()
         return bf.match(des1, des2)
 
-    def _knn_match(self, des1: ndarray, des2: ndarray, k: int = 2) -> List[List[DMatch]]:
+    def _knn_match(self, des1, des2, k = 2):
         bf = self._init_matcher()
         return bf.knnMatch(des1, des2, k)
 
 
 class FLANNMatcher(Matcher):
-    def __init__(self, logger: Logger, descriptor_method: Descriptor, mode: str = 'simple', **kwargs: Any) -> None:
+    def __init__(self, logger, descriptor_method, mode = 'simple', **kwargs):
         super().__init__(logger, descriptor_method, mode, **kwargs)
         self.index_params = kwargs.get('index_params')
         self.search_params = kwargs.get('search_params')
@@ -85,8 +79,8 @@ class FLANNMatcher(Matcher):
         elif not isinstance(self.search_params, dict):
             raise TypeError("search_params must be dict")
 
-    def _get_default_index_params(self) -> Dict:
-        if self._descriptor_method.defaultNorm == cv.NORM_HAMMING:
+    def _get_default_index_params(self):
+        if self._descriptor_method.default_norm == cv.NORM_HAMMING:
             return {
                 'algorithm': 6,
                 'table_number': 6,
@@ -99,13 +93,13 @@ class FLANNMatcher(Matcher):
                 'trees': 5
             }
 
-    def _init_matcher(self) -> cv.FlannBasedMatcher:
+    def _init_matcher(self):
         return cv.FlannBasedMatcher(self.index_params, self.search_params)
 
-    def _simple_match(self, des1: ndarray, des2: ndarray) -> List[DMatch]:
+    def _simple_match(self, des1, des2):
         flann = self._init_matcher()
         return flann.match(des1, des2)
 
-    def _knn_match(self, des1: ndarray, des2: ndarray, k: int = 2) -> List[List[DMatch]]:
+    def _knn_match(self, des1, des2, k = 2):
         flann = self._init_matcher()
         return flann.knnMatch(des1, des2, k)

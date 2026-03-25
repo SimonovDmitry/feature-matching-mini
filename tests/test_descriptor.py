@@ -16,7 +16,7 @@ def mock_logger():
 
 @pytest.fixture
 def load_img():
-    def _load(name: str):
+    def _load(name):
         path = Path(__file__).parent.parent / "test_data" / name
         img = cv.imread(str(path), cv.IMREAD_GRAYSCALE)
 
@@ -28,7 +28,7 @@ def load_img():
 
 @pytest.fixture
 def get_kp(load_img, mock_logger):
-    def _get(img_name: str, method_name: str = "sift"):
+    def _get(img_name, method_name="sift"):
         img = load_img(img_name)
         detector = Detector.create(method_name, mock_logger)
         kp = detector.detect(img)
@@ -50,6 +50,17 @@ class TestDescriptorRegistry:
         obj = Descriptor.create("sift", mock_logger)
         assert isinstance(obj, SIFTDescriptor)
         assert isinstance(obj, OpenCVDescriptor)
+
+
+class TestDescriptorFactory:
+    def test_factory_creation_types(self, mock_logger):
+        obj = Descriptor.create("sift", mock_logger)
+        assert isinstance(obj, SIFTDescriptor)
+        assert isinstance(obj, OpenCVDescriptor)
+
+    def test_create_unknown_descriptor_raises_error(self, mock_logger):
+        with pytest.raises(ValueError, match="Descriptor 'unknown' not found"):
+            Descriptor.create("unknown", mock_logger)
 
 
 class TestDescriptorCompute:
@@ -139,3 +150,49 @@ class TestDescriptorCompute:
         result = descriptor.compute(None, kp)
         assert result == ()
         mock_logger.error.assert_called()
+
+
+class TestDescriptorRobustness:
+    def test_invalid_input_none(self, mock_logger, get_kp):
+        descriptor = Descriptor.create("sift", mock_logger)
+        result = descriptor.compute(None, get_kp("box.png", "sift")[:5])
+        assert result == ()
+        assert mock_logger.error.called
+
+    def test_keypoints_outside_bounds(self, mock_logger, load_img):
+        img = load_img("box.png")
+        descriptor = Descriptor.create("sift", mock_logger)
+        bad_kp = [cv.KeyPoint(x=10000, y=10000, size=10)]
+        kp_out, des = descriptor.compute(img, bad_kp)
+        if des is not None and len(des) > 0:
+            assert np.all(des == 0) or len(kp_out) == 0
+        else:
+            assert len(kp_out) == 0 or des is None
+
+    def test_empty_keypoints_warning(self, mock_logger, load_img):
+        img = load_img("box.png")
+        descriptor = Descriptor.create("orb", mock_logger)
+        _, des = descriptor.compute(img, ())
+        assert mock_logger.warning.called
+
+
+class TestDescriptorInvariance:
+    def test_brightness_invariance(self, mock_logger, load_img, get_kp):
+        img = load_img("box.png")
+        bright_img = cv.convertScaleAbs(img, alpha=1.2, beta=30)
+        descriptor = Descriptor.create("sift", mock_logger)
+        kp = get_kp("box.png", "sift")[:10]
+        _, des1 = descriptor.compute(img, kp)
+        _, des2 = descriptor.compute(bright_img, kp)
+        cos_sim = np.dot(des1[0], des2[0]) / (np.linalg.norm(des1[0]) * np.linalg.norm(des2[0]))
+        assert cos_sim > 0.95
+
+    def test_flip_consistency(self, mock_logger, load_img):
+        img = load_img("box.png")
+        flipped_img = cv.flip(img, 1)
+        descriptor = Descriptor.create("orb", mock_logger)
+        kp = [cv.KeyPoint(100, 100, 10)]
+        flipped_kp = [cv.KeyPoint(img.shape[1] - 100, 100, 10)]
+        _, des1 = descriptor.compute(img, kp)
+        _, des2 = descriptor.compute(flipped_img, flipped_kp)
+        assert des1.shape == des2.shape

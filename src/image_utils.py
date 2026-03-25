@@ -1,7 +1,6 @@
-from pathlib import Path
+from screeninfo import get_monitors
 import cv2 as cv
 import numpy as np
-from numpy import ndarray
 import torch
 
 
@@ -22,13 +21,12 @@ def tensor_to_opencv(tensor):
     return img_opencv
 
 
-def read_image(path: str, input_type: str = 'numpy') -> ndarray | torch.Tensor:
+def read_image(path, input_type = 'numpy'):
     if path is None:
         raise ValueError('Empty path to the image')
-    filepath = Path(path)
-    if not filepath.exists():
+    if not path.exists():
         raise ValueError('Incorrect path to the image')
-    image = cv.imread(path)
+    image = cv.imread(str(path))
     if image is None:
         raise ValueError(f'Failed to read image from {path}')
 
@@ -40,24 +38,22 @@ def read_image(path: str, input_type: str = 'numpy') -> ndarray | torch.Tensor:
         return tensor.float() / 255.0
 
 
-def save_image(img: ndarray | torch.Tensor, save_path: str, input_type: str = 'numpy') -> bool:
+def save_image(img, save_path, input_type = 'numpy'):
     if img is None:
         raise ValueError('Empty image')
     if save_path is None:
         raise ValueError('Empty path to save')
-    filepath = Path(save_path)
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
     if input_type == 'numpy':
-        success = cv.imwrite(save_path, img)
+        success = cv.imwrite(str(save_path), img)
     else:
         img_np = tensor_to_opencv(img)
-        success = cv.imwrite(save_path, img_np)
+        success = cv.imwrite(str(save_path), img_np)
 
     return success
 
 
-def show_image(img: ndarray | torch.Tensor, title: str = 'Result',
-               input_type: str = 'numpy') -> None:
+def show_image(img, title = 'Result', input_type = 'numpy'):
     if img is None:
         raise ValueError('Empty image to show')
 
@@ -67,14 +63,9 @@ def show_image(img: ndarray | torch.Tensor, title: str = 'Result',
         img_to_show = tensor_to_opencv(img)
     img_height, img_width = img_to_show.shape[:2]
 
-    cv.namedWindow('temp', cv.WINDOW_NORMAL)
-    cv.setWindowProperty('temp', cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
-    screen_width = cv.getWindowImageRect('temp')[2]
-    screen_height = cv.getWindowImageRect('temp')[3]
-    cv.destroyWindow('temp')
-
-    win_width = min(img_width, screen_width)
-    win_height = min(img_height, screen_height)
+    monitors = get_monitors()
+    win_width = min(img_width, monitors[0].width)
+    win_height = min(img_height, monitors[0].height)
 
     cv.namedWindow(title, cv.WINDOW_NORMAL)
     cv.resizeWindow(title, win_width, win_height)

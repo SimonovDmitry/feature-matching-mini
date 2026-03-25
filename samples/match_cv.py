@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("CV_Sample")
 
 
-def parser() -> argparse.ArgumentParser:
+def parser():
     arg_parser = argparse.ArgumentParser(
         description="Matching points in two images using OpenCV algorithms",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -41,7 +41,7 @@ def parser() -> argparse.ArgumentParser:
     arg_parser.add_argument('-i2', '--image2', type=Path, required=True,
                             help='Path to the second image')
 
-    arg_parser.add_argument('-s', '--save', type=Path, default='',
+    arg_parser.add_argument('-s', '--save', type=Path, default=None,
                             help='Path to save result image')
     arg_parser.add_argument('-v', '--show', action='store_true',
                             help='Show the matching result in a window')
@@ -49,7 +49,7 @@ def parser() -> argparse.ArgumentParser:
     return arg_parser.parse_args()
 
 
-def main() -> int:
+def main():
     args = parser()
 
     try:
@@ -60,8 +60,8 @@ def main() -> int:
         logger.info("Starting Feature Matching Pipeline")
         logger.info(f"Comparing pair: {args.image1} and {args.image2}")
 
-        img1 = read_image(str(args.image1))
-        img2 = read_image(str(args.image2))
+        img1 = read_image(args.image1)
+        img2 = read_image(args.image2)
 
         feature_matcher = FeatureMatcherCV2(detector=args.detector, descriptor=args.descriptor,
                                             matcher=args.matcher, matcher_mode=args.matcher_mode,
@@ -71,7 +71,7 @@ def main() -> int:
         res_img = feature_matcher.visualize_matches(img1, kp1, img2, kp2, matches)
 
         if args.save:
-            save_image(res_img, save_path=str(args.save))
+            save_image(res_img, save_path=args.save)
             logger.info(f"Result successfully saved to: {args.save}")
 
         if args.show:
