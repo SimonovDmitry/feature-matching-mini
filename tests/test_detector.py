@@ -126,7 +126,8 @@ class TestDetectorRobustness:
     def test_color_image_support(self, mock_logger, load_img):
         path = Path(__file__).parent.parent / "test_data" / "box.png"
         img_bgr = cv.imread(str(path))
-        if img_bgr is None: pytest.skip("Image not found")
+        if img_bgr is None:
+            pytest.skip("Image not found")
 
         detector = Detector.create("sift", mock_logger)
         kp = detector.detect(img_bgr)
@@ -144,6 +145,7 @@ class TestKeypointProperties:
             x, y = p.pt
             assert 0 <= x < w
             assert 0 <= y < h
+
 
 class TestDetectorFunctional:
     def test_detectors_uniqueness(self, mock_logger, load_img):

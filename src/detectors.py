@@ -5,11 +5,11 @@ from abc import ABC, abstractmethod
 class Detector(ABC):
     _METHODS = {}
 
-    def __init__(self, logger, detector_name = 'sift'):
+    def __init__(self, logger, detector_name='sift'):
         self._detector_name = detector_name
         self._logger = logger
 
-    def __init_subclass__(cls, register = True, **kwargs):
+    def __init_subclass__(cls, register=True, **kwargs):
         super().__init_subclass__(**kwargs)
 
         if register:

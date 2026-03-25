@@ -13,7 +13,7 @@ class Matcher(ABC):
         'simple': '_simple_match'
     }
 
-    def __init__(self, logger, descriptor_method, mode = 'simple', **kwargs):
+    def __init__(self, logger, descriptor_method, mode='simple', **kwargs):
         self._descriptor_method = descriptor_method
         self._mode = self._MODES.get(mode.lower())
         if not self._mode:
@@ -28,7 +28,7 @@ class Matcher(ABC):
         matcher_class = globals()[matcher_class_name]
         return matcher_class(logger, descriptor_method, mode, **kwargs)
 
-    def match(self, des1, des2, k = 2):
+    def match(self, des1, des2, k=2):
         mode_match = getattr(self, self._mode)
         if self._mode == '_knn_match':
             return mode_match(des1, des2, k)
@@ -49,7 +49,7 @@ class Matcher(ABC):
 
 
 class BFMatcher(Matcher):
-    def __init__(self, logger, descriptor_method, mode = 'simple', **kwargs):
+    def __init__(self, logger, descriptor_method, mode='simple', **kwargs):
         super().__init__(logger, descriptor_method, mode, **kwargs)
 
     def _init_matcher(self):
@@ -59,13 +59,13 @@ class BFMatcher(Matcher):
         bf = self._init_matcher()
         return bf.match(des1, des2)
 
-    def _knn_match(self, des1, des2, k = 2):
+    def _knn_match(self, des1, des2, k=2):
         bf = self._init_matcher()
         return bf.knnMatch(des1, des2, k)
 
 
 class FLANNMatcher(Matcher):
-    def __init__(self, logger, descriptor_method, mode = 'simple', **kwargs):
+    def __init__(self, logger, descriptor_method, mode='simple', **kwargs):
         super().__init__(logger, descriptor_method, mode, **kwargs)
         self.index_params = kwargs.get('index_params')
         self.search_params = kwargs.get('search_params')
@@ -100,6 +100,6 @@ class FLANNMatcher(Matcher):
         flann = self._init_matcher()
         return flann.match(des1, des2)
 
-    def _knn_match(self, des1, des2, k = 2):
+    def _knn_match(self, des1, des2, k=2):
         flann = self._init_matcher()
         return flann.knnMatch(des1, des2, k)

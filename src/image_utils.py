@@ -21,7 +21,7 @@ def tensor_to_opencv(tensor):
     return img_opencv
 
 
-def read_image(path, input_type = 'numpy'):
+def read_image(path, input_type='numpy'):
     if path is None:
         raise ValueError('Empty path to the image')
     if not path.exists():
@@ -38,7 +38,7 @@ def read_image(path, input_type = 'numpy'):
         return tensor.float() / 255.0
 
 
-def save_image(img, save_path, input_type = 'numpy'):
+def save_image(img, save_path, input_type='numpy'):
     if img is None:
         raise ValueError('Empty image')
     if save_path is None:
@@ -53,7 +53,7 @@ def save_image(img, save_path, input_type = 'numpy'):
     return success
 
 
-def show_image(img, title = 'Result', input_type = 'numpy'):
+def show_image(img, title='Result', input_type='numpy'):
     if img is None:
         raise ValueError('Empty image to show')
 
