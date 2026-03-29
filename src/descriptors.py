@@ -1,52 +1,124 @@
-from abc import ABC, abstractmethod
 import cv2 as cv
+from abc import ABC, abstractmethod
 
 
-class BaseDescriptors(ABC):
-    def __init__(self):
-        self.method = None
+class Descriptor(ABC):
+    _METHODS = {}
 
+    def __init__(self, logger, descriptor_name='sift'):
+        self._descriptor_name = descriptor_name
+        self._logger = logger
+
+    def __init_subclass__(cls, register=True, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        if register:
+            key = cls.__name__.replace("Descriptor", "").lower()
+            if key:
+                Descriptor._METHODS[key] = cls
+
+    @staticmethod
+    def create(descriptor_name, logger, **kwargs):
+        if descriptor_name not in Descriptor._METHODS:
+            raise ValueError(f"Descriptor '{descriptor_name}' not found."
+                             f" Available: {list(Descriptor._METHODS.keys())}")
+
+        return Descriptor._METHODS[descriptor_name](descriptor_name, logger, **kwargs)
+
+    @property
     @abstractmethod
-    def create_method(self):
+    def default_norm(self):
         pass
 
-    def detect_and_compute(self, img1, img2):
-        kp1, des1 = self.method.detectAndCompute(img1, None)
-        kp2, des2 = self.method.detectAndCompute(img2, None)
-        return kp1, des1, kp2, des2
+    @abstractmethod
+    def compute(self, img, kp):
+        pass
 
 
-class SIFT(BaseDescriptors):
-    def __init__(self):
-        super().__init__()
-        self.method = self.create_method()
+class OpenCVDescriptor(Descriptor, register=False):
+    def __init__(self, descriptor_name, logger, extractor):
+        super().__init__(logger, descriptor_name)
+        self._extractor = extractor
 
-    def create_method(self):
-        return cv.SIFT_create()
+    @property
+    def default_norm(self):
+        return self._extractor.defaultNorm()
+
+    def compute(self, img, kp):
+        if img is None:
+            self._logger.error("Input image is None. Detection aborted.")
+            return ()
+
+        self._logger.info(f"Computing {self._descriptor_name} descriptors")
+        kp, des = self._extractor.compute(img, kp)
+
+        if des is not None:
+            self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
+        else:
+            self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
+        return kp, des
 
 
-class ORB(BaseDescriptors):
-    def __init__(self):
-        super().__init__()
-        self.method = self.create_method()
-
-    def create_method(self):
-        return cv.ORB_create()
+class SIFTDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.SIFT_create(**kwargs))
 
 
-class Descriptors:
-    _descriptors = {
-        'sift': SIFT,
-        'orb': ORB
-    }
+class ORBDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.ORB_create(**kwargs))
 
-    def select_descriptors(self, method):
-        method_class = self._descriptors.get(method.lower())
-        if not method_class:
-            raise ValueError(f"Method '{method}' not found ")
-        return method_class()
 
-    def apply_method(self, img1, img2, method):
-        method_instance = self.select_descriptors(method)
-        kp1, des1, kp2, des2 = method_instance.detect_and_compute(img1, img2)
-        return kp1, des1, kp2, des2
+class AKAZEDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.AKAZE_create(**kwargs))
+
+
+class BRISKDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.BRISK_create(**kwargs))
+
+
+class KAZEDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.KAZE_create(**kwargs))
+
+
+class BRIEFDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.BriefDescriptorExtractor_create(**kwargs))
+
+
+class FREAKDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.FREAK_create(**kwargs))
+
+
+class DAISYDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.DAISY_create(**kwargs))
+
+
+class LATCHDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.LATCH_create(**kwargs))
+
+
+class BEBLIDDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.BEBLID_create(scale_factor=0.75, **kwargs))
+
+
+class TEBLIDDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.TEBLID_create(scale_factor=0.75, **kwargs))
+
+
+class VGGDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.VGG_create(**kwargs))
+
+
+class BoostDescDescriptor(OpenCVDescriptor):
+    def __init__(self, descriptor_name, logger, **kwargs):
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.BoostDesc_create(**kwargs))
