@@ -1,0 +1,32 @@
+name: Smoke test
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - master
+  pull_request:
+
+jobs:
+  smoke_test_benchmark:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v3
+
+      - name: Setting up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Setting up Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements_ci.txt
+
+      - name: Run main tests
+        run: cd tests && python -m pytest .
