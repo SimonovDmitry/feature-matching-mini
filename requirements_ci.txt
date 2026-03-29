@@ -1,6 +1,7 @@
 pytest
 pytest-mock
 torch
+screeninfo
 flake8==7.3.0
 opencv-python
 matplotlib
