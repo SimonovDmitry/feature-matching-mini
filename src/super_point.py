@@ -10,6 +10,7 @@ from src.descriptors import Descriptor
 class SuperPoint(Detector, Descriptor):
     _shared_model = None
     _shared_processor = None
+    _shared_cache = {}
 
     def __init__(self, extractor_name, logger, device=None, threshold=0.005):
         Detector.__init__(self, logger, extractor_name)
@@ -38,10 +39,6 @@ class SuperPoint(Detector, Descriptor):
         self._processor = SuperPoint._shared_processor
         self._model = SuperPoint._shared_model
 
-        self._kp = None
-        self._des = None
-        self._last_img_id = None
-
     @property
     def default_norm(self):
         return cv.NORM_L2
@@ -51,11 +48,18 @@ class SuperPoint(Detector, Descriptor):
             self._logger.error("Input image is None. Detection aborted.")
             return (), ()
 
-        if id(img) == self._last_img_id:
-            return self._kp, self._des
+        img_id = id(img)
+        if img_id in SuperPoint._shared_cache:
+            return SuperPoint._shared_cache[img_id]
 
         self._logger.info(f"Running inference with {self._detector_name}")
-        img_input = cv.cvtColor(img, cv.COLOR_BGR2RGB) if len(img.shape) == 3 else img
+
+        if len(img.shape) == 2:
+            img_input = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
+        elif img.shape[2] == 3:
+            img_input = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        else:
+            img_input = img
         inputs = self._processor(img_input, return_tensors="pt").to(self._device)
 
         try:
@@ -70,40 +74,39 @@ class SuperPoint(Detector, Descriptor):
             raw_des = processed['descriptors'].cpu().numpy().astype(np.float32)
 
             mask = raw_scores > self._threshold
-            self._kp = [cv.KeyPoint(x=float(p[0]), y=float(p[1]), size=8, response=float(s))
+            kp = [cv.KeyPoint(x=float(p[0]), y=float(p[1]), size=8, response=float(s))
                         for p, s in zip(raw_kp[mask], raw_scores[mask])]
-            self._des = raw_des[mask]
-            self._last_img_id = id(img)
+            des = raw_des[mask]
+
+            if len(SuperPoint._shared_cache) > 10:
+                first_key = next(iter(SuperPoint._shared_cache))
+                del SuperPoint._shared_cache[first_key]
+
+            SuperPoint._shared_cache[img_id] = (kp, des)
+
+            if kp:
+                self._logger.info(f"{self._detector_name} found {len(kp)} points")
+            else:
+                self._logger.warning(f"{self._detector_name} found 0 points")
+
+            if des is not None:
+                self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
+            else:
+                self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
+
+            return kp, des
 
         except Exception as e:
             self._logger.warning(f"{self._detector_name} inference failed (likely 0 points): {e}")
-            self._kp = []
-            self._des = np.zeros((0, 256), dtype=np.float32)
-            self._last_img_id = None
-
-        if self._kp:
-            self._logger.info(f"{self._detector_name} found {len(self._kp)} points")
-        else:
-            self._logger.warning(f"{self._detector_name} found 0 points")
-
-        if self._des is not None:
-            self._logger.info(f"{self._descriptor_name} computed {len(self._des)} descriptors")
-        else:
-            self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
-
-        return self._kp, self._des
+            return (), ()
 
     def detect(self, img):
-        return self._forward(img)[0]
+        return {'kp': self._forward(img)[0]}
 
-    def compute(self, img, kp):
-        model_kp, model_des = self._forward(img)
-
-        if len(kp) == len(model_kp):
-            return kp, model_des
-
-        self._logger.warning("SuperPoint compute() called with external KeyPoints. Returning internal descriptors.")
-        return model_kp, model_des
+    def compute(self, img, features):
+        kp, des = self._forward(img)
+        return {'kp': kp, 'des': des}
 
     def detectAndCompute(self, img):
-        return self._forward(img)
+        kp, des = self._forward(img)
+        return {'kp': kp, 'des': des}

@@ -44,19 +44,19 @@ class OpenCVDescriptor(Descriptor, register=False):
     def default_norm(self):
         return self._extractor.defaultNorm()
 
-    def compute(self, img, kp):
+    def compute(self, img, features):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return ()
+            return {'kp': (), 'des': ()}
 
         self._logger.info(f"Computing {self._descriptor_name} descriptors")
-        kp, des = self._extractor.compute(img, kp)
+        kp, des = self._extractor.compute(img, features.get('kp'))
 
         if des is not None:
             self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
         else:
             self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
-        return kp, des
+        return {'kp': kp, 'des': des}
 
 
 class SIFTDescriptor(OpenCVDescriptor):

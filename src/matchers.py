@@ -3,70 +3,81 @@ import cv2 as cv
 
 
 class Matcher(ABC):
-    _METHODS = {
-        'bf': 'BFMatcher',
-        'flann': 'FLANNMatcher'
-    }
+    _METHODS = {}
 
-    _MODES = {
-        'knn': '_knn_match',
-        'simple': '_simple_match'
-    }
-
-    def __init__(self, logger, descriptor_method, mode='simple', **kwargs):
-        self._descriptor_method = descriptor_method
-        self._mode = self._MODES.get(mode.lower())
-        if not self._mode:
-            raise ValueError(f"Mode '{mode}' not found ")
+    def __init__(self, logger, matcher_name, descriptor_name, **kwargs):
+        self.matcher_name = matcher_name
+        self.descriptor_name = descriptor_name
         self.logger = logger
 
+    def __init_subclass__(cls, register=True, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        if register:
+            key = cls.__name__.replace("Matcher", "").lower()
+            if key:
+                Matcher._METHODS[key] = cls
+
     @staticmethod
-    def create(matcher_name, logger, descriptor_method, mode, **kwargs):
+    def create(matcher_name, logger, descriptor_name, **kwargs):
         matcher_class_name = Matcher._METHODS.get(matcher_name.lower())
         if not matcher_class_name:
-            raise ValueError(f"Matcher '{matcher_name}' not found ")
-        matcher_class = globals()[matcher_class_name]
-        return matcher_class(logger, descriptor_method, mode, **kwargs)
+            raise ValueError(f"Matcher '{matcher_name}' not found."
+                             f" Available: {list(Matcher._METHODS.keys())}")
 
-    def match(self, des1, des2, k=2):
-        mode_match = getattr(self, self._mode)
-        if self._mode == '_knn_match':
-            return mode_match(des1, des2, k)
+        return Matcher._METHODS[matcher_name](logger, matcher_name, descriptor_name, **kwargs)
+
+    @abstractmethod
+    def match(self, **kwargs):
+        pass
+
+    @abstractmethod
+    def _init_matcher(self):
+        pass
+
+
+class OpenCVMatcher(Matcher, register=False):
+    def __init__(self, logger, matcher_name, descriptor_name,  mode, **kwargs):
+        super().__init__(logger, matcher_name, descriptor_name)
+        self.mode = mode
+
+    def match(self, **kwargs):
+        des1 = kwargs.get('des1')
+        if des1 is None:
+            raise ValueError("des1 is None")
+        des2 = kwargs.get('des2')
+        if des2 is None:
+            raise ValueError("des2 is None")
+
+        matcher = self._init_matcher()
+        if (self.mode == 'simple'):
+            return matcher.match(des1, des2)
+        elif (self.mode == 'knn'):
+            k = kwargs.get('k')
+            if k is None:
+                k = 2
+            return matcher.knnMatch(des1, des2, k)
         else:
-            return mode_match(des1, des2)
-
-    @abstractmethod
-    def _init_matcher(self):
-        pass
-
-    @abstractmethod
-    def _simple_match(self, des1, des2):
-        pass
-
-    @abstractmethod
-    def _knn_match(self, des1, des2, k):
-        pass
+            raise ValueError(f"Mode '{self.mode}' is not supported.")
 
 
-class BFMatcher(Matcher):
-    def __init__(self, logger, descriptor_method, mode='simple', **kwargs):
-        super().__init__(logger, descriptor_method, mode, **kwargs)
+class BFMatcher(OpenCVMatcher):
+    def __init__(self, logger, matcher_name, descriptor_name, **kwargs):
+        mode = kwargs.get('mode')
+        if mode is None:
+            mode = 'simple'
+        super().__init__(logger, matcher_name, descriptor_name, mode, **kwargs)
 
     def _init_matcher(self):
-        return cv.BFMatcher(self._descriptor_method.default_norm)
-
-    def _simple_match(self, des1, des2):
-        bf = self._init_matcher()
-        return bf.match(des1, des2)
-
-    def _knn_match(self, des1, des2, k=2):
-        bf = self._init_matcher()
-        return bf.knnMatch(des1, des2, k)
+        return cv.BFMatcher(self.descriptor_name.default_norm)
 
 
-class FLANNMatcher(Matcher):
-    def __init__(self, logger, descriptor_method, mode='simple', **kwargs):
-        super().__init__(logger, descriptor_method, mode, **kwargs)
+class FLANNMatcher(OpenCVMatcher):
+    def __init__(self, logger, matcher_name, descriptor_name, **kwargs):
+        mode = kwargs.get('mode')
+        if mode is None:
+            mode = 'simple'
+        super().__init__(logger, matcher_name, descriptor_name, mode, **kwargs)
         self.index_params = kwargs.get('index_params')
         self.search_params = kwargs.get('search_params')
 
@@ -80,7 +91,7 @@ class FLANNMatcher(Matcher):
             raise TypeError("search_params must be dict")
 
     def _get_default_index_params(self):
-        if self._descriptor_method.default_norm == cv.NORM_HAMMING:
+        if self.descriptor_name.defaultNorm == cv.NORM_HAMMING:
             return {
                 'algorithm': 6,
                 'table_number': 6,
@@ -95,11 +106,3 @@ class FLANNMatcher(Matcher):
 
     def _init_matcher(self):
         return cv.FlannBasedMatcher(self.index_params, self.search_params)
-
-    def _simple_match(self, des1, des2):
-        flann = self._init_matcher()
-        return flann.match(des1, des2)
-
-    def _knn_match(self, des1, des2, k=2):
-        flann = self._init_matcher()
-        return flann.knnMatch(des1, des2, k)
