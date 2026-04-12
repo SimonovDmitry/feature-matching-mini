@@ -69,6 +69,7 @@ class TestDetectorFactory:
 
 ALGORITHMS_CPU_ONLY = {'doghardnet_lightglue'}
 
+
 class TestDetectorDetect:
     @pytest.mark.parametrize("method_name", Detector._METHODS.keys())
     def test_all_methods_return_valid_tuple(self, method_name, mock_logger, load_img):

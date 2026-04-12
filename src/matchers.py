@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import cv2 as cv
-from src.descriptors import Descriptor
 
 
 class Matcher(ABC):

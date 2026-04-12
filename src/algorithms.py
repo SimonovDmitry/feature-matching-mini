@@ -14,7 +14,7 @@ OPENCV_DESCRIPTORS = {'sift', 'orb', 'akaze', 'brisk', 'kaze', 'brief', 'freak',
                       'vgg', 'boostdesc'}
 
 OPENCV_MATCHERS = {'bf', 'flann'}
-OPENCV_MATCHERS_MODE = {'simple','knn'}
+OPENCV_MATCHERS_MODE = {'simple', 'knn'}
 
 
 NEURAL_ALGORITHMS = NEURAL_DETECTORS | NEURAL_DESCRIPTORS | NEURAL_MATCHERS
@@ -48,25 +48,25 @@ DETECTOR_DESCRIPTOR_COMPATIBILITY = {
 }
 
 DESCRIPTOR_MATCHER_COMPATIBILITY = {
-    'sift':     ['bf', 'flann'],
-    'orb':      ['bf', 'flann'],
-    'akaze':    ['bf', 'flann'],
-    'brisk':    ['bf', 'flann'],
-    'kaze':     ['bf', 'flann'],
-    'brief':    ['bf', 'flann'],
-    'freak':    ['bf', 'flann'],
-    'daisy':    ['bf', 'flann'],
-    'latch':    ['bf', 'flann'],
-    'beblid':   ['bf', 'flann'],
-    'teblid':   ['bf', 'flann'],
-    'vgg':      ['bf', 'flann'],
-    'boostdesc':['bf', 'flann'],
+    'sift': ['bf', 'flann'],
+    'orb': ['bf', 'flann'],
+    'akaze': ['bf', 'flann'],
+    'brisk': ['bf', 'flann'],
+    'kaze': ['bf', 'flann'],
+    'brief': ['bf', 'flann'],
+    'freak': ['bf', 'flann'],
+    'daisy': ['bf', 'flann'],
+    'latch': ['bf', 'flann'],
+    'beblid': ['bf', 'flann'],
+    'teblid': ['bf', 'flann'],
+    'vgg': ['bf', 'flann'],
+    'boostdesc': ['bf', 'flann'],
 
-    'superpoint':           ['bf', 'flann'],
+    'superpoint': ['bf', 'flann'],
     'superpoint_lightglue': ['lightglue'],
-    'disk_lightglue':       ['lightglue'],
-    'sift_lightglue':       ['lightglue'],
-    'aliked_lightglue':     ['lightglue'],
+    'disk_lightglue': ['lightglue'],
+    'sift_lightglue': ['lightglue'],
+    'aliked_lightglue': ['lightglue'],
     'doghardnet_lightglue': ['lightglue'],
 }
 

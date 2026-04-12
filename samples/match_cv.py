@@ -121,7 +121,7 @@ def parser():
 
     mat_group = arg_parser.add_argument_group('Matcher config')
     mat_group.add_argument('-mat_m', '--matcher_mode', type=str, default='simple',
-                            choices=available_matchers_modes, help='Matching mode')
+                           choices=available_matchers_modes, help='Matching mode')
     mat_group.add_argument('-mr', '--mat-ratio', type=float, default=None,
                            help='Ratio threshold for KNN')
     mat_group.add_argument('-md', '--mat-device', type=str, default=None,
@@ -132,7 +132,6 @@ def parser():
     pre_group = arg_parser.add_argument_group('Preprocessor config')
     pre_group.add_argument('-pd', '--pre-device', type=str, default=None,
                            choices=available_devices, help='Device for preprocessor')
-
 
     return arg_parser.parse_args()
 

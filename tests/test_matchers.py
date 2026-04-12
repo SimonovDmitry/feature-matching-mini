@@ -131,7 +131,6 @@ class TestMatcherModes:
         features1, features2 = identical_features
         result = matcher.match(features1, features2)
 
-
         assert isinstance(result, dict)
         assert 'matches' in result
         matches = result['matches']

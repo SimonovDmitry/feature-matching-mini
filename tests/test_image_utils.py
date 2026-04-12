@@ -68,21 +68,21 @@ class TestSaveImage:
         save_path = temp_dir / "output.jpg"
         result = save_image(sample_numpy, save_path, input_type='numpy')
 
-        assert result == True
+        assert result==True
         assert save_path.exists()
 
     def test_save_tensor(self, sample_tensor, temp_dir):
         save_path = temp_dir / "output.jpg"
         result = save_image(sample_tensor, save_path, input_type='tensor')
 
-        assert result == True
+        assert result==True
         assert save_path.exists()
 
     def test_save_creates_directory(self, sample_numpy, temp_dir):
         save_path = temp_dir / "nested" / "deep" / "output.jpg"
         result = save_image(sample_numpy, save_path, input_type='numpy')
 
-        assert result == True
+        assert result==True
         assert save_path.exists()
 
     def test_save_none_image(self):
@@ -129,7 +129,6 @@ class TestShowImage:
         mock_wait.return_value = 27
 
         show_image(sample_tensor, title="Test", input_type='tensor')
-
 
         mock_imshow.assert_called_once()
         mock_wait.assert_called_once_with(0)

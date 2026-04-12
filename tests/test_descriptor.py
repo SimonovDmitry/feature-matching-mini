@@ -10,7 +10,6 @@ from src.algorithms import NEURAL_ALGORITHMS
 
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
-from src.light_glue_features import LightGlueFeatureExtractor
 from src.feature_matcher import FeatureMatcherCV2
 
 
@@ -98,12 +97,13 @@ class TestDescriptorFactory:
 
 ALGORITHMS_CPU_ONLY = {'doghardnet_lightglue'}
 
+
 class TestDescriptorCompute:
     @pytest.mark.parametrize("detector_name", Detector._METHODS.keys())
     @pytest.mark.parametrize("descriptor_name", Descriptor._METHODS.keys())
     def test_all_methods_compute_descriptors(self, detector_name, descriptor_name, mock_logger, load_img, get_kp):
-        if (detector_name in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY and
-                descriptor_name in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY[detector_name]):
+        if (detector_name in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY
+                and descriptor_name in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY[detector_name]):
             is_neural = detector_name in NEURAL_ALGORITHMS
 
             if is_neural:
@@ -248,6 +248,7 @@ class TestDescriptorRobustness:
         descriptor = Descriptor.create("orb", mock_logger)
         features = descriptor.compute(img, {'kp': ()})
         assert mock_logger.warning.called
+        assert features.get('des') == None
 
 
 class TestDescriptorInvariance:
@@ -259,8 +260,8 @@ class TestDescriptorInvariance:
         features['kp'] = features.get('kp')[:10]
         features1 = descriptor.compute(img, features)
         features2 = descriptor.compute(bright_img, features)
-        cos_sim = (np.dot(features1.get('des')[0], features2.get('des')[0]) /
-                   (np.linalg.norm(features1.get('des')[0]) * np.linalg.norm(features2.get('des')[0])))
+        cos_sim = (np.dot(features1.get('des')[0], features2.get('des')[0])
+                   / (np.linalg.norm(features1.get('des')[0]) * np.linalg.norm(features2.get('des')[0])))
         assert cos_sim > 0.95
 
     def test_flip_consistency(self, mock_logger, load_img):

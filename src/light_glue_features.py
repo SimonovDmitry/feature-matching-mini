@@ -18,6 +18,7 @@ class LightGlueFeatureExtractor(Detector, Descriptor, register=False):
     _shared_models = {}
     _is_extracted = False
     _extracted_data = {}
+
     def __init__(self, extractor_name, logger, config=None):
         Detector.__init__(self, logger, extractor_name)
         Descriptor.__init__(self, logger, extractor_name)

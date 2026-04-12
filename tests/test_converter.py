@@ -124,7 +124,6 @@ class TestImageConverter:
         assert result.max() <= 1.0
         assert result.min() >= 0.0
 
-
     def test_grayscale_image(self):
         gray_img = np.random.randint(0, 255, (100, 100, 1), dtype=np.uint8)
         converter = Converter.create('image')

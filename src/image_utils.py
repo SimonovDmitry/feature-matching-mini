@@ -1,8 +1,6 @@
 from screeninfo import get_monitors
 from src.converter import Converter
 import cv2 as cv
-import numpy as np
-import torch
 
 
 def to_numpy_bgr(data, input_type='numpy'):
@@ -15,7 +13,8 @@ def to_numpy_bgr(data, input_type='numpy'):
         converter = Converter.create('image')
         return converter.convert(data, 'tensor', 'opencv')
 
-def read_image(path, input_type = 'numpy'):
+
+def read_image(path, input_type='numpy'):
     if path is None:
         raise ValueError('Empty path to the image')
     if not path.exists():
@@ -30,7 +29,8 @@ def read_image(path, input_type = 'numpy'):
         converter = Converter.create('image')
         return converter.convert(image, 'opencv', 'tensor')
 
-def save_image(img, save_path, input_type = 'numpy'):
+
+def save_image(img, save_path, input_type='numpy'):
     if img is None:
         raise ValueError('Empty image')
     if save_path is None:
@@ -46,7 +46,8 @@ def save_image(img, save_path, input_type = 'numpy'):
 
     return success
 
-def show_image(img, title = 'Result', input_type = 'numpy'):
+
+def show_image(img, title='Result', input_type='numpy'):
     if img is None:
         raise ValueError('Empty image to show')
 

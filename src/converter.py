@@ -3,6 +3,7 @@ import cv2 as cv
 import numpy as np
 import torch
 
+
 class Converter(ABC):
     _CONVERTERS = {}
 
@@ -65,6 +66,7 @@ class ImageConverter(Converter):
 
         return img_opencv
 
+
 class FeaturesConverter(Converter):
     def _to_cv(self, data):
         keypoints = data.get('keypoints')
@@ -91,6 +93,7 @@ class FeaturesConverter(Converter):
         descriptors = torch.from_numpy(des).to(device)
 
         return {'keypoints': keypoints, 'descriptors': descriptors}
+
 
 class MatchesConverter(Converter):
     def _to_cv(self, data):

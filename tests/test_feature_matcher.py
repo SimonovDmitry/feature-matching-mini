@@ -269,4 +269,3 @@ class TestFeatureMatcherInvalidInputs:
     def test_raises_value_error_on_invalid_matcher(self, mock_logger):
         with pytest.raises(ValueError):
             FeatureMatcherCV2(logger=mock_logger, matcher='unknown_matcher')
-
