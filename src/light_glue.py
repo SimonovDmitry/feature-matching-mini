@@ -12,6 +12,11 @@ class LightGlueMatcher(Matcher):
         if config is None:
             config = {}
 
+        if isinstance(descriptor_name, str):
+            self._extractor_name = descriptor_name.replace('_lightglue', '').lower()
+        else:
+            self._extractor_name = descriptor_name._descriptor_name.replace('_lightglue', '').lower()
+
         device = config.pop('device', None)
         if device is None:
             if torch.cuda.is_available():
@@ -22,7 +27,6 @@ class LightGlueMatcher(Matcher):
                 self._device = torch.device('cpu')
         else:
             self._device = torch.device(device)
-        self._extractor_name = descriptor_name.replace('_lightglue', '').lower()
         self._matcher = LightGlue(features=self._extractor_name, **config).eval().to(self._device)
 
     def _init_matcher(self):

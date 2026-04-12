@@ -11,6 +11,8 @@ from src.algorithms import NEURAL_ALGORITHMS
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
 from src.feature_matcher import FeatureMatcherCV2
+from src.light_glue_features import LightGlueFeatureExtractor
+from src.super_point import SuperPoint
 
 
 @pytest.fixture
@@ -248,7 +250,7 @@ class TestDescriptorRobustness:
         descriptor = Descriptor.create("orb", mock_logger)
         features = descriptor.compute(img, {'kp': ()})
         assert mock_logger.warning.called
-        assert features.get('des') == None
+        assert features.get('des') is None
 
 
 class TestDescriptorInvariance:

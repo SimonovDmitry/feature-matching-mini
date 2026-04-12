@@ -69,4 +69,3 @@ DESCRIPTOR_MATCHER_COMPATIBILITY = {
     'aliked_lightglue': ['lightglue'],
     'doghardnet_lightglue': ['lightglue'],
 }
-
