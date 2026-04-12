@@ -6,6 +6,11 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.detectors import Detector, SIFTDetector, OpenCVDetector
+from src.light_glue_features import LightGlueFeatureExtractor
+from src.super_point import SuperPoint
+
+from src.algorithms import NEURAL_ALGORITHMS
+from src.image_utils import read_image
 
 
 @pytest.fixture
@@ -15,13 +20,9 @@ def mock_logger():
 
 @pytest.fixture
 def load_img():
-    def _load(name):
+    def _load(name, input_type='numpy'):
         path = Path(__file__).parent.parent / "test_data" / name
-        img = cv.imread(str(path), cv.IMREAD_GRAYSCALE)
-
-        if img is None:
-            pytest.fail(f"Failed to load image. On path: {path.absolute()}")
-        return img
+        return read_image(path, input_type=input_type)
     return _load
 
 
@@ -53,40 +54,75 @@ class TestDetectorFactory:
     def test_parameters_passed_to_cv2(self, mock_logger, load_img):
         img = load_img("box.png")
         limit = 10
-        detector = Detector.create("sift", mock_logger, nfeatures=limit)
-        kp = detector.detect(img)
-        assert len(kp) <= limit + 5
+        detector = Detector.create("sift", mock_logger, config={'nfeatures': limit})
+        features = detector.detect(img)
+        assert len(features.get('kp')) <= limit + 5
 
+    def test_empty_config(self, mock_logger):
+        detector = Detector.create("sift", mock_logger, config={})
+        assert isinstance(detector, SIFTDetector)
+
+    def test_none_config(self, mock_logger):
+        detector = Detector.create("sift", mock_logger, config=None)
+        assert isinstance(detector, SIFTDetector)
+
+
+ALGORITHMS_CPU_ONLY = {'doghardnet_lightglue'}
 
 class TestDetectorDetect:
     @pytest.mark.parametrize("method_name", Detector._METHODS.keys())
     def test_all_methods_return_valid_tuple(self, method_name, mock_logger, load_img):
-        img = load_img("box.png")
-        detector = Detector.create(method_name, mock_logger)
-        kp = detector.detect(img)
+        if method_name in NEURAL_ALGORITHMS:
+            img = load_img("box.png", input_type='tensor')
 
-        assert isinstance(kp, tuple)
-        if kp:
-            assert isinstance(kp[0], cv.KeyPoint)
+            if method_name in ALGORITHMS_CPU_ONLY:
+                config = {'device': 'cpu'}
+            else:
+                config = {}
+
+            detector = Detector.create(method_name, mock_logger, config=config)
+        else:
+            img = load_img("box.png")
+            detector = Detector.create(method_name, mock_logger)
+
+        features = detector.detect(img)
+
+        if method_name in NEURAL_ALGORITHMS:
+            assert 'keypoints' in features
+            assert features.get('keypoints') is not None
+        else:
+            kp = features.get('kp')
+            assert isinstance(kp, (tuple, list))
+            if kp:
+                assert isinstance(kp[0], cv.KeyPoint)
 
     def test_reproducibility(self, mock_logger, load_img):
         img = load_img("box.png")
         detector = Detector.create("orb", mock_logger)
 
-        kp1 = detector.detect(img)
-        kp2 = detector.detect(img)
+        features1 = detector.detect(img)
+        features2 = detector.detect(img)
 
-        assert len(kp1) == len(kp2)
-        assert kp1[0].pt == kp2[0].pt
+        assert len(features1.get('kp')) == len(features2.get('kp'))
+        assert features1.get('kp')[0].pt == features2.get('kp')[0].pt
 
     def test_orb_nfeatures_parameter(self, mock_logger, load_img):
         img = load_img("box_in_scene.png")
         limit = 30
 
-        detector = Detector.create("orb", mock_logger, nfeatures=limit)
-        kp = detector.detect(img)
+        detector = Detector.create("orb", mock_logger, config={'nfeatures': limit})
+        features = detector.detect(img)
 
-        assert len(kp) <= limit
+        assert len(features.get('kp')) <= limit
+
+    def test_sift_nfeatures_parameter(self, mock_logger, load_img):
+        img = load_img("box_in_scene.png")
+        limit = 20
+
+        detector = Detector.create("sift", mock_logger, config={'nfeatures': limit})
+        features = detector.detect(img)
+
+        assert len(features.get('kp')) <= limit
 
     def test_empty_image_logging(self, mock_logger):
         detector = Detector.create("sift", mock_logger)
@@ -98,15 +134,15 @@ class TestDetectorDetect:
     def test_compare_box_and_scene(self, mock_logger, load_img):
         detector = Detector.create("sift", mock_logger)
 
-        kp_box = detector.detect(load_img("box.png"))
-        kp_scene = detector.detect(load_img("box_in_scene.png"))
-        assert len(kp_scene) > len(kp_box)
+        features_box = detector.detect(load_img("box.png"))
+        features_scene = detector.detect(load_img("box_in_scene.png"))
+        assert len(features_box.get('kp')) < len(features_scene.get('kp'))
 
     def test_invalid_input_none(self, mock_logger):
         detector = Detector.create("sift", mock_logger)
-        kp = detector.detect(None)
+        features = detector.detect(None)
 
-        assert kp == ()
+        assert features.get('kp') == ()
         assert mock_logger.error.called
 
 
@@ -114,14 +150,14 @@ class TestDetectorRobustness:
     def test_all_white_image(self, mock_logger):
         white_img = np.ones((200, 200), dtype=np.uint8) * 255
         detector = Detector.create("sift", mock_logger)
-        kp = detector.detect(white_img)
-        assert len(kp) == 0
+        features = detector.detect(white_img)
+        assert len(features.get('kp')) == 0
 
     def test_very_small_image(self, mock_logger):
         tiny_img = np.zeros((5, 5), dtype=np.uint8)
         detector = Detector.create("orb", mock_logger)
-        kp = detector.detect(tiny_img)
-        assert isinstance(kp, tuple)
+        features = detector.detect(tiny_img)
+        assert isinstance(features.get('kp'), tuple)
 
     def test_color_image_support(self, mock_logger, load_img):
         path = Path(__file__).parent.parent / "test_data" / "box.png"
@@ -130,8 +166,12 @@ class TestDetectorRobustness:
             pytest.skip("Image not found")
 
         detector = Detector.create("sift", mock_logger)
-        kp = detector.detect(img_bgr)
-        assert len(kp) > 0
+        features = detector.detect(img_bgr)
+        assert len(features.get('kp')) > 0
+
+    def test_invalid_config_key_raises(self, mock_logger):
+        with pytest.raises((TypeError, cv.error)):
+            Detector.create("sift", mock_logger, config={'invalid_param': 999})
 
 
 class TestKeypointProperties:
@@ -140,8 +180,8 @@ class TestKeypointProperties:
         img = load_img("box.png")
         h, w = img.shape[:2]
         detector = Detector.create(method_name, mock_logger)
-        kp = detector.detect(img)
-        for p in kp:
+        features = detector.detect(img)
+        for p in features.get('kp'):
             x, y = p.pt
             assert 0 <= x < w
             assert 0 <= y < h
@@ -150,14 +190,20 @@ class TestKeypointProperties:
 class TestDetectorFunctional:
     def test_detectors_uniqueness(self, mock_logger, load_img):
         img = load_img("box.png")
-        sift = Detector.create("sift", mock_logger).detect(img)
-        orb = Detector.create("orb", mock_logger).detect(img)
-        assert sift[0].pt != orb[0].pt
+        features_sift = Detector.create("sift", mock_logger).detect(img)
+        features_orb = Detector.create("orb", mock_logger).detect(img)
+        assert features_sift.get('kp')[0].pt != features_orb.get('kp')[0].pt
 
     def test_scale_impact(self, mock_logger, load_img):
         img = load_img("box.png")
         detector = Detector.create("sift", mock_logger)
-        kp_original = detector.detect(img)
+        features_original = detector.detect(img)
         small_img = cv.resize(img, (0, 0), fx=0.5, fy=0.5)
-        kp_small = detector.detect(small_img)
-        assert len(kp_small) < len(kp_original)
+        features_small = detector.detect(small_img)
+        assert len(features_original.get('kp')) > len(features_small.get('kp'))
+
+    def test_config_isolation(self, mock_logger, load_img):
+        img = load_img("box.png")
+        features_default = Detector.create("sift", mock_logger).detect(img)
+        features_limited = Detector.create("sift", mock_logger, config={'nfeatures': 5}).detect(img)
+        assert len(features_limited.get('kp')) < len(features_default.get('kp'))

@@ -1,20 +1,33 @@
 import torch
 import cv2 as cv
-import numpy as np
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
+from src.image_utils import to_numpy_bgr
 
 
 class SuperPoint(Detector, Descriptor):
     _shared_model = None
     _shared_processor = None
-    _shared_cache = {}
 
-    def __init__(self, extractor_name, logger, device=None, threshold=0.005):
+    _is_extracted = False
+    _extracted_data = {}
+
+    def __init__(self, extractor_name, logger, config=None):
+        if config is None:
+            config = {}
+
         Detector.__init__(self, logger, extractor_name)
         Descriptor.__init__(self, logger, extractor_name)
+
+        device = config.pop('device', None)
+        self._threshold = config.pop('threshold', 0.005)
+        checkpoint = config.pop('checkpoint', "weights/superpoint")
+        local_files_only = config.pop('local_files_only', True)
+
+        if config:
+            self._logger.warning(f"SuperPoint: unknown config keys ignored: {list(config.keys())}")
 
         if device is None:
             if torch.cuda.is_available():
@@ -24,16 +37,13 @@ class SuperPoint(Detector, Descriptor):
             else:
                 self._device = torch.device('cpu')
         else:
-            self._device = device
-
-        self._threshold = threshold
-        checkpoint = "weights/superpoint"
+            self._device = torch.device(device)
 
         if SuperPoint._shared_model is None:
-            SuperPoint._shared_processor = AutoImageProcessor.from_pretrained(checkpoint, local_files_only=True)
-            SuperPoint._shared_model = SuperPointForKeypointDetection.from_pretrained(checkpoint,
-                                                                                      local_files_only=True).to(
-                                                                                      self._device)
+            SuperPoint._shared_processor = AutoImageProcessor.from_pretrained(
+                checkpoint, local_files_only=local_files_only)
+            SuperPoint._shared_model = SuperPointForKeypointDetection.from_pretrained(
+                checkpoint, local_files_only=local_files_only).to(self._device)
             SuperPoint._shared_model.eval()
 
         self._processor = SuperPoint._shared_processor
@@ -46,67 +56,57 @@ class SuperPoint(Detector, Descriptor):
     def _forward(self, img):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return (), ()
-
-        img_id = id(img)
-        if img_id in SuperPoint._shared_cache:
-            return SuperPoint._shared_cache[img_id]
+            return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
 
-        if len(img.shape) == 2:
-            img_input = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
-        elif img.shape[2] == 3:
-            img_input = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-        else:
-            img_input = img
-        inputs = self._processor(img_input, return_tensors="pt").to(self._device)
+        input_type = 'torch' if isinstance(img, torch.Tensor) else 'numpy'
+        img = to_numpy_bgr(img, input_type=input_type)
+        inputs = self._processor(img, return_tensors="pt").to(self._device)
 
         try:
             with torch.no_grad():
                 outputs = self._model(**inputs)
 
-            image_size = img.shape[:2]
-            processed = self._processor.post_process_keypoint_detection(outputs, [image_size])[0]
+            processed = self._processor.post_process_keypoint_detection(outputs, [img.shape[:2]])[0]
 
-            raw_kp = processed['keypoints'].cpu().numpy()
-            raw_scores = processed['scores'].cpu().numpy()
-            raw_des = processed['descriptors'].cpu().numpy().astype(np.float32)
+            raw_kp = processed['keypoints']
+            raw_scores = processed['scores']
+            raw_des = processed['descriptors']
 
             mask = raw_scores > self._threshold
-            kp = [cv.KeyPoint(x=float(p[0]), y=float(p[1]), size=8, response=float(s))
-                        for p, s in zip(raw_kp[mask], raw_scores[mask])]
-            des = raw_des[mask]
+            SuperPoint._extracted_data = {
+                'keypoints': raw_kp[mask],
+                'descriptors': raw_des[mask],
+                'scores': raw_scores[mask]
+            }
 
-            if len(SuperPoint._shared_cache) > 10:
-                first_key = next(iter(SuperPoint._shared_cache))
-                del SuperPoint._shared_cache[first_key]
-
-            SuperPoint._shared_cache[img_id] = (kp, des)
-
-            if kp:
-                self._logger.info(f"{self._detector_name} found {len(kp)} points")
+            if len(raw_kp[mask]) > 0:
+                self._logger.info(f"{self._detector_name} found {len(raw_kp[mask])} points")
             else:
                 self._logger.warning(f"{self._detector_name} found 0 points")
 
-            if des is not None:
-                self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
+            if raw_des[mask] is not None:
+                self._logger.info(f"{self._descriptor_name} computed {len(raw_des[mask])} descriptors")
             else:
                 self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
 
-            return kp, des
+            return SuperPoint._extracted_data
 
         except Exception as e:
             self._logger.warning(f"{self._detector_name} inference failed (likely 0 points): {e}")
-            return (), ()
+            return {'keypoints': (), 'descriptors': ()}
 
     def detect(self, img):
-        return {'kp': self._forward(img)[0]}
+        SuperPoint._is_extracted = True
+        return self._forward(img)
 
     def compute(self, img, features):
-        kp, des = self._forward(img)
-        return {'kp': kp, 'des': des}
+        if SuperPoint._is_extracted:
+            SuperPoint._is_extracted = False
+            return SuperPoint._extracted_data
+        else:
+            return self._forward(img)
 
     def detectAndCompute(self, img):
-        kp, des = self._forward(img)
-        return {'kp': kp, 'des': des}
+        return self._forward(img)
