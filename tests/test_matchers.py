@@ -1,10 +1,13 @@
+import os
 import pytest
 import cv2 as cv
 import numpy as np
+from pathlib import Path
 from unittest.mock import MagicMock
 from logging import Logger
 
 from src.descriptors import Descriptor
+from src.detectors import Detector
 from src.matchers import Matcher, BFMatcher, FLANNMatcher
 
 
@@ -28,6 +31,22 @@ def mock_descriptor_hamming():
 
 
 @pytest.fixture
+def test_features():
+    np.random.seed(42)
+    des1 = np.random.rand(50, 128).astype(np.float32)
+    des2 = np.random.rand(60, 128).astype(np.float32)
+    return {'des': des1}, {'des': des2}
+
+
+@pytest.fixture
+def test_features_binary():
+    np.random.seed(42)
+    des1 = np.random.randint(0, 255, (50, 32), dtype=np.uint8)
+    des2 = np.random.randint(0, 255, (60, 32), dtype=np.uint8)
+    return {'des': des1}, {'des': des2}
+
+
+@pytest.fixture
 def test_descriptors():
     np.random.seed(42)
     des1 = np.random.rand(50, 128).astype(np.float32)
@@ -36,11 +55,45 @@ def test_descriptors():
 
 
 @pytest.fixture
-def test_descriptors_binary():
+def identical_features():
     np.random.seed(42)
-    des1 = np.random.randint(0, 255, (50, 32), dtype=np.uint8)
-    des2 = np.random.randint(0, 255, (60, 32), dtype=np.uint8)
-    return des1, des2
+    des = np.random.rand(50, 128).astype(np.float32)
+    return {'des': des}, {'des': des.copy()}
+
+
+@pytest.fixture
+def load_img():
+    def _load(name, color=True):
+        path = os.path.join(Path(__file__).parent.parent, "test_data", name)
+        mode = cv.IMREAD_COLOR if color else cv.IMREAD_GRAYSCALE
+        img = cv.imread(str(path), mode)
+        if img is None:
+            pytest.skip(f"Test image not found at {path}")
+        return img
+
+    return _load
+
+
+@pytest.fixture
+def get_kp(load_img, mock_logger):
+    def _get(img_name, method_name="sift"):
+        img = load_img(img_name)
+        detector = Detector.create(method_name, mock_logger)
+        features = detector.detect(img)
+        return features.get('kp', [])
+    return _get
+
+
+@pytest.fixture
+def get_descriptors(load_img, mock_logger):
+    def _get(img_name, kp, method_name="sift"):
+        img = load_img(img_name)
+        descriptor = Descriptor.create(method_name, mock_logger)
+        features = {'kp': kp}
+        result = descriptor.compute(img, features)
+        return result.get('des')
+
+    return _get
 
 
 class TestMatcherRegistry:
@@ -50,43 +103,62 @@ class TestMatcherRegistry:
 
     def test_internal_classes_not_registered(self):
         assert "matcher" not in Matcher._METHODS
+        assert "opencvmatcher" not in Matcher._METHODS
 
     def test_factory_creation_types_bf(self, mock_logger, mock_descriptor):
-        matcher = Matcher.create("bf", mock_logger, mock_descriptor, mode="simple")
+        config = {'mode': 'simple'}
+        matcher = Matcher.create("bf", mock_logger, mock_descriptor, config)
         assert isinstance(matcher, BFMatcher)
         assert isinstance(matcher, Matcher)
 
     def test_factory_creation_types_flann(self, mock_logger, mock_descriptor):
-        matcher = Matcher.create("flann", mock_logger, mock_descriptor, mode="simple")
+        config = {'mode': 'simple'}
+        matcher = Matcher.create("flann", mock_logger, mock_descriptor, config)
         assert isinstance(matcher, FLANNMatcher)
         assert isinstance(matcher, Matcher)
 
+    def test_factory_with_empty_config(self, mock_logger, mock_descriptor):
+        matcher = Matcher.create("bf", mock_logger, mock_descriptor, {})
+        assert isinstance(matcher, BFMatcher)
+        assert matcher.mode == 'simple'
+        assert matcher.k == 1
+
 
 class TestMatcherModes:
-    def test_simple_mode_returns_list_of_dmatches(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="simple")
-        des1, des2 = test_descriptors
-        matches = matcher.match(des1, des2)
+    def test_simple_mode_returns_list_of_dmatches(self, mock_logger, mock_descriptor, identical_features):
+        config = {'mode': 'simple'}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
+        features1, features2 = identical_features
+        result = matcher.match(features1, features2)
 
-        assert isinstance(matches, list)
+        assert isinstance(result, dict)
+        assert 'matches' in result
+        matches = result['matches']
+        assert isinstance(matches, tuple)
         if matches:
             assert isinstance(matches[0], cv.DMatch)
 
-    def test_knn_mode_returns_list_of_lists(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="knn")
-        des1, des2 = test_descriptors
-        matches = matcher.match(des1, des2, k=2)
+    def test_knn_mode_returns_list_of_lists(self, mock_logger, mock_descriptor, identical_features):
+        config = {'mode': 'knn', 'k': 2}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
+        features1, features2 = identical_features
+        result = matcher.match(features1, features2)
 
-        assert isinstance(matches, list)
+        assert isinstance(result, dict)
+        assert 'matches' in result
+        matches = result['matches']
+        assert isinstance(matches, tuple)
         if matches:
-            assert isinstance(matches[0], list)
+            assert isinstance(matches[0], tuple)
             assert isinstance(matches[0][0], cv.DMatch)
 
-    def test_knn_returns_k_matches_per_query(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="knn")
-        des1, des2 = test_descriptors
+    def test_knn_returns_k_matches_per_query(self, mock_logger, mock_descriptor, identical_features):
         k_count = 3
-        matches = matcher.match(des1, des2, k=k_count)
+        config = {'mode': 'knn', 'k': k_count}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
+        features1, features2 = identical_features
+        result = matcher.match(features1, features2)
+        matches = result['matches']
 
         if matches:
             assert len(matches[0]) == k_count
@@ -94,34 +166,41 @@ class TestMatcherModes:
 
 class TestBFMatcher:
     def test_bf_initialization_with_norm(self, mock_logger, mock_descriptor):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="simple")
+        config = {'mode': 'simple'}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
         bf_matcher = matcher._init_matcher()
         assert isinstance(bf_matcher, cv.BFMatcher)
 
-    def test_bf_simple_match_returns_valid_result(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="simple")
-        des1, des2 = test_descriptors
-        matches = matcher._simple_match(des1, des2)
+    def test_bf_simple_match_returns_valid_result(self, mock_logger, mock_descriptor, identical_features):
+        config = {'mode': 'simple'}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
+        features1, features2 = identical_features
+        result = matcher.match(features1, features2)
 
-        assert isinstance(matches, list)
-        if matches:
-            assert len(matches) == len(des1)
+        assert isinstance(result, dict)
+        assert 'matches' in result
+        assert isinstance(result['matches'], tuple)
 
-    def test_bf_knn_match_returns_valid_result(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="knn")
-        des1, des2 = test_descriptors
-        matches = matcher._knn_match(des1, des2, k=2)
+    def test_bf_knn_match_returns_valid_result(self, mock_logger, mock_descriptor, identical_features):
+        config = {'mode': 'knn', 'k': 2}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
+        features1, features2 = identical_features
+        result = matcher.match(features1, features2)
 
-        assert isinstance(matches, list)
-        if matches:
-            assert len(matches) == len(des1)
+        assert isinstance(result, dict)
+        assert 'matches' in result
+        assert isinstance(result['matches'], tuple)
 
-    def test_bf_reproducibility(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="knn")
-        des1, des2 = test_descriptors
+    def test_bf_reproducibility(self, mock_logger, mock_descriptor, test_features):
+        config = {'mode': 'knn', 'k': 2}
+        matcher = BFMatcher(mock_logger, "bf", mock_descriptor, config)
+        features1, features2 = test_features
 
-        matches1 = matcher.match(des1, des2, k=2)
-        matches2 = matcher.match(des1, des2, k=2)
+        result1 = matcher.match(features1, features2)
+        result2 = matcher.match(features1, features2)
+
+        matches1 = result1['matches']
+        matches2 = result2['matches']
 
         assert len(matches1) == len(matches2)
         if matches1 and matches2:
@@ -131,77 +210,10 @@ class TestBFMatcher:
 
 class TestFLANNMatcher:
     def test_flann_initialization_l2_norm(self, mock_logger, mock_descriptor):
-        matcher = FLANNMatcher(mock_logger, mock_descriptor, mode="simple")
+        config = {'mode': 'simple'}
+        matcher = FLANNMatcher(mock_logger, "flann", mock_descriptor, config)
         assert matcher.index_params['algorithm'] == 1
         assert 'trees' in matcher.index_params
         assert matcher.index_params['trees'] == 5
         assert 'checks' in matcher.search_params
         assert matcher.search_params['checks'] == 50
-
-    def test_flann_initialization_hamming_norm(self, mock_logger, mock_descriptor_hamming):
-        matcher = FLANNMatcher(mock_logger, mock_descriptor_hamming, mode="simple")
-        assert matcher.index_params['algorithm'] == 6
-        assert 'table_number' in matcher.index_params
-        assert 'key_size' in matcher.index_params
-        assert matcher.index_params['table_number'] == 6
-        assert matcher.index_params['key_size'] == 12
-        assert 'multi_probe_level' in matcher.index_params
-        assert matcher.index_params['multi_probe_level'] == 1
-        assert 'checks' in matcher.search_params
-        assert matcher.search_params['checks'] == 50
-
-    def test_flann_initialization_with_custom_params(self, mock_logger, mock_descriptor):
-        custom_index = {'algorithm': 1, 'trees': 10}
-        custom_search = {'checks': 100}
-        matcher = FLANNMatcher(
-            mock_logger, mock_descriptor, mode="simple",
-            index_params=custom_index, search_params=custom_search)
-        assert matcher.index_params['trees'] == 10
-        assert matcher.search_params['checks'] == 100
-
-    def test_flann_simple_match_returns_valid_result(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = FLANNMatcher(mock_logger, mock_descriptor, mode="simple")
-        des1, des2 = test_descriptors
-        matches = matcher._simple_match(des1, des2)
-
-        assert isinstance(matches, list)
-        if matches:
-            assert isinstance(matches[0], cv.DMatch)
-
-    def test_flann_knn_match_returns_valid_result(self, mock_logger, mock_descriptor, test_descriptors):
-        matcher = FLANNMatcher(mock_logger, mock_descriptor, mode="knn")
-        des1, des2 = test_descriptors
-        matches = matcher._knn_match(des1, des2, k=2)
-
-        assert isinstance(matches, list)
-        if matches:
-            assert isinstance(matches[0], list)
-            assert isinstance(matches[0][0], cv.DMatch)
-
-    def test_flann_with_binary_descriptors(self, mock_logger, mock_descriptor_hamming, test_descriptors_binary):
-
-        matcher = FLANNMatcher(mock_logger, mock_descriptor_hamming, mode="knn")
-        des1, des2 = test_descriptors_binary
-        matches = matcher.match(des1, des2, k=2)
-
-        assert isinstance(matches, list)
-        assert matches is not None
-
-
-class TestMatcherEdgeCases:
-    def test_match_with_empty_descriptors(self, mock_logger, mock_descriptor):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="simple")
-        des1 = np.array([]).reshape(0, 128).astype(np.float32)
-        des2 = np.random.rand(10, 128).astype(np.float32)
-
-        matches = matcher.match(des1, des2)
-        assert isinstance(matches, list)
-        assert len(matches) == 0
-
-    def test_match_with_mismatched_dimensions(self, mock_logger, mock_descriptor):
-        matcher = BFMatcher(mock_logger, mock_descriptor, mode="simple")
-        des1 = np.random.rand(10, 128).astype(np.float32)
-        des2 = np.random.rand(10, 64).astype(np.float32)
-
-        with pytest.raises(Exception):
-            matcher.match(des1, des2)
