@@ -1,8 +1,8 @@
-from src.algorithms import NEURAL_ALGORITHMS, OPENCV_ALGORITHMS
+from src.algorithms import DNN_ALGORITHMS, OPENCV_ALGORITHMS
 from src.converter import Converter
 
 
-class PreProcessor:
+class Preprocessor:
     _VALID_FORMATS = {'tensor', 'opencv'}
 
     def __init__(self, logger, config=None):
@@ -19,14 +19,14 @@ class PreProcessor:
         if algo in self._VALID_FORMATS:
             return algo
 
-        if algo in NEURAL_ALGORITHMS:
+        if algo in DNN_ALGORITHMS:
             return 'tensor'
 
         if algo in OPENCV_ALGORITHMS:
             return 'opencv'
 
         raise ValueError(f"Unknown algorithm or format: '{algo}'. "
-                         f"Expected one of {NEURAL_ALGORITHMS | OPENCV_ALGORITHMS | self._VALID_FORMATS}")
+                         f"Expected one of {DNN_ALGORITHMS | OPENCV_ALGORITHMS | self._VALID_FORMATS}")
 
     def _log_conversion(self, data_type, from_algo, to_algo):
         from_format = self._get_format(from_algo)

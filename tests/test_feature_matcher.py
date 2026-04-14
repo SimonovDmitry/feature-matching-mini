@@ -7,7 +7,7 @@ from logging import Logger
 
 from src.matchers import Matcher
 from src.feature_matcher import FeatureMatcherCV2
-from src.algorithms import NEURAL_ALGORITHMS, DESCRIPTOR_MATCHER_COMPATIBILITY
+from src.algorithms import DNN_ALGORITHMS, DESCRIPTOR_MATCHER_COMPATIBILITY
 
 
 @pytest.fixture
@@ -131,7 +131,7 @@ class TestFeatureMatcherCompatibility:
         for des in descriptors
         for mat in Matcher._METHODS.keys()
         for mode in ['simple', 'knn']
-        if det not in NEURAL_ALGORITHMS
+        if det not in DNN_ALGORITHMS
         if mat in DESCRIPTOR_MATCHER_COMPATIBILITY.get(des, [])
     ]
 

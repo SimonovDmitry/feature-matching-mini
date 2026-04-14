@@ -4,11 +4,11 @@ import logging
 from pathlib import Path
 
 from src.image_utils import read_image, save_image, show_image
-from src.algorithms import OPENCV_MATCHERS_MODE, NEURAL_MATCHERS
+from src.algorithms import DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
-from src.matchers import Matcher
+from src.matchers import Matcher, OpenCVMatcher
 from src.feature_matcher import FeatureMatcherCV2
 
 
@@ -17,48 +17,48 @@ logger = logging.getLogger("CV_Sample")
 
 
 def build_detector_config(args):
-    config = {}
+    config = dict()
+    if (args.device is not None) and (args.detector in DNN_DETECTORS):
+        config['device'] = args.device
     if args.det_nfeatures is not None:
         config['nfeatures'] = args.det_nfeatures
     if args.det_noctave is not None:
         config['nOctaveLayers'] = args.det_noctave
     if args.det_threshold is not None:
         config['threshold'] = args.det_threshold
-    if args.det_device is not None:
-        config['device'] = args.det_device
     return config
 
 
 def build_descriptor_config(args):
-    config = {}
+    config = dict()
+    if (args.device is not None) and (args.descriptor in DNN_DESCRIPTORS):
+        config['device'] = args.device
     if args.des_nfeatures is not None:
         config['nfeatures'] = args.des_nfeatures
     if args.des_threshold is not None:
         config['threshold'] = args.des_threshold
     if args.des_scale is not None:
         config['scale_factor'] = args.des_scale
-    if args.des_device is not None:
-        config['device'] = args.des_device
     return config
 
 
 def build_matcher_config(args):
-    config = {}
-    if args.matcher not in NEURAL_MATCHERS:
+    config = dict()
+    if (args.device is not None) and (args.matcher in DNN_MATCHERS):
+        config['device'] = args.device
+    if args.matcher in OPENCV_MATCHERS:
         config['mode'] = args.matcher_mode
     if args.mat_ratio is not None:
         config['ratio'] = args.mat_ratio
-    if args.mat_device is not None:
-        config['device'] = args.mat_device
     if args.mat_cross_check is not None:
         config['cross_check'] = args.mat_cross_check
     return config
 
 
 def build_preprocessor_config(args):
-    config = {}
-    if args.pre_device is not None:
-        config['device'] = args.pre_device
+    config = dict()
+    if args.device is not None:
+        config['device'] = args.device
     return config
 
 
@@ -79,7 +79,7 @@ def parser():
     available_detectors = list(Detector._METHODS.keys())
     available_descriptors = list(Descriptor._METHODS.keys())
     available_matchers = list(Matcher._METHODS.keys())
-    available_matchers_modes = list(OPENCV_MATCHERS_MODE)
+    available_matchers_modes = list(OpenCVMatcher._MODE)
     available_devices = ['cpu', 'cuda', 'mps']
 
     arg_parser.add_argument('-det', '--detector', type=str, default='sift',
@@ -94,10 +94,10 @@ def parser():
     arg_parser.add_argument('-i2', '--image2', type=Path, required=True,
                             help='Path to the second image')
 
+    arg_parser.add_argument('-d', '--device', type=str, default=None,
+                           choices=available_devices, help='The device on which the script will be run')
     arg_parser.add_argument('-s', '--save', type=Path, default=None,
                             help='Path to save result image')
-    arg_parser.add_argument('-v', '--show', action='store_true',
-                            help='Show the matching result in a window')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -106,8 +106,6 @@ def parser():
                            help='Number of octave layers')
     det_group.add_argument('-dt', '--det-threshold', type=float, default=None,
                            help='Detection threshold')
-    det_group.add_argument('-dd', '--det-device', type=str, default=None,
-                           choices=available_devices, help='Device for detector')
 
     des_group = arg_parser.add_argument_group('Descriptor config')
     des_group.add_argument('-dsen', '--des-nfeatures', type=int, default=None,
@@ -116,23 +114,14 @@ def parser():
                            help='Descriptor threshold')
     des_group.add_argument('-dss', '--des-scale', type=float, default=None,
                            help='Scale factor')
-    des_group.add_argument('-dsd', '--des-device', type=str, default=None,
-                           choices=available_devices, help='Device for descriptor')
 
     mat_group = arg_parser.add_argument_group('Matcher config')
     mat_group.add_argument('-mat_m', '--matcher_mode', type=str, default='simple',
                            choices=available_matchers_modes, help='Matching mode')
     mat_group.add_argument('-mr', '--mat-ratio', type=float, default=None,
                            help='Ratio threshold for KNN')
-    mat_group.add_argument('-md', '--mat-device', type=str, default=None,
-                           choices=available_devices, help='Device for matcher')
     mat_group.add_argument('-mc', '--mat-cross-check', action='store_true', default=None,
                            help='Enable cross-check for BF matcher')
-
-    pre_group = arg_parser.add_argument_group('Preprocessor config')
-    pre_group.add_argument('-pd', '--pre-device', type=str, default=None,
-                           choices=available_devices, help='Device for preprocessor')
-
     return arg_parser.parse_args()
 
 
@@ -162,9 +151,7 @@ def main():
             save_image(res_img, save_path=args.save)
             logger.info(f"Result successfully saved to: {args.save}")
 
-        if args.show:
-            show_image(res_img, title="Matched Image")
-
+        show_image(res_img, title="Matched Image")
         logger.info("Pipeline finished successfully")
         return 0
 

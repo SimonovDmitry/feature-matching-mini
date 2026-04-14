@@ -6,10 +6,10 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.detectors import Detector, SIFTDetector, OpenCVDetector
-from src.light_glue_features import LightGlueFeatureExtractor
+from src.lightglue_pipeline import LightGlueFeatureExtractor
 from src.super_point import SuperPoint
 
-from src.algorithms import NEURAL_ALGORITHMS
+from src.algorithms import DNN_ALGORITHMS
 from src.image_utils import read_image
 
 
@@ -73,7 +73,7 @@ ALGORITHMS_CPU_ONLY = {'doghardnet_lightglue'}
 class TestDetectorDetect:
     @pytest.mark.parametrize("method_name", Detector._METHODS.keys())
     def test_all_methods_return_valid_tuple(self, method_name, mock_logger, load_img):
-        if method_name in NEURAL_ALGORITHMS:
+        if method_name in DNN_ALGORITHMS:
             img = load_img("box.png", input_type='tensor')
 
             if method_name in ALGORITHMS_CPU_ONLY:
@@ -88,7 +88,7 @@ class TestDetectorDetect:
 
         features = detector.detect(img)
 
-        if method_name in NEURAL_ALGORITHMS:
+        if method_name in DNN_ALGORITHMS:
             assert 'keypoints' in features
             assert features.get('keypoints') is not None
         else:

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.preprocessor import PreProcessor
-from src.algorithms import NEURAL_ALGORITHMS, OPENCV_ALGORITHMS
+from src.algorithms import DNN_ALGORITHMS, OPENCV_ALGORITHMS
 
 
 @pytest.fixture
@@ -98,7 +98,7 @@ class TestPreProcessorInit:
 
 class TestPreProcessorGetFormat:
     def test_neural_algo_returns_tensor(self, preprocessor):
-        for algo in NEURAL_ALGORITHMS:
+        for algo in DNN_ALGORITHMS:
             assert preprocessor._get_format(algo) == 'tensor'
 
     def test_opencv_algo_returns_opencv(self, preprocessor):

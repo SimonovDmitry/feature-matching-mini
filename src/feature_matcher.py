@@ -1,16 +1,16 @@
 import cv2 as cv
 import numpy as np
 
-from src.preprocessor import PreProcessor
-from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY, NEURAL_MATCHERS,
+from src.preprocessor import Preprocessor
+from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY, DNN_MATCHERS,
                             OPENCV_MATCHERS)
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
 from src.super_point import SuperPoint
-from src.light_glue import LightGlue
-from src.light_glue_features import LightGlueFeatureExtractor
+from src.lightglue_matcher import LightGlue
+from src.lightglue_pipeline import LightGlueFeatureExtractor
 
 
 class FeatureMatcherCV2:
@@ -44,7 +44,7 @@ class FeatureMatcherCV2:
                 raise ValueError(f"Descriptor '{self._descriptor}' cannot be used with Matcher '{self._matcher}'."
                                  f" Available: {DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor]}")
 
-        if self._matcher in NEURAL_MATCHERS and 'mode' in self._matcher_config:
+        if self._matcher in DNN_MATCHERS and 'mode' in self._matcher_config:
             raise ValueError(f"Matcher '{self._matcher}' does not support 'mode' parameter. "
                              f"Mode is only available for OpenCV matchers: {OPENCV_MATCHERS}")
 
@@ -85,7 +85,7 @@ class FeatureMatcherCV2:
                                        config=self._descriptor_config)
         matcher = Matcher.create(matcher_name=self._matcher, descriptor_name=descriptor,
                                  logger=self._logger, config=self._matcher_config)
-        preprocessor = PreProcessor(config=self._preprocessor_config, logger=self._logger)
+        preprocessor = Preprocessor(config=self._preprocessor_config, logger=self._logger)
 
         img0 = preprocessor.prepare_image(img0, from_algo='opencv', to_algo=self._detector)
         img1 = preprocessor.prepare_image(img1, from_algo='opencv', to_algo=self._detector)

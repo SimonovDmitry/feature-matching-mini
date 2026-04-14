@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from logging import Logger
 
-from src.light_glue_features import LightGlueFeatureExtractor
-from src.light_glue import LightGlueMatcher
+from src.lightglue_pipeline import LightGlueFeatureExtractor
+from src.lightglue_matcher import LightGlueMatcher
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher

@@ -37,6 +37,8 @@ class Matcher(ABC):
 
 
 class OpenCVMatcher(Matcher, register=False):
+    _MODE = {'simple', 'knn'}
+
     def __init__(self, logger, matcher_name, descriptor_name, config):
         super().__init__(logger, matcher_name, descriptor_name)
         self.mode = config.get('mode', 'simple')

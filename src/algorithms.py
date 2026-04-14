@@ -1,11 +1,11 @@
 
-NEURAL_DETECTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
+DNN_DETECTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
                     'doghardnet_lightglue'}
 
-NEURAL_DESCRIPTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
+DNN_DESCRIPTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
                       'doghardnet_lightglue'}
 
-NEURAL_MATCHERS = {'lightglue'}
+DNN_MATCHERS = {'lightglue'}
 
 OPENCV_DETECTORS = {'sift', 'orb', 'fast', 'akaze', 'brisk', 'kaze', 'gftt', 'mser', 'agast', 'blob', 'star',
                     'harrislaplace', 'msd'}
@@ -17,9 +17,9 @@ OPENCV_MATCHERS = {'bf', 'flann'}
 OPENCV_MATCHERS_MODE = {'simple', 'knn'}
 
 
-NEURAL_ALGORITHMS = NEURAL_DETECTORS | NEURAL_DESCRIPTORS | NEURAL_MATCHERS
+DNN_ALGORITHMS = DNN_DETECTORS | DNN_DESCRIPTORS | DNN_MATCHERS
 OPENCV_ALGORITHMS = OPENCV_DETECTORS | OPENCV_DESCRIPTORS | OPENCV_MATCHERS
-ALL_ALGORITHMS = NEURAL_ALGORITHMS | OPENCV_ALGORITHMS
+ALL_ALGORITHMS = DNN_ALGORITHMS | OPENCV_ALGORITHMS
 
 DETECTOR_DESCRIPTOR_COMPATIBILITY = {
     'sift': ['sift', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],

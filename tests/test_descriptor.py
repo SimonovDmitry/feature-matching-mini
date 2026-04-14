@@ -6,12 +6,12 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.image_utils import read_image
-from src.algorithms import NEURAL_ALGORITHMS
+from src.algorithms import DNN_ALGORITHMS
 
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
 from src.feature_matcher import FeatureMatcherCV2
-from src.light_glue_features import LightGlueFeatureExtractor
+from src.lightglue_pipeline import LightGlueFeatureExtractor
 from src.super_point import SuperPoint
 
 

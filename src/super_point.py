@@ -8,8 +8,8 @@ from src.image_utils import to_numpy_bgr
 
 
 class SuperPoint(Detector, Descriptor):
-    _shared_model = None
-    _shared_processor = None
+    _model = None
+    _image_processor = None
 
     _is_extracted = False
     _extracted_data = {}
@@ -39,15 +39,15 @@ class SuperPoint(Detector, Descriptor):
         else:
             self._device = torch.device(device)
 
-        if SuperPoint._shared_model is None:
-            SuperPoint._shared_processor = AutoImageProcessor.from_pretrained(
+        if SuperPoint._model is None:
+            SuperPoint._image_processor = AutoImageProcessor.from_pretrained(
                 checkpoint, local_files_only=local_files_only)
-            SuperPoint._shared_model = SuperPointForKeypointDetection.from_pretrained(
+            SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(
                 checkpoint, local_files_only=local_files_only).to(self._device)
-            SuperPoint._shared_model.eval()
+            SuperPoint._model.eval()
 
-        self._processor = SuperPoint._shared_processor
-        self._model = SuperPoint._shared_model
+        self._processor = SuperPoint._image_processor
+        self._model = SuperPoint._model
 
     @property
     def default_norm(self):
