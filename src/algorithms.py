@@ -1,9 +1,9 @@
 
 DNN_DETECTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
-                    'doghardnet_lightglue'}
+                 'doghardnet_lightglue'}
 
 DNN_DESCRIPTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
-                      'doghardnet_lightglue'}
+                   'doghardnet_lightglue'}
 
 DNN_MATCHERS = {'lightglue'}
 

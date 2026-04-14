@@ -95,7 +95,7 @@ def parser():
                             help='Path to the second image')
 
     arg_parser.add_argument('-d', '--device', type=str, default=None,
-                           choices=available_devices, help='The device on which the script will be run')
+                            choices=available_devices, help='The device on which the script will be run')
     arg_parser.add_argument('-s', '--save', type=Path, default=None,
                             help='Path to save result image')
 

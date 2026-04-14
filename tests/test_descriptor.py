@@ -106,7 +106,7 @@ class TestDescriptorCompute:
     def test_all_methods_compute_descriptors(self, detector_name, descriptor_name, mock_logger, load_img, get_kp):
         if (detector_name in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY
                 and descriptor_name in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY[detector_name]):
-            is_neural = detector_name in NEURAL_ALGORITHMS
+            is_neural = detector_name in DNN_ALGORITHMS
 
             if is_neural:
                 img = load_img("box.png", input_type='tensor')
