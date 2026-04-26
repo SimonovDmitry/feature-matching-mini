@@ -5,13 +5,13 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
-from src.image_utils import read_image, save_image, show_image  
-from samples.utils import build_config  
+from src.image_utils import read_image, save_image, show_image  # noqa: E402
+from samples.utils import build_config  # noqa: E402
 
-from src.detectors import Detector  
-from src.descriptors import Descriptor  
-from src.matchers import Matcher, OpenCVMatcher  
-from src.feature_matcher import FeatureMatcherCV2  
+from src.detectors import Detector  # noqa: E402
+from src.descriptors import Descriptor  # noqa: E402
+from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
+from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
