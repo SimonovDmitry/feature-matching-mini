@@ -9,7 +9,8 @@ from src.matchers import Matcher, OpenCVMatcher
 from src.feature_matcher import FeatureMatcherCV2
 
 from samples.utils import build_config
-from samples.hpatches_utils import HPatchesDataManager, HPatchesTask
+from samples.hpatches_task import HPatchesTask
+from samples.hpatches_data_manager import HPatchesDataManager
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
@@ -44,7 +45,7 @@ def parser():
     arg_parser.add_argument('-n', '--num-scenes', type=int, default=None,
                             help='Number of scenes to process (default: all)')
     arg_parser.add_argument('-pt', '--pixel-threshold', type=float, default=5.0,
-                           help='Pixel threshold for homography verification')
+                            help='Pixel threshold for homography verification')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -70,7 +71,6 @@ def parser():
     mat_group.add_argument('-mc', '--mat-cross-check', action='store_true', default=None,
                            help='Enable cross-check for BF matcher')
     return arg_parser.parse_args()
-
 
 
 def main():
