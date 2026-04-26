@@ -4,9 +4,9 @@ from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher, OpenCVMatcher
 from src.algorithms import DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS
-from src.super_point import SuperPoint # noqa: F401
-from src.lightglue_matcher import LightGlue # noqa: F401
-from src.lightglue_pipeline import LightGlueFeatureExtractor # noqa: F401
+from src.super_point import SuperPoint  # noqa: F401
+from src.lightglue_matcher import LightGlue  # noqa: F401
+from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
 
 
 def build_detector_config(args):
@@ -21,6 +21,7 @@ def build_detector_config(args):
         config['threshold'] = args.det_threshold
     return config
 
+
 def build_descriptor_config(args):
     config = dict()
     if (args.device is not None) and (args.descriptor in DNN_DESCRIPTORS):
@@ -32,6 +33,7 @@ def build_descriptor_config(args):
     if args.des_scale is not None:
         config['scale_factor'] = args.des_scale
     return config
+
 
 def build_matcher_config(args):
     config = dict()
@@ -45,11 +47,13 @@ def build_matcher_config(args):
         config['cross_check'] = args.mat_cross_check
     return config
 
+
 def build_preprocessor_config(args):
     config = dict()
     if args.device is not None:
         config['device'] = args.device
     return config
+
 
 def build_config(args):
     return {
@@ -58,6 +62,7 @@ def build_config(args):
         'matcher': build_matcher_config(args),
         'preprocessor': build_preprocessor_config(args),
     }
+
 
 def performance_tests_parser():
     arg_parser = argparse.ArgumentParser(

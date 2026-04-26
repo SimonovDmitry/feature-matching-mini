@@ -10,6 +10,7 @@ from src.algorithms import DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("PerformanceBenchmark")
 
+
 def parse_performance_log(log_output, script_type):
     results = {}
 
@@ -39,7 +40,7 @@ def parse_performance_log(log_output, script_type):
 
 
 def run_benchmark(script_name, detector, descriptor, matcher,
-                  img1, img2, device = 'cpu', iterations = 10):
+                  img1, img2, device='cpu', iterations=10):
     cmd = [
         sys.executable, '-m', script_name,
         '-det', detector,
@@ -86,7 +87,7 @@ def get_all_combinations():
     return combinations
 
 
-def table_benchmark(img1, img2, output_csv, device = 'cpu', iterations = 10):
+def table_benchmark(img1, img2, output_csv, device='cpu', iterations=10):
     combinations = get_all_combinations()
     logger.info(f"Found {len(combinations)} valid combinations:")
     all_results = []
