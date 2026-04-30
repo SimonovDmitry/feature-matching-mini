@@ -2,13 +2,14 @@ import argparse
 import sys
 import logging
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher, OpenCVMatcher
 from src.feature_matcher import FeatureMatcherCV2
 
-from samples.utils import build_config
+from samples.utils import build_hpatches_benchmark_config
 from samples.hpatches_task import HPatchesTask
 from samples.hpatches_data_manager import HPatchesDataManager
 
@@ -35,17 +36,24 @@ def parser():
                             choices=available_descriptors, help='Descriptor algorithm')
     arg_parser.add_argument('-mat', '--matcher', type=str, default='bf',
                             choices=available_matchers, help='Matching algorithm')
-
-    arg_parser.add_argument('-d', '--device', type=str, default=None,
-                            choices=available_devices, help='The device on which the script will be run')
     arg_parser.add_argument('-t', '--task', type=str, default='matching',
                             choices=available_task, help='Descriptor algorithm')
-    arg_parser.add_argument('-p', '--path', type=Path, required=True,
-                            help='Path to hpatches-release folder')
-    arg_parser.add_argument('-n', '--num-scenes', type=int, default=None,
-                            help='Number of scenes to process (default: all)')
-    arg_parser.add_argument('-pt', '--pixel-threshold', type=float, default=5.0,
-                            help='Pixel threshold for homography verification')
+    arg_parser.add_argument('-d', '--device', type=str, default=None,
+                            choices=available_devices, help='The device on which the script will be run')
+
+    ds_group = arg_parser.add_argument_group('Dataset config')
+    ds_group.add_argument('-p', '--path', type=Path, required=True,
+                          help='Path to hpatches-release folder')
+    ds_group.add_argument('-n', '--num-scenes', type=int, default=None,
+                          help='Number of scenes to process (default: all)')
+    ds_group.add_argument('-bs', '--batch-size', type=int, default=4,
+                          help='Batch size for processing images/scenes')
+
+    task_group = arg_parser.add_argument_group('Task config')
+    task_group.add_argument('-pt', '--pixel-threshold', type=float, default=5.0,
+                            help='Pixel threshold for verification')
+    task_group.add_argument('-hm', '--homography-method', type=str, default='ransac',
+                            choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -83,34 +91,41 @@ def main():
 
         logger.info("Starting HPatches Benchmark Pipeline")
 
-        config = build_config(args)
+        config = build_hpatches_benchmark_config(args)
         logger.info(f"Config: {config}")
 
         feature_matcher = FeatureMatcherCV2(detector=args.detector, descriptor=args.descriptor,
                                             matcher=args.matcher, logger=logger, config=config)
-        dm = HPatchesDataManager(raw_data_path=args.path, logger=logger)
-        dataset = dm.load_dataset(num_scenes=args.num_scenes)
-        matching_data = {scene: {} for scene in dataset.keys()}
+        dm = HPatchesDataManager(logger=logger, config=config['dataset'])
+        task = HPatchesTask.create(task_name=args.task , logger=logger, config=config['task'])
 
-        for scene_name, data in dataset.items():
-            img_ref = data['ref_img']
+        results = {}
+        while dm.has_more_data():
+            current_batch = dm.load_batch()
+            if not current_batch:
+                break
 
-            for i, target in data['targets'].items():
-                img_tgt = target['image']
-                H = target['H']
+            for scene_name, data in current_batch.items():
+                matching_data = {scene_name: {}}
+                img_ref = data['ref_img']
 
-                features_ref, features_tgt, correspondences = feature_matcher.match(img_ref, img_tgt)
-                matching_data[scene_name][i] = {
-                    'kp_ref': features_ref['kp'],
-                    'kp_tgt': features_tgt['kp'],
-                    'matches': correspondences['matches'],
-                    'H': H
-                }
+                for i, target in data['targets'].items():
+                    img_tgt = target['image']
+                    H = target['H']
 
-        task = HPatchesTask.create(task_name=args.task, logger=logger, pixel_threshold=args.pixel_threshold)
-        results = task.eval_task(matching_data, list(dataset.keys()))
+                    features_ref, features_tgt, correspondences = feature_matcher.match(img_ref, img_tgt)
+                    matching_data[scene_name][i] = {
+                        'kp_ref': features_ref['kp'],
+                        'kp_tgt': features_tgt['kp'],
+                        'matches': correspondences['matches'],
+                        'H': H,
+                        'ref_shape': data['ref_shape']
+                    }
+
+                results_scene = task.eval_task(matching_data, [scene_name])
+                results.update(results_scene)
+
         task.report_metrics(results, "End-to-End Pipeline")
-
         logger.info("Pipeline finished successfully")
         return 0
 
