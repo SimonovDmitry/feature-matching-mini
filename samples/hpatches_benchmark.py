@@ -2,16 +2,16 @@ import argparse
 import sys
 import logging
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent)) # noqa: E402
+sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
-from src.detectors import Detector # noqa: E402
-from src.descriptors import Descriptor # noqa: E402
-from src.matchers import Matcher, OpenCVMatcher # noqa: E402
-from src.feature_matcher import FeatureMatcherCV2 # noqa: E402
+from src.detectors import Detector  # noqa: E402
+from src.descriptors import Descriptor  # noqa: E402
+from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
+from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
 
-from samples.utils import build_hpatches_benchmark_config # noqa: E402
-from samples.hpatches_task import HPatchesTask # noqa: E402
-from samples.hpatches_data_manager import HPatchesDataManager # noqa: E402
+from samples.utils import build_hpatches_benchmark_config  # noqa: E402
+from samples.hpatches_task import HPatchesTask  # noqa: E402
+from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
