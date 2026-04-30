@@ -54,7 +54,7 @@ class SuperPoint(Detector, Descriptor):
                 SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(
                     checkpoint, local_files_only=local_files_only).to(self._device)
             except Exception as e:
-                self._logger.error(f"Failed to load from {checkpoint}. Trying remote fallback...")
+                self._logger.error(f"Failed to load from {checkpoint}: {e}")
 
             SuperPoint._model.eval()
 

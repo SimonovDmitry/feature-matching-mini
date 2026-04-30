@@ -2,16 +2,16 @@ import argparse
 import sys
 import logging
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent)) # noqa: E402
 
-from src.detectors import Detector
-from src.descriptors import Descriptor
-from src.matchers import Matcher, OpenCVMatcher
-from src.feature_matcher import FeatureMatcherCV2
+from src.detectors import Detector # noqa: E402
+from src.descriptors import Descriptor # noqa: E402
+from src.matchers import Matcher, OpenCVMatcher # noqa: E402
+from src.feature_matcher import FeatureMatcherCV2 # noqa: E402
 
-from samples.utils import build_hpatches_benchmark_config
-from samples.hpatches_task import HPatchesTask
-from samples.hpatches_data_manager import HPatchesDataManager
+from samples.utils import build_hpatches_benchmark_config # noqa: E402
+from samples.hpatches_task import HPatchesTask # noqa: E402
+from samples.hpatches_data_manager import HPatchesDataManager # noqa: E402
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
@@ -97,7 +97,7 @@ def main():
         feature_matcher = FeatureMatcherCV2(detector=args.detector, descriptor=args.descriptor,
                                             matcher=args.matcher, logger=logger, config=config)
         dm = HPatchesDataManager(logger=logger, config=config['dataset'])
-        task = HPatchesTask.create(task_name=args.task , logger=logger, config=config['task'])
+        task = HPatchesTask.create(task_name=args.task, logger=logger, config=config['task'])
 
         results = {}
         while dm.has_more_data():

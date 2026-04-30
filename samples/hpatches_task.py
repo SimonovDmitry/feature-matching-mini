@@ -102,7 +102,9 @@ class MatchingAPTask(BaseMatchingTask):
         results = {seq: {} for seq in split}
 
         for seq in split:
-            if seq not in matching_data: continue
+            if seq not in matching_data:
+                continue
+
             for i in self._img_indices:
                 data = matching_data[seq].get(i)
                 res = self._get_match_results(data) if data else None
@@ -126,7 +128,9 @@ class MatchingScoreTask(BaseMatchingTask):
         results = {seq: {} for seq in split}
 
         for seq in split:
-            if seq not in matching_data: continue
+            if seq not in matching_data:
+                continue
+
             for i in self._img_indices:
                 data = matching_data[seq].get(i)
                 res = self._get_match_results(data) if data else None
@@ -142,7 +146,9 @@ class MatchingScoreTask(BaseMatchingTask):
     def report_metrics(self, results, task_name="Matching Score & Precision"):
         rows = []
         for seq, res in results.items():
-            if not res: continue
+            if not res:
+                continue
+
             rows.append({
                 'Scene': seq,
                 'MS': np.mean([m['ms'] for m in res.values()]),
@@ -166,7 +172,6 @@ class HomographyAUCTask(HPatchesTask):
         super().__init__(logger)
         self._pixel_threshold = config.pop('pixel_threshold', 5.0)
         self._homography_method = config.pop('homography_method', "ransac")
-
 
     def eval_task(self, matching_data, split):
         self._logger.info('Evaluating Full Pipeline (mAP) via Homography')
