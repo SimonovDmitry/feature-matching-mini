@@ -1,15 +1,18 @@
 import sys
 import logging
 import numpy as np
+from pathlib import Path
 
-from src.image_utils import read_image
-from samples.utils import build_config, performance_tests_parser
-from src.preprocessor import Preprocessor
-from src.algorithms import DNN_ALGORITHMS
-from src.detectors import Detector
-from src.descriptors import Descriptor
-from src.matchers import Matcher
-from samples.performance_profiler import PerformanceProfiler
+sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
+
+from src.image_utils import read_image  # noqa: E402
+from samples.utils import build_feature_matcher_config, performance_tests_parser  # noqa: E402
+from src.preprocessor import Preprocessor  # noqa: E402
+from src.algorithms import DNN_ALGORITHMS  # noqa: E402
+from src.detectors import Detector  # noqa: E402
+from src.descriptors import Descriptor  # noqa: E402
+from src.matchers import Matcher  # noqa: E402
+from samples.performance_profiler import PerformanceProfiler  # noqa: E402
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
@@ -43,7 +46,7 @@ def main():
             logger.error(f"One of the images does not exist: {args.image1} or {args.image2}")
             return 1
 
-        config = build_config(args)
+        config = build_feature_matcher_config(args)
         logger.info(f"Config: {config}")
 
         detector_config = config.get('detector', {})

@@ -6,8 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.image_utils import read_image, save_image, show_image  # noqa: E402
-from samples.utils import build_config  # noqa: E402
-
+from samples.utils import build_feature_matcher_config  # noqa: E402
 from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
@@ -83,7 +82,7 @@ def main():
         logger.info("Starting Feature Matching Pipeline")
         logger.info(f"Comparing pair: {args.image1} and {args.image2}")
 
-        config = build_config(args)
+        config = build_feature_matcher_config(args)
         logger.info(f"Config: {config}")
 
         img1 = read_image(args.image1)

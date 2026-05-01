@@ -5,11 +5,13 @@ import sys
 import logging
 import pandas as pd
 from pathlib import Path
-from src.algorithms import DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY
+
+sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
+
+from src.algorithms import DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("PerformanceBenchmark")
-
 
 def parse_performance_log(log_output, script_type):
     results = {}
@@ -40,7 +42,7 @@ def parse_performance_log(log_output, script_type):
 
 
 def run_benchmark(script_name, detector, descriptor, matcher,
-                  img1, img2, device='cpu', iterations=10):
+                  img1, img2, device = 'cpu', iterations = 10):
     cmd = [
         sys.executable, '-m', script_name,
         '-det', detector,
@@ -54,12 +56,18 @@ def run_benchmark(script_name, detector, descriptor, matcher,
 
     logger.info(f"Running: {detector}+{descriptor}+{matcher}")
 
+    process = None
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = process.communicate()
+        output = stdout + stderr
 
-        output = result.stdout + result.stderr
-
-        if result.returncode != 0:
+        if process.returncode != 0:
             logger.warning(f"Failed: {detector}+{descriptor}+{matcher}")
             return False, {}
 
@@ -70,6 +78,10 @@ def run_benchmark(script_name, detector, descriptor, matcher,
     except Exception as e:
         logger.warning(f"Error: {e}")
         return False, {}
+    finally:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.wait()
 
 
 def get_all_combinations():
@@ -87,7 +99,7 @@ def get_all_combinations():
     return combinations
 
 
-def table_benchmark(img1, img2, output_csv, device='cpu', iterations=10):
+def table_benchmark(img1, img2, output_csv, device = 'cpu', iterations = 10):
     combinations = get_all_combinations()
     logger.info(f"Found {len(combinations)} valid combinations:")
     all_results = []

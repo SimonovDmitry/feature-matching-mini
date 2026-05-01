@@ -1,12 +1,16 @@
+import sys
 import argparse
 from pathlib import Path
-from src.detectors import Detector
-from src.descriptors import Descriptor
-from src.matchers import Matcher, OpenCVMatcher
-from src.algorithms import DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS
-from src.super_point import SuperPoint  # noqa: F401
-from src.lightglue_matcher import LightGlue  # noqa: F401
-from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
+
+sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
+
+from src.detectors import Detector  # noqa: E402
+from src.descriptors import Descriptor  # noqa: E402
+from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
+from src.algorithms import DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS  # noqa: E402
+from src.super_point import SuperPoint # noqa: F401, E402
+from src.lightglue_matcher import LightGlue # noqa: F401, E402
+from src.lightglue_pipeline import LightGlueFeatureExtractor # noqa: F401, E402
 
 
 def build_detector_config(args):
@@ -55,7 +59,7 @@ def build_preprocessor_config(args):
     return config
 
 
-def build_config(args):
+def build_feature_matcher_config(args):
     return {
         'detector': build_detector_config(args),
         'descriptor': build_descriptor_config(args),
@@ -117,3 +121,31 @@ def performance_tests_parser():
     arg_parser.add_argument('-n', '--iterations', type=int, default=10,
                             help='Number of iterations for performance testing (default: 10)')
     return arg_parser.parse_args()
+
+
+def build_hpatches_dataset_config(args):
+    config = dict()
+    if args.path is not None:
+        config['path'] = args.path
+    if args.num_scenes is not None:
+        config['num_scenes'] = args.num_scenes
+    if args.batch_size is not None:
+        config['batch_size'] = args.batch_size
+    return config
+
+
+def build_hpatches_task_config(args):
+    config = dict()
+    if args.pixel_threshold is not None:
+        config['pixel_threshold'] = args.pixel_threshold
+    if args.homography_method is not None:
+        config['homography_method'] = args.homography_method
+    return config
+
+
+def build_hpatches_benchmark_config(args):
+    return {
+        **build_feature_matcher_config(args),
+        "dataset": build_hpatches_dataset_config(args),
+        "task": build_hpatches_task_config(args)
+    }
