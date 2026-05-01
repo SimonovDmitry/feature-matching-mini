@@ -8,9 +8,9 @@ from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
 from src.algorithms import DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS  # noqa: E402
-from src.super_point import SuperPoint # noqa: F401, E402
-from src.lightglue_matcher import LightGlue # noqa: F401, E402
-from src.lightglue_pipeline import LightGlueFeatureExtractor # noqa: F401, E402
+from src.super_point import SuperPoint  # noqa: F401, E402
+from src.lightglue_matcher import LightGlue  # noqa: F401, E402
+from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401, E402
 
 
 def build_detector_config(args):
