@@ -32,7 +32,7 @@ def parse_performance_log(log_output, script_type):
         patterns = {
             'min_pipeline_ms': r'Min time pipeline test:\s*([\d\.eE\+\-]+)',
             'mean_pipeline_ms': r'Mean time pipeline test:\s*([\d\.eE\+\-]+)',
-        } 
+        }
 
     for key, pattern in patterns.items():
         match = re.search(pattern, log_output)
