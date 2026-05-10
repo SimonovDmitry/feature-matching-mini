@@ -44,16 +44,18 @@ def parser():
     ds_group = arg_parser.add_argument_group('Dataset config')
     ds_group.add_argument('-p', '--path', type=Path, required=True,
                           help='Path to hpatches-release folder')
-    ds_group.add_argument('-n', '--num-scenes', type=int, default=None,
+    ds_group.add_argument('-n', '--num-scenes', type=int, default=116,
                           help='Number of scenes to process (default: all)')
-    ds_group.add_argument('-bs', '--batch-size', type=int, default=4,
+    ds_group.add_argument('-sbs', '--scenes-batch-size', type=int, default=4,
                           help='Batch size for processing images/scenes')
 
     task_group = arg_parser.add_argument_group('Task config')
-    task_group.add_argument('-pt', '--pixel-threshold', type=float, default=5.0,
+    task_group.add_argument('-et', '--eval-threshold', type=float, default=5.0,
                             help='Pixel threshold for verification')
     task_group.add_argument('-hm', '--homography-method', type=str, default='ransac',
                             choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
+    task_group.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
+                            help='Threshold for homography estimation (inlier classification)')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -119,7 +121,8 @@ def main():
                         'kp_tgt': features_tgt['kp'],
                         'matches': correspondences['matches'],
                         'H': H,
-                        'ref_shape': data['ref_shape']
+                        'ref_shape': data['ref_shape'],
+                        'tgt_shape': target['tgt_shape'],
                     }
 
                 results_scene = task.eval_task(matching_data, [scene_name])

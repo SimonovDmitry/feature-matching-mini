@@ -14,16 +14,14 @@ class HPatchesDataManager:
 
         self._raw_data_path = Path(config.pop("raw_data_path", "hpatches-sequences-release"))
         self._num_scenes = config.pop("num_scenes", 116)
-        self._batch_size = config.pop("batch_size", 4)
+        self._scenes_batch_size = config.pop("scenes_batch_size", 4)
         self._logger = logger
 
         self._current_idx = 0
         self.all_scenes = self._get_all_scenes()
-        self._logger.info(f"Loading {self._num_scenes} scenes")
 
     def _get_all_scenes(self):
         scenes = [d for d in self._raw_data_path.iterdir() if d.is_dir()]
-        scenes.sort()
         if self._num_scenes:
             scenes = scenes[:self._num_scenes]
         return scenes
@@ -55,7 +53,8 @@ class HPatchesDataManager:
                 H = np.loadtxt(str(h_path))
                 scene_data['targets'][i] = {
                     'image': img_target,
-                    'H': H
+                    'H': H,
+                    'tgt_shape': img_target.shape
                 }
         return scene_data
 
@@ -64,8 +63,11 @@ class HPatchesDataManager:
             self._logger.info("No more scenes to process.")
             return None
 
+        if not self._current_idx:
+            self._logger.info(f"Loading {self._num_scenes} scenes")
+
         start = self._current_idx
-        end = min(start + self._batch_size, len(self.all_scenes))
+        end = min(start + self._scenes_batch_size, len(self.all_scenes))
 
         batch_paths = self.all_scenes[start: end]
         batch_data = {}
