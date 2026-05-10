@@ -85,8 +85,8 @@ class BaseMatchingTask(HPatchesTask, register=False):
 
         if tgt_shape is not None:
             h, w = tgt_shape[:2]
-            valid_mask = ((pts_tgt_gt[:, 0] >= 0) & (pts_tgt_gt[:, 0] < w) &
-                          (pts_tgt_gt[:, 1] >= 0) & (pts_tgt_gt[:, 1] < h))
+            valid_mask = ((pts_tgt_gt[:, 0] >= 0) & (pts_tgt_gt[:, 0] < w)
+                          & (pts_tgt_gt[:, 1] >= 0) & (pts_tgt_gt[:, 1] < h))
             pts_tgt_gt = pts_tgt_gt[valid_mask]
 
         if len(pts_tgt_gt) == 0:
