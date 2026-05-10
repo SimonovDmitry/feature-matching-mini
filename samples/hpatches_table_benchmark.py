@@ -30,7 +30,6 @@ def parse_metrics_log(log_output, task_names):
         }
     }
 
-
     for task_name in task_names:
         task_patterns = patterns.get(task_name.lower(), {})
         for key, pattern in task_patterns.items():

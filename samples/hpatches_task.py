@@ -86,7 +86,7 @@ class BaseMatchingTask(HPatchesTask, register=False):
         if tgt_shape is not None:
             h, w = tgt_shape[:2]
             valid_mask = ((pts_tgt_gt[:, 0] >= 0) & (pts_tgt_gt[:, 0] < w) &
-                    (pts_tgt_gt[:, 1] >= 0) & (pts_tgt_gt[:, 1] < h))
+                          (pts_tgt_gt[:, 1] >= 0) & (pts_tgt_gt[:, 1] < h))
             pts_tgt_gt = pts_tgt_gt[valid_mask]
 
         if len(pts_tgt_gt) == 0:
@@ -232,7 +232,7 @@ class HomographyAUCTask(HPatchesTask):
     def __init__(self, logger, config):
         super().__init__(logger)
         self._eval_threshold = config.pop('eval_threshold', 5.0)
-        self._homography_threshold  = config.pop('homography_threshold', 3.0)
+        self._homography_threshold = config.pop('homography_threshold', 3.0)
         self._homography_method = config.pop('homography_method', "ransac")
 
     def eval_task(self, matching_data, split):
