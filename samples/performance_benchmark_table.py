@@ -19,19 +19,19 @@ def parse_performance_log(log_output, script_type):
 
     if script_type == 'staged':
         patterns = {
-            'min_detection_ms': r'Min time detection:\s*([\d\.]+)',
-            'mean_detection_ms': r'Mean time detection:\s*([\d\.]+)',
-            'min_descriptor_ms': r'Min time descriptor:\s*([\d\.]+)',
-            'mean_descriptor_ms': r'Mean time descriptor:\s*([\d\.]+)',
-            'min_extractor_ms': r'Min time feature extract:\s*([\d\.]+)',
-            'mean_extractor_ms': r'Mean time feature extract:\s*([\d\.]+)',
-            'min_match_ms': r'Min time match:\s*([\d\.]+)',
-            'mean_match_ms': r'Mean time match:\s*([\d\.]+)',
+            'min_detection_ms': r'Min time detection:\s*([\d\.eE\+\-]+)',
+            'mean_detection_ms': r'Mean time detection:\s*([\d\.eE\+\-]+)',
+            'min_descriptor_ms': r'Min time descriptor:\s*([\d\.eE\+\-]+)',
+            'mean_descriptor_ms': r'Mean time descriptor:\s*([\d\.eE\+\-]+)',
+            'min_extractor_ms': r'Min time feature extract:\s*([\d\.eE\+\-]+)',
+            'mean_extractor_ms': r'Mean time feature extract:\s*([\d\.eE\+\-]+)',
+            'min_match_ms': r'Min time match:\s*([\d\.eE\+\-]+)',
+            'mean_match_ms': r'Mean time match:\s*([\d\.eE\+\-]+)',
         }
     else:
         patterns = {
-            'min_pipeline_ms': r'Min time pipeline test:\s*([\d\.]+)',
-            'mean_pipeline_ms': r'Mean time pipeline test:\s*([\d\.]+)',
+            'min_pipeline_ms': r'Min time pipeline test:\s*([\d\.eE\+\-]+)',
+            'mean_pipeline_ms': r'Mean time pipeline test:\s*([\d\.eE\+\-]+)',
         }
 
     for key, pattern in patterns.items():
