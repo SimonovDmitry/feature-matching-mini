@@ -219,7 +219,7 @@ def table_benchmark(dataset_path, output_csv, tasks, thresholds, device='cpu', n
             logger.error(f"Error saving result: {e}")
             continue
 
-    logger.info(f"All combinations processed!")
+    logger.info("All combinations processed")
     logger.info(f"Results saved to: {output_csv}")
 
 

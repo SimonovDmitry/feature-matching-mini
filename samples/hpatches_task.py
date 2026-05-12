@@ -155,7 +155,8 @@ class MatchingAPTask(BaseMatchingTask):
                     res = self._get_match_results(data, threshold) if data else None
 
                     if res is not None:
-                        _, _, ap = self._pr(res['scores'], res['labels'], numpos=self._compute_numpos(data, self._numpos_threshold))
+                        _, _, ap = self._pr(res['scores'], res['labels'],
+                                            numpos=self._compute_numpos(data, self._numpos_threshold))
                         results[threshold][seq][i] = {'ap': ap}
 
         return results
