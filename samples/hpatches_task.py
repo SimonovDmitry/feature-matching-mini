@@ -69,9 +69,13 @@ class HPatchesTask(ABC):
 class BaseMatchingTask(HPatchesTask, register=False):
     def __init__(self, logger, config):
         super().__init__(logger)
-        self._eval_threshold = config.get('eval_threshold', 5.0)
 
-    def _compute_numpos(self, data):
+        self._numpos_threshold = config.get('numpos_threshold', 3.0)
+        self._eval_thresholds = config.get('eval_thresholds', [5.0])
+        if not isinstance(self._eval_thresholds, list):
+            self._eval_thresholds = [self._eval_thresholds]
+
+    def _compute_numpos(self, data, threshold):
         kp_ref = data['kp_ref']
         kp_tgt = data['kp_tgt']
         H = data['H']
@@ -95,14 +99,14 @@ class BaseMatchingTask(HPatchesTask, register=False):
         pts_tgt = np.array([kp.pt for kp in kp_tgt], dtype=np.float32)
 
         num_gt = 0
-        for pt_proj in pts_tgt_gt:
-            pixel_dists = np.linalg.norm(pts_tgt - pt_proj, axis=1)
-            if len(pixel_dists) > 0 and np.min(pixel_dists) <= self._eval_threshold:
+        for pt_gt in pts_tgt_gt:
+            pixel_dists = np.linalg.norm(pts_tgt - pt_gt, axis=1)
+            if len(pixel_dists) > 0 and np.min(pixel_dists) <= threshold:
                 num_gt += 1
 
         return num_gt
 
-    def _get_match_results(self, data):
+    def _get_match_results(self, data, threshold):
         kp_ref = data['kp_ref']
         kp_tgt = data['kp_tgt']
         matches = data['matches']
@@ -116,7 +120,7 @@ class BaseMatchingTask(HPatchesTask, register=False):
         pts_tgt_gt = cv.perspectiveTransform(pts_ref, H)
 
         pixel_dists = np.linalg.norm(pts_tgt_pred - pts_tgt_gt, axis=2).flatten()
-        labels = (pixel_dists <= self._eval_threshold)
+        labels = (pixel_dists <= threshold)
         descriptor_dists = np.array([m.distance for m in matches], dtype=np.float32)
 
         if descriptor_dists.size > 0:
@@ -137,88 +141,92 @@ class BaseMatchingTask(HPatchesTask, register=False):
 
 class MatchingAPTask(BaseMatchingTask):
     def eval_task(self, matching_data, split):
-        self._logger.info(f'Evaluating Feature Matching (mAP) @ {self._eval_threshold}px')
-        results = {seq: {} for seq in split}
+        results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
 
-        for seq in split:
-            if seq not in matching_data:
-                continue
+        for threshold in self._eval_thresholds:
+            self._logger.info(f'Evaluating Feature Matching (mAP) @ {threshold}px')
 
-            for i in self._img_indices:
-                data = matching_data[seq].get(i)
-                res = self._get_match_results(data) if data else None
+            for seq in split:
+                if seq not in matching_data:
+                    continue
 
-                if res is not None:
-                    _, _, ap = self._pr(res['scores'], res['labels'], numpos=self._compute_numpos(data))
-                    results[seq][i] = {'ap': ap}
+                for i in self._img_indices:
+                    data = matching_data[seq].get(i)
+                    res = self._get_match_results(data, threshold) if data else None
+
+                    if res is not None:
+                        _, _, ap = self._pr(res['scores'], res['labels'], numpos=self._compute_numpos(data, self._numpos_threshold))
+                        results[threshold][seq][i] = {'ap': ap}
+
         return results
 
     def report_metrics(self, results, task_name="Feature Matching (mAP)"):
-        all_ap_values = [
-            img_data['ap']
-            for scene_data in results.values()
-            for img_data in scene_data.values()
-            if 'ap' in img_data
-        ]
+        for threshold, threshold_results in results.items():
+            all_ap_values = [
+                img_data['ap']
+                for scene_data in threshold_results.values()
+                for img_data in scene_data.values()
+                if 'ap' in img_data
+            ]
 
-        if not all_ap_values:
-            self._logger.warning("No AP results found to report.")
-            return
+            if not all_ap_values:
+                self._logger.warning(f"No AP results found for threshold {threshold}px")
+                continue
 
-        mean_total_ap = np.mean(all_ap_values)
-        self._logger.info(f"--- {task_name.upper()} ---")
-        self._logger.info(f"Mean Total AP: {mean_total_ap:.4f}")
+            mean_total_ap = np.mean(all_ap_values)
+            self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
+            self._logger.info(f"Mean Total AP: {mean_total_ap:.4f}")
 
 
 class MatchingScoreTask(BaseMatchingTask):
     def eval_task(self, matching_data, split):
-        self._logger.info(f'Evaluating Matching Score & Precision @ {self._eval_threshold}px')
-        results = {seq: {} for seq in split}
+        results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
 
-        for seq in split:
-            if seq not in matching_data:
-                continue
+        for threshold in self._eval_thresholds:
+            self._logger.info(f'Evaluating Matching Score & Precision @ {threshold}px')
 
-            for i in self._img_indices:
-                data = matching_data[seq].get(i)
-                res = self._get_match_results(data) if data else None
+            for seq in split:
+                if seq not in matching_data:
+                    continue
 
-                if res is not None:
-                    num_inliers = np.sum(res['labels'])
-                    results[seq][i] = {
-                        'ms': num_inliers / min(res['num_kp_ref'], res['num_kp_tgt']),
-                        'prec': num_inliers / res['num_matches'] if res['num_matches'] > 0 else 0
-                    }
+                for i in self._img_indices:
+                    data = matching_data[seq].get(i)
+                    res = self._get_match_results(data, threshold) if data else None
+
+                    if res is not None:
+                        num_inliers = np.sum(res['labels'])
+                        results[threshold][seq][i] = {
+                            'ms': num_inliers / min(res['num_kp_ref'], res['num_kp_tgt']),
+                            'prec': num_inliers / res['num_matches'] if res['num_matches'] > 0 else 0
+                        }
+
         return results
 
     def report_metrics(self, results, task_name="Matching Score & Precision"):
-        all_ms_values = [
-            img_data['ms']
-            for scene_data in results.values()
-            for img_data in scene_data.values()
-            if 'ms' in img_data
-        ]
+        for threshold, threshold_results in results.items():
+            all_ms_values = [
+                img_data['ms']
+                for scene_data in threshold_results.values()
+                for img_data in scene_data.values()
+                if 'ms' in img_data
+            ]
 
-        if not all_ms_values:
-            self._logger.warning("No Matching Score results found to report.")
-            return
+            if not all_ms_values:
+                self._logger.warning(f"No MS results for threshold {threshold}px")
+                continue
 
-        all_prec_values = [
-            img_data['prec']
-            for scene_data in results.values()
-            for img_data in scene_data.values()
-            if 'prec' in img_data
-        ]
+            all_prec_values = [
+                img_data['prec']
+                for scene_data in threshold_results.values()
+                for img_data in scene_data.values()
+                if 'prec' in img_data
+            ]
 
-        if not all_prec_values:
-            self._logger.warning("No Precision results found to report.")
-            return
+            mean_total_ms = np.mean(all_ms_values)
+            mean_total_prec = np.mean(all_prec_values)
 
-        mean_total_ms = np.mean(all_ms_values)
-        mean_total_prec = np.mean(all_prec_values)
-
-        self._logger.info(f"--- {task_name.upper()} ---")
-        self._logger.info(f"Mean MS: {mean_total_ms:.4f}, Mean Prec: {mean_total_prec:.4f}")
+            self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
+            self._logger.info(f"Mean MS: {mean_total_ms:.4f}, Mean Prec: {mean_total_prec:.4f}")
 
 
 class HomographyAUCTask(HPatchesTask):
@@ -231,64 +239,72 @@ class HomographyAUCTask(HPatchesTask):
 
     def __init__(self, logger, config):
         super().__init__(logger)
-        self._eval_threshold = config.pop('eval_threshold', 5.0)
+
+        self._eval_thresholds = config.pop('eval_thresholds', [5.0])
+        if not isinstance(self._eval_thresholds, list):
+            self._eval_thresholds = [self._eval_thresholds]
+
         self._homography_threshold = config.pop('homography_threshold', 3.0)
         self._homography_method = config.pop('homography_method', "ransac")
 
     def eval_task(self, matching_data, split):
-        self._logger.info('Evaluating Full Pipeline (mAP) via Homography')
-        results = {seq: {} for seq in split}
+        results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
 
-        for seq in split:
-            if seq not in matching_data:
-                continue
+        for threshold in self._eval_thresholds:
+            self._logger.info(f'Evaluating Homography AUC @ {threshold}px')
 
-            for i in self._img_indices:
-                data = matching_data[seq].get(i)
-                if not data or not data['matches']:
+            for seq in split:
+                if seq not in matching_data:
                     continue
 
-                kp_ref = data['kp_ref']
-                kp_tgt = data['kp_tgt']
-                matches = data['matches']
+                for i in self._img_indices:
+                    data = matching_data[seq].get(i)
+                    if not data or not data['matches']:
+                        continue
 
-                pts_ref = np.array([kp_ref[m.queryIdx].pt for m in matches], dtype=np.float32).reshape(-1, 1, 2)
-                pts_tgt_pred = np.array([kp_tgt[m.trainIdx].pt for m in matches], dtype=np.float32).reshape(-1, 1, 2)
+                    kp_ref = data['kp_ref']
+                    kp_tgt = data['kp_tgt']
+                    matches = data['matches']
 
-                H_gt = data['H']
-                H_pred, mask = cv.findHomography(pts_ref, pts_tgt_pred,
-                                                 self._HOMOGRAPHY_METHODS[self._homography_method],
-                                                 self._homography_threshold)
+                    pts_ref = np.array([kp_ref[m.queryIdx].pt for m in matches],
+                                       dtype=np.float32).reshape(-1, 1, 2)
+                    pts_tgt_pred = np.array([kp_tgt[m.trainIdx].pt for m in matches],
+                                            dtype=np.float32).reshape(-1, 1, 2)
+                    H_gt = data['H']
+                    H_pred, mask = cv.findHomography(pts_ref, pts_tgt_pred,
+                                                     self._HOMOGRAPHY_METHODS[self._homography_method],
+                                                     self._homography_threshold)
 
-                if H_pred is None:
-                    continue
+                    if H_pred is None:
+                        continue
 
-                h, w = data['ref_shape'][:2]
-                corners = np.float32([[0, 0], [w, 0], [w, h], [0, h]]).reshape(-1, 1, 2)
+                    h, w = data['ref_shape'][:2]
+                    corners = np.float32([[0, 0], [w, 0], [w, h], [0, h]]).reshape(-1, 1, 2)
 
-                corners_gt = cv.perspectiveTransform(corners, H_gt)
-                corners_pred = cv.perspectiveTransform(corners, H_pred)
+                    corners_gt = cv.perspectiveTransform(corners, H_gt)
+                    corners_pred = cv.perspectiveTransform(corners, H_pred)
 
-                error = np.mean(np.linalg.norm(corners_gt - corners_pred, axis=2))
-                results[seq][i] = {'error': error}
+                    error = np.mean(np.linalg.norm(corners_gt - corners_pred, axis=2))
+                    results[threshold][seq][i] = {'error': error}
 
         return results
 
     def report_metrics(self, results, task_name="Homography AUC"):
-        all_errors = [
-            img['error']
-            for s in results.values()
-            for img in s.values()
-            if 'error' in img
-        ]
+        for threshold, threshold_results in results.items():
+            all_errors = [
+                img['error']
+                for s in threshold_results.values()
+                for img in s.values()
+                if 'error' in img
+            ]
 
-        if not all_errors:
-            self._logger.warning("No results found to report.")
-            return
+            if not all_errors:
+                self._logger.warning(f"No results for threshold {threshold}px")
+                continue
 
-        thresholds = np.linspace(0, self._eval_threshold, 100)
-        acc_curve = [np.mean(np.array(all_errors) < t) for t in thresholds]
+            thresholds = np.linspace(0, threshold, 100)
+            acc_curve = [np.mean(np.array(all_errors) < t) for t in thresholds]
 
-        global_auc = np.trapezoid(acc_curve, thresholds) / self._eval_threshold
-        self._logger.info(f"--- {task_name.upper()} ---")
-        self._logger.info(f"Mean AUC@{self._eval_threshold}px: {global_auc:.4f}")
+            global_auc = np.trapezoid(acc_curve, thresholds) / threshold
+            self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
+            self._logger.info(f"Mean AUC: {global_auc:.4f}")

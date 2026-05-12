@@ -2,6 +2,7 @@ import argparse
 import sys
 import logging
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.detectors import Detector  # noqa: E402
@@ -12,7 +13,6 @@ from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
 from samples.utils import build_hpatches_benchmark_config  # noqa: E402
 from samples.hpatches_task import HPatchesTask  # noqa: E402
 from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402
-
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("hpatches_benchmark")
@@ -27,7 +27,7 @@ def parser():
     available_descriptors = list(Descriptor._METHODS.keys())
     available_matchers = list(Matcher._METHODS.keys())
     available_matchers_modes = list(OpenCVMatcher._MODE)
-    available_task = list(HPatchesTask._TASKS.keys())
+    available_tasks = list(HPatchesTask._TASKS.keys())
     available_devices = ['cpu', 'cuda', 'mps']
 
     arg_parser.add_argument('-det', '--detector', type=str, default='sift',
@@ -36,8 +36,9 @@ def parser():
                             choices=available_descriptors, help='Descriptor algorithm')
     arg_parser.add_argument('-mat', '--matcher', type=str, default='bf',
                             choices=available_matchers, help='Matching algorithm')
-    arg_parser.add_argument('-t', '--task', type=str, default='matching',
-                            choices=available_task, help='Descriptor algorithm')
+
+    arg_parser.add_argument('-t', '--tasks', type=str, nargs='+', default=available_tasks,
+                            choices=available_tasks, help='Tasks to evaluate (default: run all available tasks)')
     arg_parser.add_argument('-d', '--device', type=str, default=None,
                             choices=available_devices, help='The device on which the script will be run')
 
@@ -50,12 +51,14 @@ def parser():
                           help='Batch size for processing images/scenes')
 
     task_group = arg_parser.add_argument_group('Task config')
-    task_group.add_argument('-et', '--eval-threshold', type=float, default=5.0,
-                            help='Pixel threshold for verification')
+    task_group.add_argument('-et', '--eval-thresholds', type=float, nargs='+', default=[5.0],
+                            help='Pixel thresholds for verification (1.0 3.0 5.0 10.0)')
     task_group.add_argument('-hm', '--homography-method', type=str, default='ransac',
                             choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
     task_group.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
                             help='Threshold for homography estimation (inlier classification)')
+    task_group.add_argument('-nt', '--numpos-threshold', type=float, default=3.0,
+                            help='NumPos threshold for verification')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -91,24 +94,27 @@ def main():
             logger.error(f"Dataset path does not exist: {args.path}")
             return 1
 
-        logger.info("Starting HPatches Benchmark Pipeline")
+        logger.info(f"Starting HPatches Benchmark. Tasks: {args.tasks}, Thresholds: {args.eval_thresholds}")
 
         config = build_hpatches_benchmark_config(args)
-        logger.info(f"Config: {config}")
-
         feature_matcher = FeatureMatcherCV2(detector=args.detector, descriptor=args.descriptor,
                                             matcher=args.matcher, logger=logger, config=config)
         dm = HPatchesDataManager(logger=logger, config=config['dataset'])
-        task = HPatchesTask.create(task_name=args.task, logger=logger, config=config['task'])
 
-        results = {}
+        task_objects = {}
+        results_by_task = {}
+        for task_name in args.tasks:
+            task_objects[task_name] = HPatchesTask.create(task_name=task_name, logger=logger,
+                                                          config=config['task'])
+            results_by_task[task_name] = {}
+
         while dm.has_more_data():
             current_batch = dm.load_batch()
             if not current_batch:
                 break
 
             for scene_name, data in current_batch.items():
-                matching_data = {scene_name: {}}
+                scene_matching_data = {scene_name: {}}
                 img_ref = data['ref_img']
 
                 for i, target in data['targets'].items():
@@ -116,7 +122,7 @@ def main():
                     H = target['H']
 
                     features_ref, features_tgt, correspondences = feature_matcher.match(img_ref, img_tgt)
-                    matching_data[scene_name][i] = {
+                    scene_matching_data[scene_name][i] = {
                         'kp_ref': features_ref['kp'],
                         'kp_tgt': features_tgt['kp'],
                         'matches': correspondences['matches'],
@@ -125,10 +131,19 @@ def main():
                         'tgt_shape': target['tgt_shape'],
                     }
 
-                results_scene = task.eval_task(matching_data, [scene_name])
-                results.update(results_scene)
+                for task_name, task_obj in task_objects.items():
+                    results_scene = task_obj.eval_task(scene_matching_data, [scene_name])
+                    if task_name not in results_by_task:
+                        results_by_task[task_name] = results_scene
+                    else:
+                        for threshold in results_scene:
+                            if threshold not in results_by_task[task_name]:
+                                results_by_task[task_name][threshold] = {}
+                            results_by_task[task_name][threshold].update(results_scene[threshold])
 
-        task.report_metrics(results, "End-to-End Pipeline")
+        for task_name, task_obj in task_objects.items():
+            task_obj.report_metrics(results_by_task[task_name], f"End-to-End Pipeline [{task_name}]")
+
         logger.info("Pipeline finished successfully")
         return 0
 
