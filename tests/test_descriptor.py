@@ -11,8 +11,8 @@ from src.algorithms import DNN_ALGORITHMS
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
 from src.feature_matcher import FeatureMatcherCV2
-from src.lightglue_pipeline import LightGlueFeatureExtractor
-from src.super_point import SuperPoint
+from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
+from src.super_point import SuperPoint  # noqa: F401
 
 
 @pytest.fixture

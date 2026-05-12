@@ -8,9 +8,9 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
-from src.super_point import SuperPoint
-from src.lightglue_matcher import LightGlue
-from src.lightglue_pipeline import LightGlueFeatureExtractor
+from src.super_point import SuperPoint  # noqa: F401
+from src.lightglue_matcher import LightGlue  # noqa: F401
+from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
 
 
 class FeatureMatcherCV2:
