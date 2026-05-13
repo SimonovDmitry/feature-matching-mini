@@ -1,7 +1,7 @@
 import torch
 import cv2 as cv
-from pathlib import Path
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
+from pathlib import Path
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
@@ -24,9 +24,11 @@ class SuperPoint(Detector, Descriptor):
 
         device = config.pop('device', None)
         self._threshold = config.pop('threshold', 0.005)
-
         checkpoint = config.pop('checkpoint', "weights/superpoint")
         local_files_only = config.pop('local_files_only', True)
+
+        if config:
+            self._logger.warning(f"SuperPoint: unknown config keys ignored: {list(config.keys())}")
         remote_repo = "magic-leap-community/superpoint"
 
         if device is None:
@@ -55,8 +57,6 @@ class SuperPoint(Detector, Descriptor):
                     checkpoint, local_files_only=local_files_only).to(self._device)
             except Exception as e:
                 self._logger.error(f"Failed to load from {checkpoint}: {e}")
-
-            SuperPoint._model.eval()
 
         self._processor = SuperPoint._image_processor
         self._model = SuperPoint._model
