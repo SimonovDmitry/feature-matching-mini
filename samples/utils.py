@@ -138,8 +138,6 @@ def build_hpatches_task_config(args):
     config = dict()
     if args.eval_thresholds is not None:
         config['eval_thresholds'] = args.eval_thresholds
-    if args.numpos_threshold is not None:
-        config['numpos_threshold'] = args.numpos_threshold
     if args.homography_method is not None:
         config['homography_method'] = args.homography_method
     if args.homography_threshold is not None:

@@ -70,7 +70,6 @@ class BaseMatchingTask(HPatchesTask, register=False):
     def __init__(self, logger, config):
         super().__init__(logger)
 
-        self._numpos_threshold = config.get('numpos_threshold', 3.0)
         self._eval_thresholds = config.get('eval_thresholds', [5.0])
         if not isinstance(self._eval_thresholds, list):
             self._eval_thresholds = [self._eval_thresholds]
@@ -156,7 +155,7 @@ class MatchingAPTask(BaseMatchingTask):
 
                     if res is not None:
                         _, _, ap = self._pr(res['scores'], res['labels'],
-                                            numpos=self._compute_numpos(data, self._numpos_threshold))
+                                            numpos=self._compute_numpos(data, threshold))
                         results[threshold][seq][i] = {'ap': ap}
 
         return results
@@ -271,6 +270,10 @@ class HomographyAUCTask(HPatchesTask):
                                        dtype=np.float32).reshape(-1, 1, 2)
                     pts_tgt_pred = np.array([kp_tgt[m.trainIdx].pt for m in matches],
                                             dtype=np.float32).reshape(-1, 1, 2)
+
+                    if len(pts_ref) < 4:
+                        continue
+
                     H_gt = data['H']
                     H_pred, mask = cv.findHomography(pts_ref, pts_tgt_pred,
                                                      self._HOMOGRAPHY_METHODS[self._homography_method],

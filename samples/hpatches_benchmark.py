@@ -57,8 +57,6 @@ def parser():
                             choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
     task_group.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
                             help='Threshold for homography estimation (inlier classification)')
-    task_group.add_argument('-nt', '--numpos-threshold', type=float, default=3.0,
-                            help='NumPos threshold for verification')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
