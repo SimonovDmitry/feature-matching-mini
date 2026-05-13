@@ -1,6 +1,7 @@
 import torch
 import cv2 as cv
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
+from pathlib import Path
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
@@ -28,6 +29,7 @@ class SuperPoint(Detector, Descriptor):
 
         if config:
             self._logger.warning(f"SuperPoint: unknown config keys ignored: {list(config.keys())}")
+        remote_repo = "magic-leap-community/superpoint"
 
         if device is None:
             if torch.cuda.is_available():
@@ -40,11 +42,21 @@ class SuperPoint(Detector, Descriptor):
             self._device = torch.device(device)
 
         if SuperPoint._model is None:
-            SuperPoint._image_processor = AutoImageProcessor.from_pretrained(
-                checkpoint, local_files_only=local_files_only)
-            SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(
-                checkpoint, local_files_only=local_files_only).to(self._device)
-            SuperPoint._model.eval()
+            local_path = Path(checkpoint)
+            if not local_path.exists() or not any(local_path.iterdir()):
+                self._logger.warning(f"Local checkpoint {checkpoint} not found or empty.")
+                self._logger.info(f"Switching to remote repository: {remote_repo}")
+                checkpoint = remote_repo
+                local_files_only = False
+
+            try:
+                self._logger.info(f"Loading SuperPoint from {checkpoint} (local={local_files_only})")
+                SuperPoint._image_processor = AutoImageProcessor.from_pretrained(
+                    checkpoint, local_files_only=local_files_only)
+                SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(
+                    checkpoint, local_files_only=local_files_only).to(self._device)
+            except Exception as e:
+                self._logger.error(f"Failed to load from {checkpoint}: {e}")
 
         self._processor = SuperPoint._image_processor
         self._model = SuperPoint._model
