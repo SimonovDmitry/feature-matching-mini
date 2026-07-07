@@ -27,6 +27,12 @@ def _dnn_staged_perf_test(logger, profiler, descriptor, descriptor_name,
     for _ in range(iterations):
         res_extract_dict0, time_desc0 = profiler.profile_dnn_extractor(descriptor, img0)
         res_extract_dict1, time_desc1 = profiler.profile_dnn_extractor(descriptor, img1)
+        keypoints0 = res_extract_dict0['keypoints']
+        keypoints1 = res_extract_dict1['keypoints']
+        kp_index = 1 if keypoints0.ndim == 3 else 0
+        count_kp0 = keypoints0.shape[kp_index]
+        count_kp1 = keypoints1.shape[kp_index]
+
         times_detectors_and_descriptors.append(time_desc0)
         times_detectors_and_descriptors.append(time_desc1)
         features0 = profiler.preprocessor.prepare_features(res_extract_dict0, from_algo=descriptor_name,
@@ -45,7 +51,9 @@ def _dnn_staged_perf_test(logger, profiler, descriptor, descriptor_name,
     logger.info(f"\nMin time feature extract: {min_time_detectors_and_descriptors}\n"
                 f"Mean time feature extract: {mean_time_detectors_and_descriptors}\n"
                 f"Min time match: {min_time_matcher}\n"
-                f"Mean time match: {mean_time_matcher}\n")
+                f"Mean time match: {mean_time_matcher}\n"
+                f"Number of key points 1: {count_kp0}\n"
+                f"Number of key points 2: {count_kp1}\n")
 
 
 def _opencv_staged_perf_test(logger, profiler, detector, detector_name, descriptor, descriptor_name,
@@ -57,6 +65,8 @@ def _opencv_staged_perf_test(logger, profiler, detector, detector_name, descript
     for _ in range(iterations):
         res_detect_dict0, time_detect0 = profiler.profile_detection(detector, img0)
         res_detect_dict1, time_detect1 = profiler.profile_detection(detector, img1)
+        count_kp0 = len(res_detect_dict0['kp'])
+        count_kp1 = len(res_detect_dict1['kp'])
         times_detectors.append(time_detect0)
         times_detectors.append(time_detect1)
         kp0 = profiler.preprocessor.prepare_features(res_detect_dict0,
@@ -88,7 +98,9 @@ def _opencv_staged_perf_test(logger, profiler, detector, detector_name, descript
                 f"Min time descriptor: {min_time_descriptor}\n"
                 f"Mean time descriptor: {mean_time_descriptor}\n"
                 f"Min time match: {min_time_matcher}\n"
-                f"Mean time match: {mean_time_matcher}\n")
+                f"Mean time match: {mean_time_matcher}\n"
+                f"Number of key points 1: {count_kp0}\n"
+                f"Number of key points 2: {count_kp1}\n")
 
 
 def staged_performance_test(logger, profiler, detector, detector_name, descriptor, descriptor_name,
