@@ -42,13 +42,19 @@ class HPatchesTask(ABC):
             assert (numpos >= p), 'numpos smaller that number of positives in labels'
             extra_pos = numpos - p
             p = numpos
-
             scores = np.hstack((scores, np.repeat(-np.inf, extra_pos)))
             labels = np.hstack((labels, np.repeat(1, extra_pos)))
 
         perm = np.argsort(-scores, kind='mergesort', axis=0)
         scores = scores[perm]
-        stop = np.max(np.where(scores > -np.inf))
+
+        valid = np.where(scores > -np.inf)[0]
+        if len(valid) == 0:
+            tp = np.hstack((0, np.cumsum(labels == 1)))
+            fp = np.hstack((0, np.cumsum(labels == 0)))
+            return tp, fp, p, n, perm
+
+        stop = np.max(valid)
         perm = perm[0:stop + 1]
         labels = labels[perm]
 
@@ -74,14 +80,14 @@ class BaseMatchingTask(HPatchesTask, register=False):
         if not isinstance(self._eval_thresholds, list):
             self._eval_thresholds = [self._eval_thresholds]
 
-    def _compute_numpos(self, data, threshold):
+    def _compute_numpos(self, data):
         kp_ref = data['kp_ref']
         kp_tgt = data['kp_tgt']
         H = data['H']
         tgt_shape = data['tgt_shape']
 
         if len(kp_ref) == 0 or len(kp_tgt) == 0:
-            return 0
+            return np.array([], dtype=np.float32)
 
         pts_ref = np.array([kp.pt for kp in kp_ref], dtype=np.float32).reshape(-1, 1, 2)
         pts_tgt_gt = cv.perspectiveTransform(pts_ref, H).reshape(-1, 2)
@@ -93,19 +99,21 @@ class BaseMatchingTask(HPatchesTask, register=False):
             pts_tgt_gt = pts_tgt_gt[valid_mask]
 
         if len(pts_tgt_gt) == 0:
-            return 0
+            return np.array([], dtype=np.float32)
 
         pts_tgt = np.array([kp.pt for kp in kp_tgt], dtype=np.float32)
 
-        num_gt = 0
-        for pt_gt in pts_tgt_gt:
-            pixel_dists = np.linalg.norm(pts_tgt - pt_gt, axis=1)
-            if len(pixel_dists) > 0 and np.min(pixel_dists) <= threshold:
-                num_gt += 1
+        diff = pts_tgt_gt[:, np.newaxis, :] - pts_tgt[np.newaxis, :, :]
+        dist_matrix = np.linalg.norm(diff, axis=2)
+        return dist_matrix.min(axis=1)
 
-        return num_gt
+    @staticmethod
+    def _numpos(min_dists, threshold):
+        if min_dists.size == 0:
+            return 0
+        return int(np.sum(min_dists <= threshold))
 
-    def _get_match_results(self, data, threshold):
+    def _compute_distances(self, data):
         kp_ref = data['kp_ref']
         kp_tgt = data['kp_tgt']
         matches = data['matches']
@@ -119,7 +127,6 @@ class BaseMatchingTask(HPatchesTask, register=False):
         pts_tgt_gt = cv.perspectiveTransform(pts_ref, H)
 
         pixel_dists = np.linalg.norm(pts_tgt_pred - pts_tgt_gt, axis=2).flatten()
-        labels = (pixel_dists <= threshold)
         descriptor_dists = np.array([m.distance for m in matches], dtype=np.float32)
 
         if descriptor_dists.size > 0:
@@ -129,38 +136,56 @@ class BaseMatchingTask(HPatchesTask, register=False):
             scores = np.array([], dtype=np.float32)
 
         return {
-            'labels': labels,
-            'distances': pixel_dists,
+            'pixel_dists': pixel_dists,
             'num_kp_ref': len(kp_ref),
             'num_kp_tgt': len(kp_tgt),
             'num_matches': len(matches),
             'scores': scores
         }
 
+    @staticmethod
+    def _match_results(dist_result, threshold):
+        labels = dist_result['pixel_dists'] <= threshold
+        return {
+            'labels': labels,
+            'distances': dist_result['pixel_dists'],
+            'num_kp_ref': dist_result['num_kp_ref'],
+            'num_kp_tgt': dist_result['num_kp_tgt'],
+            'num_matches': dist_result['num_matches'],
+            'scores': dist_result['scores']
+        }
+
 
 class MatchingAPTask(BaseMatchingTask):
     def eval_task(self, matching_data, split):
         results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
+        self._logger.info(f'Evaluating Feature Matching (mAP) @ {self._eval_thresholds}px')
 
-        for threshold in self._eval_thresholds:
-            self._logger.info(f'Evaluating Feature Matching (mAP) @ {threshold}px')
+        for seq in split:
+            if seq not in matching_data:
+                continue
 
-            for seq in split:
-                if seq not in matching_data:
+            for i in self._img_indices:
+                data = matching_data[seq].get(i)
+                if not data:
                     continue
 
-                for i in self._img_indices:
-                    data = matching_data[seq].get(i)
-                    res = self._get_match_results(data, threshold) if data else None
+                dist_result = self._compute_distances(data)
+                if dist_result is None:
+                    continue
+                min_dists = self._compute_numpos(data)
 
-                    if res is not None:
-                        _, _, ap = self._pr(res['scores'], res['labels'],
-                                            numpos=self._compute_numpos(data, threshold))
-                        results[threshold][seq][i] = {'ap': ap}
+                for threshold in self._eval_thresholds:
+                    res = self._match_results(dist_result, threshold)
+                    numpos = self._numpos(min_dists, threshold)
+                    _, _, ap = self._pr(res['scores'], res['labels'], numpos=numpos)
+                    results[threshold][seq][i] = {'ap': ap}
 
         return results
 
     def report_metrics(self, results, task_name="Feature Matching (mAP)"):
+        metrics = {}
+
         for threshold, threshold_results in results.items():
             all_ap_values = [
                 img_data['ap']
@@ -171,38 +196,48 @@ class MatchingAPTask(BaseMatchingTask):
 
             if not all_ap_values:
                 self._logger.warning(f"No AP results found for threshold {threshold}px")
+                metrics[threshold] = None
                 continue
 
-            mean_total_ap = np.mean(all_ap_values)
+            mean_total_ap = float(np.mean(all_ap_values))
             self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
             self._logger.info(f"Mean Total AP: {mean_total_ap:.4f}")
+            metrics[threshold] = {'mean_ap': mean_total_ap}
+
+        return metrics
 
 
 class MatchingScoreTask(BaseMatchingTask):
     def eval_task(self, matching_data, split):
         results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
+        self._logger.info(f'Evaluating Matching Score & Precision @ {self._eval_thresholds}px')
 
-        for threshold in self._eval_thresholds:
-            self._logger.info(f'Evaluating Matching Score & Precision @ {threshold}px')
+        for seq in split:
+            if seq not in matching_data:
+                continue
 
-            for seq in split:
-                if seq not in matching_data:
+            for i in self._img_indices:
+                data = matching_data[seq].get(i)
+                if not data:
                     continue
 
-                for i in self._img_indices:
-                    data = matching_data[seq].get(i)
-                    res = self._get_match_results(data, threshold) if data else None
+                dist_result = self._compute_distances(data)
+                if dist_result is None:
+                    continue
 
-                    if res is not None:
-                        num_inliers = np.sum(res['labels'])
-                        results[threshold][seq][i] = {
-                            'ms': num_inliers / min(res['num_kp_ref'], res['num_kp_tgt']),
-                            'prec': num_inliers / res['num_matches'] if res['num_matches'] > 0 else 0
-                        }
+                for threshold in self._eval_thresholds:
+                    res = self._match_results(dist_result, threshold)
+                    num_inliers = np.sum(res['labels'])
+                    results[threshold][seq][i] = {
+                        'ms': num_inliers / min(res['num_kp_ref'], res['num_kp_tgt']),
+                        'prec': num_inliers / res['num_matches'] if res['num_matches'] > 0 else 0
+                    }
 
         return results
 
     def report_metrics(self, results, task_name="Matching Score & Precision"):
+        metrics = {}
+
         for threshold, threshold_results in results.items():
             all_ms_values = [
                 img_data['ms']
@@ -213,6 +248,7 @@ class MatchingScoreTask(BaseMatchingTask):
 
             if not all_ms_values:
                 self._logger.warning(f"No MS results for threshold {threshold}px")
+                metrics[threshold] = None
                 continue
 
             all_prec_values = [
@@ -222,11 +258,15 @@ class MatchingScoreTask(BaseMatchingTask):
                 if 'prec' in img_data
             ]
 
-            mean_total_ms = np.mean(all_ms_values)
-            mean_total_prec = np.mean(all_prec_values)
+            mean_total_ms = float(np.mean(all_ms_values))
+            mean_total_prec = float(np.mean(all_prec_values))
 
             self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
             self._logger.info(f"Mean MS: {mean_total_ms:.4f}, Mean Prec: {mean_total_prec:.4f}")
+
+            metrics[threshold] = {'mean_ms': mean_total_ms, 'mean_prec': mean_total_prec}
+
+        return metrics
 
 
 class HomographyAUCTask(HPatchesTask):
@@ -294,6 +334,8 @@ class HomographyAUCTask(HPatchesTask):
         return results
 
     def report_metrics(self, results, task_name="Homography AUC"):
+        metrics = {}
+
         for threshold, threshold_results in results.items():
             all_errors = [
                 img['error']
@@ -304,11 +346,16 @@ class HomographyAUCTask(HPatchesTask):
 
             if not all_errors:
                 self._logger.warning(f"No results for threshold {threshold}px")
+                metrics[threshold] = None
                 continue
 
-            thresholds = np.linspace(0, threshold, 100)
-            acc_curve = [np.mean(np.array(all_errors) < t) for t in thresholds]
+            thresholds_lin = np.linspace(0, threshold, 100)
+            acc_curve = [np.mean(np.array(all_errors) < t) for t in thresholds_lin]
 
-            global_auc = np.trapezoid(acc_curve, thresholds) / threshold
+            global_auc = float(np.trapezoid(acc_curve, thresholds_lin) / threshold)
             self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
             self._logger.info(f"Mean AUC: {global_auc:.4f}")
+
+            metrics[threshold] = {'mean_auc': global_auc}
+
+        return metrics
