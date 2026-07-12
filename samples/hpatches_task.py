@@ -163,18 +163,24 @@ class MatchingAPTask(BaseMatchingTask):
 
         for seq in split:
             if seq not in matching_data:
+                self._logger.warning(f"Scene '{seq}' not found in matching_data."
+                                     f" Skipping for threshold {threshold}px")
                 continue
 
             for i in self._img_indices:
                 data = matching_data[seq].get(i)
                 if not data:
+                    self._logger.warning(f"Image pair 1-{i} in scene '{seq}' has no matching data. "
+                                         f"Skipping for all thresholds.")
                     continue
 
                 dist_result = self._compute_distances(data)
                 if dist_result is None:
+                    self._logger.warning(f"Could not compute distances for image pair 1-{i} in scene '{seq}'."
+                                         f"Matches list is empty.")
                     continue
-                min_dists = self._compute_numpos(data)
 
+                min_dists = self._compute_numpos(data)
                 for threshold in self._eval_thresholds:
                     res = self._match_results(dist_result, threshold)
                     numpos = self._numpos(min_dists, threshold)
@@ -200,7 +206,7 @@ class MatchingAPTask(BaseMatchingTask):
                 continue
 
             mean_total_ap = float(np.mean(all_ap_values))
-            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean Total AP: {mean_total_ap:.4f}")
+            self._logger.info(f"{task_name.upper()} @ {threshold}px, MAP: {mean_total_ap:.4f}")
             metrics[threshold] = {'mean_ap': mean_total_ap}
 
         return metrics
@@ -213,15 +219,21 @@ class MatchingScoreTask(BaseMatchingTask):
 
         for seq in split:
             if seq not in matching_data:
+                self._logger.warning(f"Scene '{seq}' not found in matching_data."
+                                     f" Skipping for threshold {threshold}px")
                 continue
 
             for i in self._img_indices:
                 data = matching_data[seq].get(i)
                 if not data:
+                    self._logger.warning(f"Image pair 1-{i} in scene '{seq}' has no matching data. "
+                                         f"Skipping for all thresholds.")
                     continue
 
                 dist_result = self._compute_distances(data)
                 if dist_result is None:
+                    self._logger.warning(f"Could not compute distances for image pair 1-{i} in scene '{seq}'. "
+                                         f"Matches list is empty.")
                     continue
 
                 for threshold in self._eval_thresholds:
@@ -260,8 +272,8 @@ class MatchingScoreTask(BaseMatchingTask):
             mean_total_ms = float(np.mean(all_ms_values))
             mean_total_prec = float(np.mean(all_prec_values))
 
-            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean MS: {mean_total_ms:.4f},"
-                              f" Mean Prec: {mean_total_prec:.4f}")
+            self._logger.info(f"{task_name.upper()} @ {threshold}px, MS: {mean_total_ms:.4f},"
+                              f" Prec: {mean_total_prec:.4f}")
             metrics[threshold] = {'mean_ms': mean_total_ms, 'mean_prec': mean_total_prec}
 
         return metrics
@@ -292,11 +304,15 @@ class HomographyAUCTask(HPatchesTask):
         for threshold in self._eval_thresholds:
             for seq in split:
                 if seq not in matching_data:
+                    self._logger.warning(f"Scene '{seq}' not found in matching_data."
+                                         f" Skipping for threshold {threshold}px")
                     continue
 
                 for i in self._img_indices:
                     data = matching_data[seq].get(i)
                     if not data or not data['matches']:
+                        self._logger.warning(f"Image pair 1-{i} in scene '{seq}' has no matching data. "
+                                             f"Skipping for all thresholds.")
                         continue
 
                     kp_ref = data['kp_ref']
@@ -309,6 +325,8 @@ class HomographyAUCTask(HPatchesTask):
                                             dtype=np.float32).reshape(-1, 1, 2)
 
                     if len(pts_ref) < 4:
+                        self._logger.warning(f"Not enough matches ({len(pts_ref)}) to compute homography "
+                                             f"for scene '{seq}' image pair 1-{i}. Minimum 4 required.")
                         continue
 
                     H_gt = data['H']
@@ -317,6 +335,8 @@ class HomographyAUCTask(HPatchesTask):
                                                      self._homography_threshold)
 
                     if H_pred is None:
+                        self._logger.warning(f"Homography estimation failed for scene '{seq}' image pair 1-{i}. "
+                                             f"Check points distribution.")
                         continue
 
                     h, w = data['ref_shape'][:2]
@@ -350,7 +370,7 @@ class HomographyAUCTask(HPatchesTask):
             acc_curve = [np.mean(np.array(all_errors) < t) for t in thresholds_lin]
             global_auc = float(np.trapezoid(acc_curve, thresholds_lin) / threshold)
 
-            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean AUC: {global_auc:.4f}")
+            self._logger.info(f"{task_name.upper()} @ {threshold}px, AUC: {global_auc:.4f}")
             metrics[threshold] = {'mean_auc': global_auc}
 
         return metrics
