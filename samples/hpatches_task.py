@@ -200,8 +200,7 @@ class MatchingAPTask(BaseMatchingTask):
                 continue
 
             mean_total_ap = float(np.mean(all_ap_values))
-            self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
-            self._logger.info(f"Mean Total AP: {mean_total_ap:.4f}")
+            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean Total AP: {mean_total_ap:.4f}")
             metrics[threshold] = {'mean_ap': mean_total_ap}
 
         return metrics
@@ -261,9 +260,7 @@ class MatchingScoreTask(BaseMatchingTask):
             mean_total_ms = float(np.mean(all_ms_values))
             mean_total_prec = float(np.mean(all_prec_values))
 
-            self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
-            self._logger.info(f"Mean MS: {mean_total_ms:.4f}, Mean Prec: {mean_total_prec:.4f}")
-
+            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean MS: {mean_total_ms:.4f}, Mean Prec: {mean_total_prec:.4f}")
             metrics[threshold] = {'mean_ms': mean_total_ms, 'mean_prec': mean_total_prec}
 
         return metrics
@@ -289,10 +286,9 @@ class HomographyAUCTask(HPatchesTask):
 
     def eval_task(self, matching_data, split):
         results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
+        self._logger.info(f'Evaluating Homography AUC @ {self._eval_thresholds}px')
 
         for threshold in self._eval_thresholds:
-            self._logger.info(f'Evaluating Homography AUC @ {threshold}px')
-
             for seq in split:
                 if seq not in matching_data:
                     continue
@@ -351,11 +347,9 @@ class HomographyAUCTask(HPatchesTask):
 
             thresholds_lin = np.linspace(0, threshold, 100)
             acc_curve = [np.mean(np.array(all_errors) < t) for t in thresholds_lin]
-
             global_auc = float(np.trapezoid(acc_curve, thresholds_lin) / threshold)
-            self._logger.info(f"--- {task_name.upper()} @ {threshold}px ---")
-            self._logger.info(f"Mean AUC: {global_auc:.4f}")
 
+            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean AUC: {global_auc:.4f}")
             metrics[threshold] = {'mean_auc': global_auc}
 
         return metrics

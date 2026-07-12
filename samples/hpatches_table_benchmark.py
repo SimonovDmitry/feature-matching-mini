@@ -1,6 +1,5 @@
 import argparse
-import re
-import subprocess
+import copy
 import sys
 import logging
 import pandas as pd
@@ -8,111 +7,27 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
+from src.matchers import OpenCVMatcher  # noqa: E402
 from src.algorithms import DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY  # noqa: E402
+from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
+
+from samples.utils import build_hpatches_benchmark_config, build_feature_matcher_config  # noqa: E402
+from samples.hpatches_task import HPatchesTask  # noqa: E402
+from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402
+
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("HPatchesTableBenchmark")
 
 
-def parse_metrics_log(log_output, task_names, thresholds):
-    results = {}
-
-    for threshold in thresholds:
-        patterns = {
-            'matchingap': {
-                f'matchingap_mean_ap_{threshold}': (
-                    rf'--- END-TO-END PIPELINE \[MATCHINGAP\] @ {threshold}(?:\.0)?px ---'
-                    rf'[\s\S]*?Mean Total AP:\s*([\d\.]+)'
-                ),
-            },
-            'matchingscore': {
-                f'matchingscore_mean_ms_{threshold}': (
-                    rf'--- END-TO-END PIPELINE \[MATCHINGSCORE\] @ {threshold}(?:\.0)?px ---'
-                    rf'[\s\S]*?Mean MS:\s*([\d\.]+)'
-                ),
-                f'matchingscore_mean_prec_{threshold}': (
-                    rf'--- END-TO-END PIPELINE \[MATCHINGSCORE\] @ {threshold}(?:\.0)?px ---'
-                    rf'[\s\S]*?Mean Prec:\s*([\d\.]+)'
-                ),
-            },
-            'homographyauc': {
-                f'homographyauc_mean_auc_{threshold}': (
-                    rf'--- END-TO-END PIPELINE \[HOMOGRAPHYAUC\] @ {threshold}(?:\.0)?px ---'
-                    rf'[\s\S]*?Mean AUC:\s*([\d\.]+)'
-                ),
-            }
-        }
-
-        for task_name in task_names:
-            task_patterns = patterns.get(task_name.lower(), {})
-            for key, pattern in task_patterns.items():
-                match = re.search(pattern, log_output, re.IGNORECASE)
-                if match:
-                    results[key] = float(match.group(1))
-                else:
-                    logger.debug(f"No match for: {key}")
-
-    return results
-
-
-def run_benchmark(detector, descriptor, matcher, dataset_path, tasks, thresholds, device='cpu', num_scenes=None):
-    cmd = [
-        sys.executable, '-m', 'samples.hpatches_benchmark',
-        '-det', detector,
-        '-des', descriptor,
-        '-mat', matcher,
-        '-t'] + tasks + [
-        '-p', str(dataset_path),
-        '-et'] + [str(t) for t in thresholds]
-
-    if device:
-        cmd.extend(['-d', device])
-
-    if num_scenes:
-        cmd.extend(['-n', str(num_scenes)])
-
-    logger.info(f"Running: {detector}+{descriptor}+{matcher}")
-
-    process = None
-    try:
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        stdout, stderr = process.communicate()
-        output = stdout + stderr
-
-        if process.returncode != 0:
-            logger.warning(f"Failed: {detector}+{descriptor}+{matcher}")
-            logger.debug(f"Error output: {stderr}")
-            return False, {}
-
-        all_results = parse_metrics_log(output, tasks, thresholds)
-        return True, all_results
-
-    except Exception as e:
-        logger.warning(f"Error: {e}")
-        return False, {}
-    finally:
-        if process is not None and process.poll() is None:
-            process.kill()
-            process.wait()
-
-
 def get_all_combinations():
     combinations = []
-
     for detector in DETECTOR_DESCRIPTOR_COMPATIBILITY:
         descriptors = DETECTOR_DESCRIPTOR_COMPATIBILITY.get(detector, [])
-
         for descriptor in descriptors:
             matchers = DESCRIPTOR_MATCHER_COMPATIBILITY.get(descriptor, [])
-
             for matcher in matchers:
                 combinations.append((detector, descriptor, matcher))
-
     return combinations
 
 
@@ -140,18 +55,15 @@ def load_existing_results(output_path):
 
 def save_single_result(output_path, new_result, tasks, thresholds):
     base_columns = ['detector', 'descriptor', 'matcher', 'device', 'num_scenes']
-
     metric_columns = []
     for task in tasks:
-        if task.lower() == 'matchingap':
-            for threshold in thresholds:
+        t = task.lower()
+        for threshold in thresholds:
+            if t == 'matchingap':
                 metric_columns.append(f'matchingap_mean_ap_{threshold}')
-        elif task.lower() == 'matchingscore':
-            for threshold in thresholds:
-                metric_columns.append(f'matchingscore_mean_ms_{threshold}')
-                metric_columns.append(f'matchingscore_mean_prec_{threshold}')
-        elif task.lower() == 'homographyauc':
-            for threshold in thresholds:
+            elif t == 'matchingscore':
+                metric_columns.extend([f'matchingscore_mean_ms_{threshold}', f'matchingscore_mean_prec_{threshold}'])
+            elif t == 'homographyauc':
                 metric_columns.append(f'homographyauc_mean_auc_{threshold}')
 
     columns_order = base_columns + metric_columns
@@ -164,63 +76,114 @@ def save_single_result(output_path, new_result, tasks, thresholds):
     new_df = pd.DataFrame([new_result])
     df = pd.concat([df, new_df], ignore_index=True)
 
-    existing_columns = [col for col in columns_order if col in df.columns]
-    df = df[existing_columns]
+    existing_cols = [col for col in columns_order if col in df.columns]
+    df = df[existing_cols]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
 
 
-def table_benchmark(dataset_path, output_csv, tasks, thresholds, device='cpu', num_scenes=None, skip_existing=True):
-    combinations = get_all_combinations()
-    logger.info(f"Found {len(combinations)} valid combinations")
-    logger.info(f"Tasks to run: {tasks}")
-    logger.info(f"Thresholds: {thresholds}")
+def flatten_metrics(task_name, per_threshold):
+    flat = {}
+    if per_threshold is None: return flat
+    for threshold, m in per_threshold.items():
+        if m is None:
+            logger.warning(f"No {task_name} results for threshold {threshold}px")
+            continue
+        for metric_key, value in m.items():
+            flat[f"{task_name.lower()}_{metric_key}_{threshold}"] = value
+    return flat
 
-    existing_df, existing_combos = load_existing_results(output_csv)
 
-    if skip_existing and existing_combos:
-        remaining_combos = [c for c in combinations if c not in existing_combos]
-        logger.info(f"Skipping {len(existing_combos)} already computed combinations")
-        logger.info(f"Remaining: {len(remaining_combos)} combinations")
-        combinations = remaining_combos
-
-    if not combinations:
-        logger.info("All combinations already computed!")
+def table_benchmark(cli_args):
+    all_combinations = get_all_combinations()
+    if not all_combinations:
+        logger.error("No combinations found in algorithms.py")
         return
 
-    for detector, descriptor, matcher in combinations:
-        logger.info(f"Processing: {detector}+{descriptor}+{matcher}")
+    cli_args.detector = all_combinations[0][0]
+    cli_args.descriptor = all_combinations[0][1]
+    cli_args.matcher = all_combinations[0][2]
 
-        combo_result = {
-            'detector': detector,
-            'descriptor': descriptor,
-            'matcher': matcher,
-            'device': device,
-            'num_scenes': num_scenes if num_scenes else 116,
-        }
+    base_config = build_hpatches_benchmark_config(cli_args)
+    _, existing_combos = load_existing_results(cli_args.output)
 
-        success, metrics = run_benchmark(
-            detector, descriptor, matcher,
-            dataset_path, tasks, thresholds, device, num_scenes
-        )
+    logger.info(f"Found {len(all_combinations)} valid combinations")
+    logger.info(f"Tasks to run: {cli_args.tasks}")
+    logger.info(f"Thresholds: {cli_args.eval_thresholds}")
 
-        if not success:
-            logger.warning(f"Failed: {detector}+{descriptor}+{matcher}")
-            continue
+    if not cli_args.no_skip:
+        combinations = [c for c in all_combinations if c not in existing_combos]
+        logger.info(f"Remaining: {len(combinations)} combinations")
+    else:
+        combinations = all_combinations
 
-        combo_result.update(metrics)
+    if not combinations:
+        logger.info("All combinations already computed")
+        return
+
+    task_objects = {name: HPatchesTask.create(task_name=name, logger=logger, config=base_config['task'])
+                    for name in cli_args.tasks}
+    feature_matcher = FeatureMatcherCV2(detector=combinations[0][0], descriptor=combinations[0][1],
+                                        matcher=combinations[0][2], logger=logger, config=base_config)
+
+    for idx, combo in enumerate(combinations, 1):
+        det, desc, mat = combo
+        logger.info(f"{idx}/{len(combinations)} Processing: {det} + {desc} + {mat}")
+
+        current_combo_results = {task: {} for task in cli_args.tasks}
+
+        tmp_args = copy.copy(cli_args)
+        tmp_args.detector, tmp_args.descriptor, tmp_args.matcher = det, desc, mat
+        combo_fm_config = build_feature_matcher_config(tmp_args)
+        feature_matcher.__init__(detector=det, descriptor=desc, matcher=mat,
+                                 logger=logger, config=combo_fm_config)
+
+        dm = HPatchesDataManager(logger=logger, config=base_config['dataset'])
 
         try:
-            save_single_result(output_csv, combo_result, tasks, thresholds)
-            logger.info(f"Saved: {detector}+{descriptor}+{matcher}")
-            logger.info(f"Metrics: {metrics}")
+            while dm.has_more_data():
+                current_batch = dm.load_batch()
+                if not current_batch: break
+
+                for scene_name, scene_data in current_batch.items():
+                    img_ref = scene_data['ref_img']
+                    scene_matching_data = {scene_name: {}}
+
+                    for i, target in scene_data['targets'].items():
+                        features_ref, features_tgt, correspondences = feature_matcher.match(img_ref, target['image'])
+                        scene_matching_data[scene_name][i] = {
+                            'kp_ref': features_ref['kp'], 'kp_tgt': features_tgt['kp'],
+                            'matches': correspondences['matches'], 'H': target['H'],
+                            'ref_shape': scene_data['ref_shape'], 'tgt_shape': target['tgt_shape'],
+                        }
+
+
+                    for name, task_obj in task_objects.items():
+                        res_scene = task_obj.eval_task(scene_matching_data, [scene_name])
+
+                        for threshold in res_scene:
+                            if threshold not in current_combo_results[name]:
+                                current_combo_results[name][threshold] = {}
+                            current_combo_results[name][threshold].update(res_scene[threshold])
+
+            combo_row = {
+                'detector': det, 'descriptor': desc, 'matcher': mat,
+                'device': cli_args.device or 'cpu',
+                'num_scenes': cli_args.num_scenes,
+            }
+
+            for name, task_obj in task_objects.items():
+                per_threshold_metrics = task_obj.report_metrics(current_combo_results[name])
+                combo_row.update(flatten_metrics(name, per_threshold_metrics))
+
+            save_single_result(cli_args.output, combo_row, cli_args.tasks, cli_args.eval_thresholds)
+            logger.info(f"Combination {det}+{desc}+{mat} finished and saved")
+
         except Exception as e:
-            logger.error(f"Error saving result: {e}")
+            logger.error(f"Failed combination {det}+{desc}+{mat}: {e}")
             continue
 
-    logger.info("All combinations processed")
-    logger.info(f"Results saved to: {output_csv}")
 
 
 def parse_args():
@@ -229,7 +192,8 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     available_devices = ['cpu', 'cuda', 'mps']
-    available_tasks = ['matchingap', 'matchingscore', 'homographyauc']
+    available_tasks = list(HPatchesTask._TASKS.keys())
+    available_matchers_modes = list(OpenCVMatcher._MODE)
 
     parser.add_argument('-p', '--path', type=Path, required=True,
                         help='Path to hpatches-sequences-release folder')
@@ -237,8 +201,7 @@ def parse_args():
                         help='Output CSV file path')
 
     parser.add_argument('-t', '--tasks', type=str, nargs='+', choices=available_tasks,
-                        default=['matchingap', 'matchingscore', 'homographyauc'],
-                        help='Tasks to run')
+                        default=available_tasks, help='Tasks to run')
     parser.add_argument('-et', '--eval-thresholds', type=float, nargs='+', default=[5.0],
                         help='Pixel thresholds (1.0 3.0 5.0 10.0)')
 
@@ -246,32 +209,54 @@ def parse_args():
                         help='Device to run on')
     parser.add_argument('-n', '--num-scenes', type=int, default=116,
                         help='Number of scenes to process')
+    parser.add_argument('-sbs', '--scenes-batch-size', type=int, default=4,
+                        help='Batch size for processing images/scenes')
     parser.add_argument('--no-skip', action='store_true',
                         help='Recompute already existing combinations')
+
+    task_group = parser.add_argument_group('Task config')
+    task_group.add_argument('-hm', '--homography-method', type=str, default='ransac',
+                            choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
+    task_group.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
+                            help='Threshold for homography estimation')
+
+    det_group = parser.add_argument_group('Detector config')
+    det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
+                           help='Max number of features to detect')
+    det_group.add_argument('-do', '--det-noctave', type=int, default=None,
+                           help='Number of octave layers')
+    det_group.add_argument('-dt', '--det-threshold', type=float, default=None,
+                           help='Detection threshold')
+
+    des_group = parser.add_argument_group('Descriptor config')
+    des_group.add_argument('-dsen', '--des-nfeatures', type=int, default=None,
+                           help='Max number of features for descriptor')
+    des_group.add_argument('-dsdt', '--des-threshold', type=float, default=None,
+                           help='Descriptor threshold')
+    des_group.add_argument('-dss', '--des-scale', type=float, default=None,
+                           help='Scale factor')
+
+    mat_group = parser.add_argument_group('Matcher config')
+    mat_group.add_argument('-mat_m', '--matcher_mode', type=str, default='simple',
+                           choices=available_matchers_modes, help='Matching mode')
+    mat_group.add_argument('-mr', '--mat-ratio', type=float, default=None,
+                           help='Ratio threshold for KNN')
+    mat_group.add_argument('-mc', '--mat-cross-check', action='store_true', default=None,
+                           help='Enable cross-check for BF matcher')
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-
     if not args.path.exists():
         logger.error(f"Dataset path does not exist: {args.path}")
         return 1
 
     logger.info("HPatches Benchmark Table Generator")
-
-    table_benchmark(
-        dataset_path=args.path,
-        output_csv=args.output,
-        tasks=args.tasks,
-        thresholds=args.eval_thresholds,
-        device=args.device,
-        num_scenes=args.num_scenes,
-        skip_existing=not args.no_skip,
-    )
-
+    table_benchmark(args)
     logger.info("Benchmark completed successfully")
+
     return 0
 
 
