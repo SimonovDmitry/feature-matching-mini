@@ -78,17 +78,17 @@ class ORBDescriptor(OpenCVDescriptor):
 
 class AKAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
-        super().__init__(descriptor_name, logger, cv.AKAZE_create(**config), config)
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.AKAZE_create(**config), config)
 
 
 class BRISKDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
-        super().__init__(descriptor_name, logger, cv.BRISK_create(**config), config)
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.BRISK_create(**config), config)
 
 
 class KAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
-        super().__init__(descriptor_name, logger, cv.KAZE_create(**config), config)
+        super().__init__(descriptor_name, logger, cv.xfeatures2d.KAZE_create(**config), config)
 
 
 class BRIEFDescriptor(OpenCVDescriptor):

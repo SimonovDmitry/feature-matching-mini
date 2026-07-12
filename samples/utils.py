@@ -56,6 +56,8 @@ def build_preprocessor_config(args):
     config = dict()
     if args.device is not None:
         config['device'] = args.device
+    if args.modelpath is not None:
+        config['modelpath'] = args.modelpath
     return config
 
 
@@ -93,6 +95,8 @@ def performance_tests_parser():
 
     arg_parser.add_argument('-d', '--device', type=str, default=None,
                             choices=available_devices, help='The device on which the script will be run')
+    arg_parser.add_argument('-mp', '--modelpath', type=Path, default=None,
+                            help='Path to models')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,

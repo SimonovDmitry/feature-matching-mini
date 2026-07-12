@@ -13,6 +13,7 @@ from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher  # noqa: E402
 from samples.performance_profiler import PerformanceProfiler  # noqa: E402
+from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: E402, F401
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
