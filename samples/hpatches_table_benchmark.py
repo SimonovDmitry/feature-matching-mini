@@ -85,7 +85,9 @@ def save_single_result(output_path, new_result, tasks, thresholds):
 
 def flatten_metrics(task_name, per_threshold):
     flat = {}
-    if per_threshold is None: return flat
+    if per_threshold is None:
+        return flat
+
     for threshold, m in per_threshold.items():
         if m is None:
             logger.warning(f"No {task_name} results for threshold {threshold}px")
@@ -144,7 +146,8 @@ def table_benchmark(cli_args):
         try:
             while dm.has_more_data():
                 current_batch = dm.load_batch()
-                if not current_batch: break
+                if not current_batch:
+                    break
 
                 for scene_name, scene_data in current_batch.items():
                     img_ref = scene_data['ref_img']
@@ -157,7 +160,6 @@ def table_benchmark(cli_args):
                             'matches': correspondences['matches'], 'H': target['H'],
                             'ref_shape': scene_data['ref_shape'], 'tgt_shape': target['tgt_shape'],
                         }
-
 
                     for name, task_obj in task_objects.items():
                         res_scene = task_obj.eval_task(scene_matching_data, [scene_name])
@@ -183,7 +185,6 @@ def table_benchmark(cli_args):
         except Exception as e:
             logger.error(f"Failed combination {det}+{desc}+{mat}: {e}")
             continue
-
 
 
 def parse_args():

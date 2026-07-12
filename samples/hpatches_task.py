@@ -260,7 +260,8 @@ class MatchingScoreTask(BaseMatchingTask):
             mean_total_ms = float(np.mean(all_ms_values))
             mean_total_prec = float(np.mean(all_prec_values))
 
-            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean MS: {mean_total_ms:.4f}, Mean Prec: {mean_total_prec:.4f}")
+            self._logger.info(f"{task_name.upper()} @ {threshold}px Mean MS: {mean_total_ms:.4f},"
+                              f" Mean Prec: {mean_total_prec:.4f}")
             metrics[threshold] = {'mean_ms': mean_total_ms, 'mean_prec': mean_total_prec}
 
         return metrics
