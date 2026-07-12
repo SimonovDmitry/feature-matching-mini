@@ -164,7 +164,7 @@ class MatchingAPTask(BaseMatchingTask):
         for seq in split:
             if seq not in matching_data:
                 self._logger.warning(f"Scene '{seq}' not found in matching_data."
-                                     f" Skipping for threshold {threshold}px")
+                                     f"Skipping for threshold {self._eval_thresholds}px")
                 continue
 
             for i in self._img_indices:
@@ -220,7 +220,7 @@ class MatchingScoreTask(BaseMatchingTask):
         for seq in split:
             if seq not in matching_data:
                 self._logger.warning(f"Scene '{seq}' not found in matching_data."
-                                     f" Skipping for threshold {threshold}px")
+                                     f"Skipping for threshold {self._eval_thresholds}px")
                 continue
 
             for i in self._img_indices:
