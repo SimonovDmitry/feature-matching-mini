@@ -29,6 +29,7 @@ def parse_performance_log(log_output, script_type):
             'mean_match_ms': r'Mean time match:\s*([\d\.eE\+\-]+)',
             'num_keypoints_1': r'Number of key points 1:\s*(\d+)',
             'num_keypoints_2': r'Number of key points 2:\s*(\d+)',
+            'descriptors_dim': r'Descriptors dimension:\s*(\d+)'
         }
     else:
         patterns = {
@@ -40,7 +41,7 @@ def parse_performance_log(log_output, script_type):
         match = re.search(pattern, log_output)
         if match:
             value = float(match.group(1))
-            if key in ['num_keypoints_1', 'num_keypoints_2']:
+            if key in ['num_keypoints_1', 'num_keypoints_2', 'descriptors_dim']:
                 results[key] = int(value)
             else:
                 results[key] = value * 1000
@@ -157,7 +158,7 @@ def save_results_to_csv(results, output_path):
         'min_detection_ms', 'mean_detection_ms',
         'min_descriptor_ms', 'mean_descriptor_ms',
         "min_extractor_ms", "mean_extractor_ms",
-        'num_keypoints_1', 'num_keypoints_2',
+        'num_keypoints_1', 'num_keypoints_2', 'descriptors_dim',
         'min_match_ms', 'mean_match_ms',
         'min_pipeline_ms', 'mean_pipeline_ms',
     ]

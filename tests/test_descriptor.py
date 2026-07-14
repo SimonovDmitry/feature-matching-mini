@@ -118,7 +118,6 @@ class TestDescriptorCompute:
             else:
                 img = load_img("box.png")
                 features = get_kp("box.png", detector_name)
-                features['kp'] = features.get('kp')[:20]
 
                 descriptor = Descriptor.create(descriptor_name, mock_logger)
                 features = descriptor.compute(img, features)
