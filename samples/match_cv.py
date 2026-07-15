@@ -44,6 +44,8 @@ def parser():
                             choices=available_devices, help='The device on which the script will be run')
     arg_parser.add_argument('-s', '--save', type=Path, default=None,
                             help='Path to save result image')
+    arg_parser.add_argument('-mp', '--modelpath', type=Path, default=None,
+                            help='Path to models')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
