@@ -34,42 +34,47 @@ class HPatchesTask(ABC):
         pass
 
     @classmethod
-    def _tpfp(cls, scores, labels, numpos=None):
-        p = int(np.sum(labels))
-        n = len(labels) - p
+    def _compute_tp_fp(cls, probs, targets, total_gt=None):
+        probs = np.asarray(probs)
+        targets = np.asarray(targets)
 
-        if numpos is not None:
-            assert (numpos >= p), 'numpos smaller that number of positives in labels'
-            extra_pos = numpos - p
-            p = numpos
-            scores = np.hstack((scores, np.repeat(-np.inf, extra_pos)))
-            labels = np.hstack((labels, np.repeat(1, extra_pos)))
+        n_pos = int(np.sum(targets == 1))
+        n_neg = len(targets) - n_pos
 
-        perm = np.argsort(-scores, kind='mergesort', axis=0)
-        scores = scores[perm]
+        if total_gt is not None:
+            if total_gt < n_pos:
+                raise ValueError("total_gt must be >= n_pos")
 
-        valid = np.where(scores > -np.inf)[0]
-        if len(valid) == 0:
-            tp = np.hstack((0, np.cumsum(labels == 1)))
-            fp = np.hstack((0, np.cumsum(labels == 0)))
-            return tp, fp, p, n, perm
+            missing = total_gt - n_pos
+            probs = np.concatenate([probs, np.full(missing, -np.inf)])
+            targets = np.concatenate([targets, np.ones(missing)])
+            n_pos = total_gt
 
-        stop = np.max(valid)
-        perm = perm[0:stop + 1]
-        labels = labels[perm]
+        order = np.argsort(probs, kind='mergesort')[::-1]
+        probs, targets = probs[order], targets[order]
 
-        tp = np.hstack((0, np.cumsum(labels == 1)))
-        fp = np.hstack((0, np.cumsum(labels == 0)))
-        return tp, fp, p, n, perm
+        is_real = probs > -np.inf
+        real_targets = targets[is_real]
+
+        tp_curve = np.r_[0, np.cumsum(real_targets == 1)]
+        fp_curve = np.r_[0, np.cumsum(real_targets == 0)]
+
+        return tp_curve, fp_curve, n_pos, n_neg
 
     @classmethod
-    def _pr(cls, scores, labels, numpos=None):
-        [tp, fp, p, n, perm] = cls._tpfp(scores, labels, numpos)
+    def _precision_recall(cls, probs, targets, total_gt=None):
+        tp, fp, p, n = cls._compute_tp_fp(probs, targets, total_gt)
+        safe_div = 1e-12
 
-        small = 1e-10
-        recall = tp / float(np.maximum(p, small))
-        precision = np.maximum(tp, small) / np.maximum(tp + fp, small)
-        return precision, recall, np.trapezoid(precision, recall)
+        recall = tp / max(p, safe_div)
+        precision = tp / np.maximum(tp + fp, safe_div)
+
+        try:
+            ap = np.trapezoid(precision, recall)
+        except AttributeError:
+            ap = np.trapz(precision, recall)
+
+        return precision, recall, ap
 
 
 class BaseMatchingTask(HPatchesTask, register=False):
@@ -184,7 +189,7 @@ class MatchingAPTask(BaseMatchingTask):
                 for threshold in self._eval_thresholds:
                     res = self._match_results(dist_result, threshold)
                     numpos = self._numpos(min_dists, threshold)
-                    _, _, ap = self._pr(res['scores'], res['labels'], numpos=numpos)
+                    _, _, ap = self._precision_recall(res['scores'], res['labels'], total_gt=numpos)
                     results[threshold][seq][i] = {'ap': ap}
 
         return results

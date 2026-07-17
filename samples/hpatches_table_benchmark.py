@@ -1,6 +1,7 @@
 import argparse
 import copy
 import sys
+import numpy as np
 import logging
 import pandas as pd
 from pathlib import Path
@@ -93,7 +94,10 @@ def flatten_metrics(task_name, per_threshold):
             logger.warning(f"No {task_name} results for threshold {threshold}px")
             continue
         for metric_key, value in m.items():
-            flat[f"{task_name.lower()}_{metric_key}_{threshold}"] = value
+            if isinstance(value, (int, float, np.float32, np.float64)):
+                flat[f"{task_name.lower()}_{metric_key}_{threshold}"] = round(float(value), 5)
+            else:
+                flat[f"{task_name.lower()}_{metric_key}_{threshold}"] = value
     return flat
 
 
@@ -128,6 +132,7 @@ def table_benchmark(cli_args):
                     for name in cli_args.tasks}
     feature_matcher = FeatureMatcherCV2(detector=combinations[0][0], descriptor=combinations[0][1],
                                         matcher=combinations[0][2], logger=logger, config=base_config)
+    dm = HPatchesDataManager(logger=logger, config=base_config['dataset'])
 
     for idx, combo in enumerate(combinations, 1):
         det, desc, mat = combo
@@ -140,8 +145,6 @@ def table_benchmark(cli_args):
         combo_fm_config = build_feature_matcher_config(tmp_args)
         feature_matcher.__init__(detector=det, descriptor=desc, matcher=mat,
                                  logger=logger, config=combo_fm_config)
-
-        dm = HPatchesDataManager(logger=logger, config=base_config['dataset'])
 
         try:
             while dm.has_more_data():
@@ -169,6 +172,7 @@ def table_benchmark(cli_args):
                                 current_combo_results[name][threshold] = {}
                             current_combo_results[name][threshold].update(res_scene[threshold])
 
+            dm.reset()
             combo_row = {
                 'detector': det, 'descriptor': desc, 'matcher': mat,
                 'device': cli_args.device or 'cpu',
