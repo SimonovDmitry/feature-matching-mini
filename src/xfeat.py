@@ -7,11 +7,11 @@ XFEAT_ROOT = str(Path(__file__).parent.parent / "xfeat_repo")
 if XFEAT_ROOT not in sys.path:
     sys.path.append(XFEAT_ROOT)
 
-from src.detectors import Detector
-from src.descriptors import Descriptor
-from src.image_utils import to_numpy_bgr
+from src.detectors import Detector  # noqa: E402
+from src.descriptors import Descriptor  # noqa: E402
+from src.image_utils import to_numpy_bgr  # noqa: E402
 
-from xfeat_repo.modules.xfeat import XFeat as XFeatModel
+from xfeat_repo.modules.xfeat import XFeat as XFeatModel  # noqa: E402
 
 
 class XFeat(Detector, Descriptor):
