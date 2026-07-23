@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 XFEAT_ROOT = str(Path(__file__).parent.parent / "xfeat_repo")
-
 if XFEAT_ROOT not in sys.path:
     sys.path.append(XFEAT_ROOT)
 
@@ -86,7 +85,7 @@ class XFeat(Detector, Descriptor):
             XFeat._extracted_data = {
                 'keypoints': raw_kp[mask],
                 'descriptors': raw_des[mask],
-                'scores': raw_scores[mask].numpy()
+                'scores': raw_scores[mask].cpu().numpy()
             }
 
             if len(raw_kp[mask]) > 0:

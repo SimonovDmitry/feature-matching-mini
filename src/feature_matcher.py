@@ -12,8 +12,6 @@ from src.super_point import SuperPoint  # noqa: F401
 from src.lightglue_matcher import LightGlue  # noqa: F401
 from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
 from src.xfeat import XFeat # noqa: F401
-from src.omniglue_matcher import OmniGlueMatcher # noqa: F401
-from src.omniglue_pypline import OmniGlueFeatureExtractor # noqa: F401
 
 
 class FeatureMatcherCV2:
