@@ -8,14 +8,15 @@ SUPERGLUE_REPO_PATH = Path(__file__).parent.parent / "superglue_repo"
 if str(SUPERGLUE_REPO_PATH) not in sys.path:
     sys.path.append(str(SUPERGLUE_REPO_PATH))
 
-from superglue_repo.models.superglue import SuperGlue
-from src.matchers import Matcher
+from superglue_repo.models.superglue import SuperGlue  # noqa: E402
+from src.matchers import Matcher  # noqa: E402
 
 
 class SuperGlueMatcher(Matcher):
     def __init__(self, logger, matcher_name, descriptor_name, config=None):
         Matcher.__init__(self, logger, matcher_name, descriptor_name)
-        if config is None: config = {}
+        if config is None:
+            config = {}
 
         device = config.pop('device', None)
         if device is None:
@@ -29,14 +30,13 @@ class SuperGlueMatcher(Matcher):
             self._device = torch.device(device)
 
         self._logger = logger
-        weights = config.pop('weights', 'outdoor')
         sg_config = {
-            'weights': weights,
+            'weights': config.pop('weights', 'outdoor'),
             'sinkhorn_iterations': config.pop('sinkhorn_iterations', 20),
-            'match_threshold': config.pop('match_threshold', 0.005),
+            'match_threshold': config.pop('threshold', 0.005),
         }
 
-        self._logger.info(f"Loading SuperGlue ({weights}) onto {self._device}")
+        self._logger.info(f"Loading SuperGlue ({sg_config.get('weights')}) onto {self._device}")
         self._matcher = SuperGlue(sg_config).to(self._device).eval()
 
     def _init_matcher(self):
@@ -47,9 +47,12 @@ class SuperGlueMatcher(Matcher):
         des = feat['descriptors']
         scores = feat['scores']
 
-        if not torch.is_tensor(kps): kps = torch.from_numpy(kps).float()
-        if not torch.is_tensor(des): des = torch.from_numpy(des).float()
-        if not torch.is_tensor(scores): scores = torch.from_numpy(scores).float()
+        if not torch.is_tensor(kps):
+            kps = torch.from_numpy(kps).float()
+        if not torch.is_tensor(des):
+            des = torch.from_numpy(des).float()
+        if not torch.is_tensor(scores):
+            scores = torch.from_numpy(scores).float()
 
         des = functional.normalize(des, p=2, dim=1)
 

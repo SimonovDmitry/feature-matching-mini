@@ -11,11 +11,12 @@ D2_ROOT = Path(__file__).parent.parent / "d2net_repo"
 if str(D2_ROOT) not in sys.path:
     sys.path.append(str(D2_ROOT))
 
-from d2net_repo.lib.model_test import D2Net
-from d2net_repo.lib.pyramid import process_multiscale
-from d2net_repo.lib.utils import preprocess_image
+from d2net_repo.lib.model_test import D2Net as D2NetModel # noqa: E402
+from d2net_repo.lib.pyramid import process_multiscale  # noqa: E402
+from d2net_repo.lib.utils import preprocess_image  # noqa: E402
 
-class D2_Net(Detector, Descriptor):
+
+class D2Net(Detector, Descriptor):
     _model = None
     _is_extracted = False
     _extracted_data = {}
@@ -40,16 +41,17 @@ class D2_Net(Detector, Descriptor):
             self._device = torch.device(device)
 
         checkpoint = config.pop('checkpoint', "weights/d2net/d2_tf.pth")
-        use_relu = config.pop('use_relu', True)
+        self._use_relu = config.pop('use_relu', True)
         if config:
             self._logger.warning(f"D2Net: unknown config keys ignored: {list(config.keys())}")
 
-        if D2_Net._model is None:
+        if D2Net._model is None:
             self._logger.info(f"Loading D2Net weights onto {self._device}")
-            use_cuda = torch.cuda.is_available()
-            D2_Net._model = D2Net(model_file=checkpoint, use_relu=use_relu, use_cuda=use_cuda)
+            use_cuda = self._device.type == 'cuda'
+            D2Net._model = D2NetModel(model_file=checkpoint, use_relu=self._use_relu, use_cuda=use_cuda)
+            D2Net._model.eval()
 
-        self._model = D2_Net._model
+        self._model = D2Net._model
 
     @property
     def default_norm(self):
@@ -57,13 +59,15 @@ class D2_Net(Detector, Descriptor):
 
     def _forward(self, img):
         if img is None:
+            self._logger.error("Input image is None. Detection aborted.")
             return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
 
         if torch.is_tensor(img):
             img_np = img.squeeze(0).cpu().detach().numpy().transpose(1, 2, 0)
-            if img_np.max() <= 1.0: img_np = (img_np * 255)
+            if img_np.max() <= 1.0:
+                img_np = (img_np * 255)
         else:
             img_np = np.array(img)
 
@@ -86,7 +90,7 @@ class D2_Net(Detector, Descriptor):
                     'descriptors': torch.from_numpy(descriptors[mask]),
                     'scores': torch.from_numpy(scores[mask])
                 }
-                D2_Net._extracted_data = extracted
+                D2Net._extracted_data = extracted
 
                 if len(keypoints[mask]) > 0:
                     self._logger.info(f"{self._detector_name} found {len(keypoints[mask])} points")
@@ -107,13 +111,13 @@ class D2_Net(Detector, Descriptor):
             return {'keypoints': (), 'descriptors': ()}
 
     def detect(self, img):
-        D2_Net._is_extracted = True
+        D2Net._is_extracted = True
         return self._forward(img)
 
     def compute(self, img, kp):
-        if D2_Net._is_extracted:
-            D2_Net._is_extracted = False
-            return D2_Net._extracted_data
+        if D2Net._is_extracted:
+            D2Net._is_extracted = False
+            return D2Net._extracted_data
         else:
             return self._forward(img)
 
