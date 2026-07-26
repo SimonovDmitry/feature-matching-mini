@@ -11,7 +11,7 @@ D2_ROOT = Path(__file__).parent.parent / "d2net_repo"
 if str(D2_ROOT) not in sys.path:
     sys.path.append(str(D2_ROOT))
 
-from d2net_repo.lib.model_test import D2Net as D2NetModel # noqa: E402
+from d2net_repo.lib.model_test import D2Net as D2NetModel  # noqa: E402
 from d2net_repo.lib.pyramid import process_multiscale  # noqa: E402
 from d2net_repo.lib.utils import preprocess_image  # noqa: E402
 

@@ -52,7 +52,7 @@ class TestD2NetRegistration:
         obj = Detector.create("d2net", mock_logger, config={'threshold': 0.01, 'use_relu': False})
         assert isinstance(obj, D2Net)
         assert obj._threshold == 0.01
-        assert obj._use_relu == False
+        assert obj._use_relu is False
 
 
 class TestD2NetConfig:
@@ -73,11 +73,17 @@ class TestD2NetConfig:
         assert d2net._threshold == 0.005
 
     def test_custom_config(self, mock_logger):
-        d2net = D2Net("d2net", mock_logger, config={'device': 'cpu',
-                                                                  'threshold': 0.01,
-                                                                  'use_relu': False})
+        d2net = D2Net(
+            "d2net",
+            mock_logger,
+            config={
+                'device': 'cpu',
+                'threshold': 0.01,
+                'use_relu': False
+            }
+        )
         assert d2net._threshold == 0.01
-        assert d2net._use_relu == False
+        assert d2net._use_relu is False
         assert d2net._device.type == 'cpu'
 
     def test_unknown_config_key_warns(self, mock_logger):
