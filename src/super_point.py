@@ -1,45 +1,20 @@
 import torch
-import cv2 as cv
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
 from pathlib import Path
 
-from src.detectors import Detector
-from src.descriptors import Descriptor
+from src.dnn_extractors import DNNFeatureExtractors
 from src.image_utils import to_numpy_bgr
 
 
-class SuperPoint(Detector, Descriptor):
-    _model = None
+class SuperPoint(DNNFeatureExtractors):
     _image_processor = None
 
-    _is_extracted = False
-    _extracted_data = {}
-
     def __init__(self, extractor_name, logger, config=None):
-        if config is None:
-            config = {}
-
-        Detector.__init__(self, logger, extractor_name)
-        Descriptor.__init__(self, logger, extractor_name)
-
-        device = config.pop('device', None)
-        self._threshold = config.pop('threshold', 0.005)
+        DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
         checkpoint = config.pop('checkpoint', "weights/superpoint")
         local_files_only = config.pop('local_files_only', True)
 
-        if config:
-            self._logger.warning(f"SuperPoint: unknown config keys ignored: {list(config.keys())}")
         remote_repo = "magic-leap-community/superpoint"
-
-        if device is None:
-            if torch.cuda.is_available():
-                self._device = torch.device('cuda')
-            elif torch.backends.mps.is_available():
-                self._device = torch.device('mps')
-            else:
-                self._device = torch.device('cpu')
-        else:
-            self._device = torch.device(device)
 
         if SuperPoint._model is None:
             local_path = Path(checkpoint)
@@ -61,10 +36,6 @@ class SuperPoint(Detector, Descriptor):
         self._processor = SuperPoint._image_processor
         self._model = SuperPoint._model
 
-    @property
-    def default_norm(self):
-        return cv.NORM_L2
-
     def _forward(self, img):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
@@ -74,6 +45,7 @@ class SuperPoint(Detector, Descriptor):
 
         input_type = 'torch' if isinstance(img, torch.Tensor) else 'numpy'
         img = to_numpy_bgr(img, input_type=input_type)
+        height, width = img.shape[:2]
         inputs = self._processor(img, return_tensors="pt").to(self._device)
 
         try:
@@ -87,12 +59,14 @@ class SuperPoint(Detector, Descriptor):
             raw_des = processed['descriptors']
 
             mask = raw_scores > self._threshold
-            SuperPoint._extracted_data = {
+            extracted = {
                 'keypoints': raw_kp[mask],
                 'descriptors': raw_des[mask],
-                'scores': raw_scores[mask]
+                'scores': raw_scores[mask],
+                'width': width,
+                'height': height
             }
-
+            SuperPoint._extracted_data = extracted
             if len(raw_kp[mask]) > 0:
                 self._logger.info(f"{self._detector_name} found {len(raw_kp[mask])} points")
             else:
@@ -103,22 +77,8 @@ class SuperPoint(Detector, Descriptor):
             else:
                 self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
 
-            return SuperPoint._extracted_data
+            return extracted
 
         except Exception as e:
             self._logger.warning(f"{self._detector_name} inference failed (likely 0 points): {e}")
-            return {'keypoints': (), 'descriptors': ()}
-
-    def detect(self, img):
-        SuperPoint._is_extracted = True
-        return self._forward(img)
-
-    def compute(self, img, features):
-        if SuperPoint._is_extracted:
-            SuperPoint._is_extracted = False
-            return SuperPoint._extracted_data
-        else:
-            return self._forward(img)
-
-    def detectAndCompute(self, img):
-        return self._forward(img)
+            return {'keypoints': (), 'descriptors': (), 'width': width, 'height': height}
