@@ -204,22 +204,23 @@ def parse_args():
                         help='Path to hpatches-sequences-release folder')
     parser.add_argument('-o', '--output', type=Path, default=Path('hpatches_results.csv'),
                         help='Output CSV file path')
-
     parser.add_argument('-t', '--tasks', type=str, nargs='+', choices=available_tasks,
                         default=available_tasks, help='Tasks to run')
-    parser.add_argument('-et', '--eval-thresholds', type=float, nargs='+', default=[5.0],
-                        help='Pixel thresholds (1.0 3.0 5.0 10.0)')
 
     parser.add_argument('-d', '--device', type=str, default=None, choices=available_devices,
                         help='Device to run on')
     parser.add_argument('-n', '--num-scenes', type=int, default=116,
                         help='Number of scenes to process')
+    parser.add_argument('-mp', '--modelpath', type=Path, default=None,
+                            help='Path to models')
     parser.add_argument('-sbs', '--scenes-batch-size', type=int, default=4,
                         help='Batch size for processing images/scenes')
     parser.add_argument('--no-skip', action='store_true',
                         help='Recompute already existing combinations')
 
     task_group = parser.add_argument_group('Task config')
+    task_group.add_argument('-et', '--eval-thresholds', type=float, nargs='+', default=[5.0],
+                        help='Pixel thresholds (1.0 3.0 5.0 10.0)')
     task_group.add_argument('-hm', '--homography-method', type=str, default='ransac',
                             choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
     task_group.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
