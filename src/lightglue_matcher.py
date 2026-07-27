@@ -7,6 +7,9 @@ from lightglue.utils import rbd
 
 class LightGlueMatcher(DNNMatcher):
     def __init__(self, logger, matcher_name, descriptor_name, config=None):
+        if config is None:
+            config = {}
+
         DNNMatcher.__init__(self, logger, matcher_name, descriptor_name, config)
 
         if isinstance(descriptor_name, str):

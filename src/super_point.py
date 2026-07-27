@@ -10,11 +10,16 @@ class SuperPoint(DNNFeatureExtractors):
     _image_processor = None
 
     def __init__(self, extractor_name, logger, config=None):
+        if config is None:
+            config = {}
+
         DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
         checkpoint = config.pop('checkpoint', "weights/superpoint")
         local_files_only = config.pop('local_files_only', True)
 
         remote_repo = "magic-leap-community/superpoint"
+        if config:
+            self._logger.warning(f"SuperPoint: unknown config keys ignored: {list(config.keys())}")
 
         if SuperPoint._model is None:
             local_path = Path(checkpoint)

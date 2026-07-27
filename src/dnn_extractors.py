@@ -40,12 +40,12 @@ class DNNFeatureExtractors(Detector, Descriptor, register=False):
         pass
 
     def detect(self, img):
-        self._is_extracted = True
+        DNNFeatureExtractors._is_extracted = True
         return self._forward(img)
 
-    def compute(self, img, features):
-        if self._is_extracted:
-            self._is_extracted = False
+    def compute(self, img, features=None):
+        if DNNFeatureExtractors._is_extracted:
+            DNNFeatureExtractors._is_extracted = False
             return self._extracted_data
         else:
             return self._forward(img)

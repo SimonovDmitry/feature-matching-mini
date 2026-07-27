@@ -16,6 +16,9 @@ class LightGlueFeatureExtractor(DNNFeatureExtractors, register=False):
     _shared_models = {}
 
     def __init__(self, extractor_name, logger, config=None):
+        if config is None:
+            config = {}
+
         DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
 
         model_key = (self._detector_name, self._device.type)
