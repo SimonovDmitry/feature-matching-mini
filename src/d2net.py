@@ -7,13 +7,13 @@ from pathlib import Path
 from src.detectors import Detector
 from src.descriptors import Descriptor
 
-D2_ROOT = Path(__file__).parent.parent / "d2net_repo"
+D2_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "d2net"
 if str(D2_ROOT) not in sys.path:
-    sys.path.append(str(D2_ROOT))
+    sys.path.insert(0, str(D2_ROOT))
 
-from d2net_repo.lib.model_test import D2Net as D2NetModel  # noqa: E402
-from d2net_repo.lib.pyramid import process_multiscale  # noqa: E402
-from d2net_repo.lib.utils import preprocess_image  # noqa: E402
+from lib.model_test import D2Net as D2NetModel  # noqa: E402
+from lib.pyramid import process_multiscale  # noqa: E402
+from lib.utils import preprocess_image  # noqa: E402
 
 
 class D2Net(Detector, Descriptor):

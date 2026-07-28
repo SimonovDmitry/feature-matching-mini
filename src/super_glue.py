@@ -4,11 +4,11 @@ import sys
 import numpy as np
 from pathlib import Path
 
-SUPERGLUE_REPO_PATH = Path(__file__).parent.parent / "superglue_repo"
-if str(SUPERGLUE_REPO_PATH) not in sys.path:
-    sys.path.append(str(SUPERGLUE_REPO_PATH))
+SG_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "superglue"
+if str(SG_ROOT) not in sys.path:
+    sys.path.insert(0, str(SG_ROOT))
 
-from superglue_repo.models.superglue import SuperGlue  # noqa: E402
+from models.superglue import SuperGlue  # noqa: E402
 from src.matchers import Matcher  # noqa: E402
 
 
