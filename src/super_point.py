@@ -87,11 +87,12 @@ class SuperPoint(Detector, Descriptor):
             raw_des = processed['descriptors']
 
             mask = raw_scores > self._threshold
-            SuperPoint._extracted_data = {
+            extracted = {
                 'keypoints': raw_kp[mask],
                 'descriptors': raw_des[mask],
                 'scores': raw_scores[mask]
             }
+            SuperPoint._extracted_data = extracted
 
             if len(raw_kp[mask]) > 0:
                 self._logger.info(f"{self._detector_name} found {len(raw_kp[mask])} points")
@@ -103,7 +104,7 @@ class SuperPoint(Detector, Descriptor):
             else:
                 self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
 
-            return SuperPoint._extracted_data
+            return extracted
 
         except Exception as e:
             self._logger.warning(f"{self._detector_name} inference failed (likely 0 points): {e}")
