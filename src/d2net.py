@@ -44,7 +44,7 @@ class D2Net(Detector, Descriptor):
 
         checkpoint = Path(config.pop('checkpoint', "weights/d2net/d2_tf.pth"))
         if not checkpoint.exists():
-            print(f"Downloading weights to {checkpoint}...")
+            self._logger.info(f"Downloading weights to {checkpoint}")
             checkpoint.parent.mkdir(parents=True, exist_ok=True)
             torch.hub.download_url_to_file(self.WEIGHTS_URL, str(checkpoint))
 
