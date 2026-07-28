@@ -3,15 +3,15 @@ import torch
 import sys
 from pathlib import Path
 
-XFEAT_ROOT = str(Path(__file__).parent.parent / "xfeat_repo")
-if XFEAT_ROOT not in sys.path:
-    sys.path.append(XFEAT_ROOT)
+XFEAT_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "xfeat"
+if str(XFEAT_ROOT) not in sys.path:
+    sys.path.insert(0, str(XFEAT_ROOT))
 
 from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.image_utils import to_numpy_bgr  # noqa: E402
 
-from xfeat_repo.modules.xfeat import XFeat as XFeatModel  # noqa: E402
+from modules.xfeat import XFeat as XFeatModel  # noqa: E402
 
 
 class XFeat(Detector, Descriptor):

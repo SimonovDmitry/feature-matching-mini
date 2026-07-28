@@ -1,0 +1,3 @@
+[submodule "3rdparty/xfeat"]
+	path = 3rdparty/xfeat
+	url = https://github.com/verlab/accelerated_features.git
