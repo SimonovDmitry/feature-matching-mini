@@ -17,6 +17,8 @@ from lib.utils import preprocess_image  # noqa: E402
 
 
 class D2Net(Detector, Descriptor):
+    WEIGHTS_URL = "https://dusmanu.com/files/d2-net/d2_tf.pth"
+
     _model = None
     _is_extracted = False
     _extracted_data = {}
@@ -40,7 +42,12 @@ class D2Net(Detector, Descriptor):
         else:
             self._device = torch.device(device)
 
-        checkpoint = config.pop('checkpoint', "weights/d2net/d2_tf.pth")
+        checkpoint = Path(config.pop('checkpoint', "weights/d2net/d2_tf.pth"))
+        if not checkpoint.exists():
+            print(f"Downloading weights to {checkpoint}...")
+            checkpoint.parent.mkdir(parents=True, exist_ok=True)
+            torch.hub.download_url_to_file(self.WEIGHTS_URL, str(checkpoint))
+
         self._use_relu = config.pop('use_relu', True)
         if config:
             self._logger.warning(f"D2Net: unknown config keys ignored: {list(config.keys())}")
