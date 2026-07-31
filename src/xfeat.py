@@ -57,7 +57,7 @@ class XFeat(DNNFeatureExtractors):
 
             mask = raw_scores > self._threshold
 
-            extracted  = {
+            extracted = {
                 'keypoints': raw_kp[mask],
                 'descriptors': raw_des[mask],
                 'scores': raw_scores[mask].cpu().numpy()
