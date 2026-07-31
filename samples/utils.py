@@ -56,6 +56,8 @@ def build_preprocessor_config(args):
     config = dict()
     if args.device is not None:
         config['device'] = args.device
+    if args.modelpath is not None:
+        config['modelpath'] = args.modelpath
     return config
 
 
@@ -93,6 +95,8 @@ def performance_tests_parser():
 
     arg_parser.add_argument('-d', '--device', type=str, default=None,
                             choices=available_devices, help='The device on which the script will be run')
+    arg_parser.add_argument('-mp', '--modelpath', type=Path, default=None,
+                            help='Path to models')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -129,17 +133,19 @@ def build_hpatches_dataset_config(args):
         config['path'] = args.path
     if args.num_scenes is not None:
         config['num_scenes'] = args.num_scenes
-    if args.batch_size is not None:
-        config['batch_size'] = args.batch_size
+    if args.scenes_batch_size is not None:
+        config['scenes_batch_size'] = args.scenes_batch_size
     return config
 
 
 def build_hpatches_task_config(args):
     config = dict()
-    if args.pixel_threshold is not None:
-        config['pixel_threshold'] = args.pixel_threshold
+    if args.eval_thresholds is not None:
+        config['eval_thresholds'] = args.eval_thresholds
     if args.homography_method is not None:
         config['homography_method'] = args.homography_method
+    if args.homography_threshold is not None:
+        config['homography_threshold'] = args.homography_threshold
     return config
 
 

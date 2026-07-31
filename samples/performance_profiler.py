@@ -35,11 +35,11 @@ class PerformanceProfiler:
                          matcher, matcher_name, img0, img1):
         kp0 = detector.detect(img0)
         kp0 = self.preprocessor.prepare_features(kp0, from_algo=detector_name, to_algo=descriptor_name)
-        kp1 = detector.detect(img1)
-        kp1 = self.preprocessor.prepare_features(kp1, from_algo=detector_name, to_algo=descriptor_name)
-
         des0 = descriptor.compute(img0, kp0)['des']
         des0 = self.preprocessor.prepare_features(des0, from_algo=descriptor_name, to_algo=matcher_name)
+
+        kp1 = detector.detect(img1)
+        kp1 = self.preprocessor.prepare_features(kp1, from_algo=detector_name, to_algo=descriptor_name)
         des1 = descriptor.compute(img1, kp1)['des']
         des1 = self.preprocessor.prepare_features(des1, from_algo=descriptor_name, to_algo=matcher_name)
 

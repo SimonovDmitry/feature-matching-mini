@@ -2,7 +2,6 @@ import sys
 import logging
 import numpy as np
 from pathlib import Path
-
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.image_utils import read_image  # noqa: E402
@@ -13,7 +12,7 @@ from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher  # noqa: E402
 from samples.performance_profiler import PerformanceProfiler  # noqa: E402
-
+from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: E402, F401
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("Pipeline_Performance_Test_Sample")
@@ -32,6 +31,7 @@ def pipeline_performance_test(logger, profiler, detector, detector_name, descrip
             res, time = profiler.profile_pipeline(detector, detector_name, descriptor, descriptor_name,
                                                   matcher, matcher_name, img0, img1)
             times.append(time)
+
     min_time = np.min(times)
     mean_time = np.mean(times)
     logger.info(f"\nMin time pipeline test: {min_time}\n"

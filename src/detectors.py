@@ -74,17 +74,17 @@ class FASTDetector(OpenCVDetector):
 
 class AKAZEDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
-        super().__init__(detector_name, logger, cv.AKAZE_create(**config), config)
+        super().__init__(detector_name, logger, cv.xfeatures2d.AKAZE_create(**config), config)
 
 
 class BRISKDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
-        super().__init__(detector_name, logger, cv.BRISK_create(**config), config)
+        super().__init__(detector_name, logger, cv.xfeatures2d.BRISK_create(**config), config)
 
 
 class KAZEDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
-        super().__init__(detector_name, logger, cv.KAZE_create(**config), config)
+        super().__init__(detector_name, logger, cv.xfeatures2d.KAZE_create(**config), config)
 
 
 class GFTTDetector(OpenCVDetector):
@@ -99,7 +99,7 @@ class MSERDetector(OpenCVDetector):
 
 class AGASTDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
-        super().__init__(detector_name, logger, cv.AgastFeatureDetector_create(**config), config)
+        super().__init__(detector_name, logger, cv.xfeatures2d.AgastFeatureDetector_create(**config), config)
 
 
 class BlobDetector(OpenCVDetector):
