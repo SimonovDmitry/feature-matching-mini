@@ -7,56 +7,31 @@ XFEAT_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "xfeat"
 if str(XFEAT_ROOT) not in sys.path:
     sys.path.insert(0, str(XFEAT_ROOT))
 
-from src.detectors import Detector  # noqa: E402
-from src.descriptors import Descriptor  # noqa: E402
+from src.dnn_extractors import DNNFeatureExtractors  # noqa: E402
 from src.image_utils import to_numpy_bgr  # noqa: E402
 
 from modules.xfeat import XFeat as XFeatModel  # noqa: E402
 
 
-class XFeat(Detector, Descriptor):
-    _model = None
-    _extracted_data = {}
-    _is_extracted = False
-
+class XFeat(DNNFeatureExtractors):
     def __init__(self, extractor_name, logger, config=None):
         if config is None:
             config = {}
 
-        Detector.__init__(self, logger, extractor_name)
-        Descriptor.__init__(self, logger, extractor_name)
+        DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
 
-        device = config.pop('device', None)
-        self._threshold = config.pop('threshold', 0.005)
         self._top_k = config.pop('top_k', 4096)
-
         if config:
             self._logger.warning(f"XFeat: unknown config keys ignored: {list(config.keys())}")
-
-        if device is None:
-            if torch.cuda.is_available():
-                self._device = torch.device('cuda')
-            elif torch.backends.mps.is_available():
-                self._device = torch.device('mps')
-            else:
-                self._device = torch.device('cpu')
-        else:
-            self._device = torch.device(device)
 
         if XFeat._model is None:
             try:
                 self._logger.info(f"Loading XFeat weights onto {self._device}")
-                XFeat._model = XFeatModel().to(self._device)
-                XFeat._model.dev = self._device
-                XFeat._model.eval()
+                DNNFeatureExtractors._model = XFeatModel().to(self._device)
+                DNNFeatureExtractors._model.dev = self._device
+                DNNFeatureExtractors._model.eval()
             except Exception as e:
                 self._logger.error(f"Failed to load XFeat: {e}")
-
-        self._model = XFeat._model
-
-    @property
-    def default_norm(self):
-        return cv.NORM_L2
 
     def _forward(self, img):
         if img is None:
@@ -87,7 +62,7 @@ class XFeat(Detector, Descriptor):
                 'descriptors': raw_des[mask],
                 'scores': raw_scores[mask].cpu().numpy()
             }
-            XFeat._extracted_data = extracted
+            DNNFeatureExtractors._extracted_data = extracted
 
             if len(raw_kp[mask]) > 0:
                 self._logger.info(f"{self._detector_name} found {len(raw_kp[mask])} points")
@@ -104,17 +79,3 @@ class XFeat(Detector, Descriptor):
         except Exception as e:
             self._logger.warning(f"{self._detector_name} inference failed (likely 0 points): {e}")
             return {'keypoints': (), 'descriptors': (), 'scores': ()}
-
-    def detect(self, img):
-        XFeat._is_extracted = True
-        return self._forward(img)
-
-    def compute(self, img, kp):
-        if XFeat._is_extracted:
-            XFeat._is_extracted = False
-            return XFeat._extracted_data
-        else:
-            return self._forward(img)
-
-    def detectAndCompute(self, img):
-        return self._forward(img)
