@@ -41,6 +41,8 @@ def parser():
                             choices=available_tasks, help='Tasks to evaluate (default: run all available tasks)')
     arg_parser.add_argument('-d', '--device', type=str, default=None,
                             choices=available_devices, help='The device on which the script will be run')
+    arg_parser.add_argument('-mp', '--modelpath', type=Path, default=None,
+                            help='Path to models')
 
     ds_group = arg_parser.add_argument_group('Dataset config')
     ds_group.add_argument('-p', '--path', type=Path, required=True,
