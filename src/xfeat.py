@@ -24,6 +24,9 @@ class XFeat(DNNFeatureExtractors):
         if config:
             self._logger.warning(f"XFeat: unknown config keys ignored: {list(config.keys())}")
 
+        if self._device == torch.device('mps'):
+            self._device = torch.device('cpu')
+
         if XFeat._model is None:
             try:
                 self._logger.info(f"Loading XFeat weights onto {self._device}")

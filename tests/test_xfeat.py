@@ -35,7 +35,7 @@ def random_img():
 
 @pytest.fixture
 def xf_instance(mock_logger):
-    return XFeat("xfeat", logger=mock_logger, config={'device': 'cpu'})
+    return XFeat("xfeat", logger=mock_logger, config=None)
 
 
 class TestXFeatRegistration:
