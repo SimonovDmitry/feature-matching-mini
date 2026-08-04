@@ -30,9 +30,9 @@ class XFeat(DNNFeatureExtractors):
         if XFeat._model is None:
             try:
                 self._logger.info(f"Loading XFeat weights onto {self._device}")
-                DNNFeatureExtractors._model = XFeatModel().to(self._device)
-                DNNFeatureExtractors._model.dev = self._device
-                DNNFeatureExtractors._model.eval()
+                XFeat._model = XFeatModel().to(self._device)
+                XFeat._model.dev = self._device
+                XFeat._model.eval()
             except Exception as e:
                 self._logger.error(f"Failed to load XFeat: {e}")
 
@@ -65,7 +65,7 @@ class XFeat(DNNFeatureExtractors):
                 'descriptors': raw_des[mask],
                 'scores': raw_scores[mask].cpu().numpy()
             }
-            DNNFeatureExtractors._extracted_data = extracted
+            XFeat._extracted_data = extracted
 
             if len(raw_kp[mask]) > 0:
                 self._logger.info(f"{self._detector_name} found {len(raw_kp[mask])} points")
