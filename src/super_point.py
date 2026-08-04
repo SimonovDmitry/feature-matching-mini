@@ -1,45 +1,25 @@
 import torch
-import cv2 as cv
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
 from pathlib import Path
 
-from src.detectors import Detector
-from src.descriptors import Descriptor
+from src.dnn_extractors import DNNFeatureExtractors
 from src.image_utils import to_numpy_bgr
 
 
-class SuperPoint(Detector, Descriptor):
-    _model = None
+class SuperPoint(DNNFeatureExtractors):
     _image_processor = None
-
-    _is_extracted = False
-    _extracted_data = {}
 
     def __init__(self, extractor_name, logger, config=None):
         if config is None:
             config = {}
 
-        Detector.__init__(self, logger, extractor_name)
-        Descriptor.__init__(self, logger, extractor_name)
-
-        device = config.pop('device', None)
-        self._threshold = config.pop('threshold', 0.005)
+        DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
         checkpoint = config.pop('checkpoint', "weights/superpoint")
         local_files_only = config.pop('local_files_only', True)
 
+        remote_repo = "magic-leap-community/superpoint"
         if config:
             self._logger.warning(f"SuperPoint: unknown config keys ignored: {list(config.keys())}")
-        remote_repo = "magic-leap-community/superpoint"
-
-        if device is None:
-            if torch.cuda.is_available():
-                self._device = torch.device('cuda')
-            elif torch.backends.mps.is_available():
-                self._device = torch.device('mps')
-            else:
-                self._device = torch.device('cpu')
-        else:
-            self._device = torch.device(device)
 
         if SuperPoint._model is None:
             local_path = Path(checkpoint)
@@ -60,10 +40,6 @@ class SuperPoint(Detector, Descriptor):
 
         self._processor = SuperPoint._image_processor
         self._model = SuperPoint._model
-
-    @property
-    def default_norm(self):
-        return cv.NORM_L2
 
     def _forward(self, img):
         if img is None:
@@ -111,17 +87,3 @@ class SuperPoint(Detector, Descriptor):
         except Exception as e:
             self._logger.warning(f"{self._detector_name} inference failed (likely 0 points): {e}")
             return {'keypoints': (), 'descriptors': (), 'width': width, 'height': height}
-
-    def detect(self, img):
-        SuperPoint._is_extracted = True
-        return self._forward(img)
-
-    def compute(self, img, features):
-        if SuperPoint._is_extracted:
-            SuperPoint._is_extracted = False
-            return SuperPoint._extracted_data
-        else:
-            return self._forward(img)
-
-    def detectAndCompute(self, img):
-        return self._forward(img)
