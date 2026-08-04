@@ -31,9 +31,9 @@ class SuperPoint(DNNFeatureExtractors):
 
             try:
                 self._logger.info(f"Loading SuperPoint from {checkpoint} (local={local_files_only})")
-                DNNFeatureExtractors._processor = AutoImageProcessor.from_pretrained(
+                SuperPoint._processor = AutoImageProcessor.from_pretrained(
                     checkpoint, local_files_only=local_files_only)
-                DNNFeatureExtractors._model = SuperPointForKeypointDetection.from_pretrained(
+                SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(
                     checkpoint, local_files_only=local_files_only).to(self._device)
             except Exception as e:
                 self._logger.error(f"Failed to load from {checkpoint}: {e}")
@@ -68,7 +68,7 @@ class SuperPoint(DNNFeatureExtractors):
                 'width': width,
                 'height': height
             }
-            DNNFeatureExtractors._extracted_data = extracted
+            SuperPoint._extracted_data = extracted
 
             if len(raw_kp[mask]) > 0:
                 self._logger.info(f"{self._detector_name} found {len(raw_kp[mask])} points")
