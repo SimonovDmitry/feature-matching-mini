@@ -4,39 +4,28 @@ import sys
 import numpy as np
 from pathlib import Path
 
+from src.dnn_matchers import DNNMatcher  # noqa: E402
+
 SG_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "superglue"
 if str(SG_ROOT) not in sys.path:
     sys.path.insert(0, str(SG_ROOT))
 
 from models.superglue import SuperGlue  # noqa: E402
-from src.matchers import Matcher  # noqa: E402
 
 
-class SuperGlueMatcher(Matcher):
+class SuperGlueMatcher(DNNMatcher):
     def __init__(self, logger, matcher_name, descriptor_name, config=None):
-        Matcher.__init__(self, logger, matcher_name, descriptor_name)
         if config is None:
             config = {}
 
-        device = config.pop('device', None)
-        if device is None:
-            if torch.cuda.is_available():
-                self._device = torch.device('cuda')
-            elif torch.backends.mps.is_available():
-                self._device = torch.device('mps')
-            else:
-                self._device = torch.device('cpu')
-        else:
-            self._device = torch.device(device)
-
-        self._logger = logger
+        DNNMatcher.__init__(self, logger, matcher_name, descriptor_name, config)
         sg_config = {
             'weights': config.pop('weights', 'outdoor'),
             'sinkhorn_iterations': config.pop('sinkhorn_iterations', 20),
             'match_threshold': config.pop('threshold', 0.005),
         }
 
-        self._logger.info(f"Loading SuperGlue ({sg_config.get('weights')}) onto {self._device}")
+        self.logger.info(f"Loading SuperGlue ({sg_config.get('weights')}) onto {self._device}")
         self._matcher = SuperGlue(sg_config).to(self._device).eval()
 
     def _init_matcher(self):
@@ -95,7 +84,7 @@ class SuperGlueMatcher(Matcher):
         match_indices = np.stack([idx0, idx1], axis=1)
         res_scores = confidences[valid]
 
-        self._logger.info(f"SuperGlue: {len(match_indices)} matches found.")
+        self.logger.info(f"SuperGlue: {len(match_indices)} matches found.")
 
         return {
             'matches': torch.from_numpy(match_indices).long(),

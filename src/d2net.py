@@ -4,8 +4,7 @@ import cv2 as cv
 import sys
 from pathlib import Path
 
-from src.detectors import Detector
-from src.descriptors import Descriptor
+from src.dnn_extractors import DNNFeatureExtractors
 
 D2_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "d2net"
 if str(D2_ROOT) not in sys.path:
@@ -16,31 +15,14 @@ from lib.pyramid import process_multiscale  # noqa: E402
 from lib.utils import preprocess_image  # noqa: E402
 
 
-class D2Net(Detector, Descriptor):
+class D2Net(DNNFeatureExtractors):
     WEIGHTS_URL = "https://dusmanu.com/files/d2-net/d2_tf.pth"
-
-    _model = None
-    _is_extracted = False
-    _extracted_data = {}
 
     def __init__(self, extractor_name, logger, config=None):
         if config is None:
             config = {}
 
-        Detector.__init__(self, logger, extractor_name)
-        Descriptor.__init__(self, logger, extractor_name)
-
-        self._threshold = config.pop('threshold', 0.005)
-        device = config.pop('device', None)
-        if device is None:
-            if torch.cuda.is_available():
-                self._device = torch.device('cuda')
-            elif torch.backends.mps.is_available():
-                self._device = torch.device('mps')
-            else:
-                self._device = torch.device('cpu')
-        else:
-            self._device = torch.device(device)
+        DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
 
         checkpoint = Path(config.pop('checkpoint', "weights/d2net/d2_tf.pth"))
         if not checkpoint.exists():
@@ -59,10 +41,6 @@ class D2Net(Detector, Descriptor):
             D2Net._model.eval()
 
         self._model = D2Net._model
-
-    @property
-    def default_norm(self):
-        return cv.NORM_L2
 
     def _forward(self, img):
         if img is None:
@@ -116,17 +94,3 @@ class D2Net(Detector, Descriptor):
         except Exception as e:
             self._logger.error(f"D2-Net inference error: {e}")
             return {'keypoints': (), 'descriptors': ()}
-
-    def detect(self, img):
-        D2Net._is_extracted = True
-        return self._forward(img)
-
-    def compute(self, img, kp):
-        if D2Net._is_extracted:
-            D2Net._is_extracted = False
-            return D2Net._extracted_data
-        else:
-            return self._forward(img)
-
-    def detectAndCompute(self, img):
-        return self._forward(img)
