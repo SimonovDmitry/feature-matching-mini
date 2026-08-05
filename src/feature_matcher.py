@@ -12,6 +12,8 @@ from src.super_point import SuperPoint  # noqa: F401
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.lightglue_matcher import LightGlue  # noqa: F401
 from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
+from src.super_glue import SuperGlueMatcher  # noqa: F401
+from src.d2net import D2Net  # noqa: F401
 
 
 class FeatureMatcherCV2:
