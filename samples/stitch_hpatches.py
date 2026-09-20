@@ -9,7 +9,7 @@ import numpy as np
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402
-from samples.utils import (build_hpatches_benchmark_config, build_hpatches_feature_matcher_config) # noqa: E402
+from samples.utils import (build_hpatches_benchmark_config, build_hpatches_feature_matcher_config)  # noqa: E402
 
 from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
 from src.matchers import OpenCVMatcher  # noqa: E402

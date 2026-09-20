@@ -46,7 +46,6 @@ class Stitcher:
         points1 = np.float32([keypoints1[m.queryIdx].pt for m in matches])
         points2 = np.float32([keypoints2[m.trainIdx].pt for m in matches])
 
-
         H, mask = cv.findHomography(points1, points2, self._HOMOGRAPHY_METHODS.get(self._homography_method),
                                     self._homography_threshold)
         if not self._is_valid_transformation(H):
@@ -58,12 +57,11 @@ class Stitcher:
                 H = np.eye(3, dtype=np.float64)
                 H[:2, :] = M
 
-
         if not self._is_valid_transformation(H):
             self._logger.warning('estimateAffine2D failed quality check. Falling back to estimateAffinePartial2D')
             M, mask = cv.estimateAffinePartial2D(points1, points2,
                                                  method=self._HOMOGRAPHY_METHODS.get(self._homography_method),
-                                                 ransacReprojThreshold=(self._homography_threshold+1))
+                                                 ransacReprojThreshold=(self._homography_threshold + 1))
             if M is not None:
                 H = np.eye(3, dtype=np.float64)
                 H[:2, :] = M
