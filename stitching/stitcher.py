@@ -5,12 +5,36 @@ from src.feature_matcher import FeatureMatcherCV2
 
 
 class Stitcher:
+    _HOMOGRAPHY_METHODS = {
+        "ransac": cv.RANSAC,
+        "magsac": cv.USAC_MAGSAC,
+        "lmeds": cv.LMEDS,
+        "rho": cv.RHO
+    }
+
     def __init__(self, logger, detector='sift', descriptor='sift', matcher='bf', config=None):
         if config is None:
             config = {}
+
+        self._homography_threshold = config.pop('homography_threshold', 3.0)
+        self._homography_method = config.pop('homography_method', "ransac")
         self._logger = logger
         self._feature_matcher = FeatureMatcherCV2(detector=detector, descriptor=descriptor, matcher=matcher,
                                                   logger=logger, config=config)
+
+    def _is_valid_transformation(self, H):
+        if H is None:
+            return False
+
+        perspective_strength = np.abs(H[2, 0]) + np.abs(H[2, 1])
+        if perspective_strength > 0.0015:
+            return False
+
+        det = np.linalg.det(H[:2, :2])
+        if det < 0.3 or det > 2.5:
+            return False
+
+        return True
 
     def _find_homography(self, keypoints1, keypoints2, matches):
         self._logger.info('START: Find homography / Affine transform')
@@ -19,28 +43,76 @@ class Stitcher:
             self._logger.error('At least 4 matches are required')
             return None
 
-        points1 = []
-        points2 = []
-        for match in matches:
-            m = match
-            points1.append(keypoints1[m.queryIdx].pt)
-            points2.append(keypoints2[m.trainIdx].pt)
+        points1 = np.float32([keypoints1[m.queryIdx].pt for m in matches])
+        points2 = np.float32([keypoints2[m.trainIdx].pt for m in matches])
 
-        points1 = np.asarray(points1, dtype=np.float32)
-        points2 = np.asarray(points2, dtype=np.float32)
 
-        M, mask = cv.estimateAffinePartial2D(points1, points2, method=cv.RANSAC, ransacReprojThreshold=4.0)
-        if M is None or mask is None:
-            self._logger.warning('Affine estimation failed, falling back to findHomography with strict RANSAC')
-            H, mask = cv.findHomography(points1, points2, cv.RANSAC, 3.0)
-            if H is None:
+        H, mask = cv.findHomography(points1, points2, self._HOMOGRAPHY_METHODS.get(self._homography_method),
+                                    self._homography_threshold)
+        if not self._is_valid_transformation(H):
+            self._logger.warning('findHomography produced invalid/depth matrix. Trying estimateAffine2D...')
+            M, mask = cv.estimateAffine2D(points1, points2,
+                                          method=self._HOMOGRAPHY_METHODS.get(self._homography_method),
+                                          ransacReprojThreshold=self._homography_threshold)
+            if M is not None:
+                H = np.eye(3, dtype=np.float64)
+                H[:2, :] = M
+
+
+        if not self._is_valid_transformation(H):
+            self._logger.warning('estimateAffine2D failed quality check. Falling back to estimateAffinePartial2D')
+            M, mask = cv.estimateAffinePartial2D(points1, points2,
+                                                 method=self._HOMOGRAPHY_METHODS.get(self._homography_method),
+                                                 ransacReprojThreshold=(self._homography_threshold+1))
+            if M is not None:
+                H = np.eye(3, dtype=np.float64)
+                H[:2, :] = M
+            else:
+                self._logger.error('All transformation estimations failed')
                 return None
-        else:
-            H = np.eye(3, dtype=np.float64)
-            H[:2, :] = M
 
         self._logger.info('FINISH: Find homography')
         return H
+
+    def _check_homography(self, H, img1, img2):
+        self._logger.info('START: Check homography')
+
+        if H is None:
+            return False
+
+        h1, w1 = img1.shape[:2]
+        corners1 = np.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]]).reshape(-1, 1, 2)
+
+        try:
+            transformed1 = cv.perspectiveTransform(corners1, H)
+        except Exception as e:
+            self._logger.error(f'Perspective transform error: {e}')
+            return False
+
+        transformed1 = transformed1.reshape(-1, 2)
+
+        x = transformed1[:, 0]
+        y = transformed1[:, 1]
+
+        transformed_width = x.max() - x.min()
+        transformed_height = y.max() - y.min()
+
+        width_ratio = transformed_width / w1
+        height_ratio = transformed_height / h1
+
+        self._logger.info(f'Transformed image size: {transformed_width:.1f} x {transformed_height:.1f}')
+        self._logger.info(f'Scale ratio: {width_ratio:.2f} x {height_ratio:.2f}')
+
+        if width_ratio > 1.8 or height_ratio > 1.8:
+            self._logger.error('Homography rejected: image is stretched too much (>1.8x).')
+            return False
+
+        if width_ratio < 0.5 or height_ratio < 0.5:
+            self._logger.error('Homography rejected: image is collapsed/shrunk (<0.5x).')
+            return False
+
+        self._logger.info('FINISH: Check homography')
+        return True
 
     def _get_features_and_matches(self, img1, img2):
         self._logger.info('START: Feature matching')
@@ -65,45 +137,13 @@ class Stitcher:
 
         self._logger.info(f'Good matches: {len(matches)}')
         if len(matches) < 4:
-            self._logger.error(
-                f'Not enough matches: {len(matches)}'
-            )
+            self._logger.error(f'Not enough matches: {len(matches)}')
             return None, None, None
 
         self._logger.info('FINISH: Feature matching')
         return keypoints1, keypoints2, matches
 
-    def _check_homography(self, H, img1, img2):
-        self._logger.info('START: Check homography')
-
-        if H is None:
-            return False
-
-        h1, w1 = img1.shape[:2]
-        h2, w2 = img2.shape[:2]
-
-        corners1 = np.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]]).reshape(-1, 1, 2)
-        corners2 = np.float32([[0, 0], [w2, 0], [w2, h2], [0, h2]]).reshape(-1, 1, 2)
-
-        transformed1 = cv.perspectiveTransform(corners1, H)
-        transformed1 = transformed1.reshape(-1, 2)
-
-        x = transformed1[:, 0]
-        y = transformed1[:, 1]
-
-        transformed_width = x.max() - x.min()
-        transformed_height = y.max() - y.min()
-
-        self._logger.info(f'Transformed image size: {transformed_width:.1f} x {transformed_height:.1f}')
-        width_ratio = transformed_width / w1
-        height_ratio = transformed_height / h1
-
-        self._logger.info(f'Scale ratio: {width_ratio:.2f} x {height_ratio:.2f}')
-        self._logger.info('FINISH: Check homography')
-        return True
-
     def _match_images(self, img1, img2):
-
         self._logger.info('START: Match neighbouring images')
 
         keypoints1, keypoints2, matches = self._get_features_and_matches(img1, img2)
@@ -112,7 +152,6 @@ class Stitcher:
             return None
 
         H = self._find_homography(keypoints1, keypoints2, matches)
-
         if H is None:
             return None
 
@@ -178,10 +217,10 @@ class Stitcher:
             self._logger.info(f'Warp image {i + 1}/{len(imgs)}')
 
             H = translation @ global_H[i]
-            warped = cv.warpPerspective(img, H,(width, height))
+            warped = cv.warpPerspective(img, H, (width, height))
 
             mask = np.ones(img.shape[:2], dtype=np.uint8) * 255
-            warped_mask = cv.warpPerspective(mask, H,(width, height))
+            warped_mask = cv.warpPerspective(mask, H, (width, height))
             new_pixels = ((warped_mask > 0) & (panorama_mask == 0))
 
             panorama[new_pixels] = warped[new_pixels]

@@ -19,6 +19,12 @@ def read_images(img_dir):
 
 
 def build_stitch_config(args):
+    config = dict()
+    if args.homography_method is not None:
+        config['homography_method'] = args.homography_method
+    if args.homography_threshold is not None:
+        config['homography_threshold'] = args.homography_threshold
     return {
-        **build_feature_matcher_config(args)
+        **build_feature_matcher_config(args),
+        **config
     }

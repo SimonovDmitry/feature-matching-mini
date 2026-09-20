@@ -5,12 +5,12 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
-from src.image_utils import save_image, show_image  # noqa: E402
+from src.image_utils import read_image, save_image, show_image  # noqa: E402
 from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
-from stitching.utils import build_stitch_config, read_images  # noqa: E402
-from stitching.stitcher import Stitcher
+from stitching.utils import build_stitch_config  # noqa: E402
+from stitching.stitcher import Stitcher  # noqa: E402
 
 logging.basicConfig(format='[ %(levelname)s ] %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def parser():
     arg_parser = argparse.ArgumentParser(
-        description="Stitching images into a single panorama",
+        description="Stitching two images together",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     available_detectors = list(Detector._METHODS.keys())
@@ -34,12 +34,19 @@ def parser():
     arg_parser.add_argument('-mat', '--matcher', type=str, default='bf',
                             choices=available_matchers, help='Matching algorithm')
 
-    arg_parser.add_argument('-i', '--img-dir', type=str, dest='img_dir', required=True,
-                            help='Directory that contains sequence of overlapped images')
+    arg_parser.add_argument('-i1', '--image1', type=Path, required=True,
+                            help='Path to the first image')
+    arg_parser.add_argument('-i2', '--image2', type=Path, required=True,
+                            help='Path to the second image')
+
     arg_parser.add_argument('-d', '--device', type=str, default=None,
                             choices=available_devices, help='The device on which the script will be run')
-    arg_parser.add_argument('-o', '--out', help='File name for saving the stitched panoramas',
+    arg_parser.add_argument('-o', '--out', help='File name for saving the stitched image',
                             type=Path, dest='out_file_name', default=None)
+    arg_parser.add_argument('-hm', '--homography-method', type=str, default='ransac',
+                            choices=['ransac', 'magsac', 'lmeds', 'rho'], help='Homography estimation method')
+    arg_parser.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
+                            help='Threshold for homography estimation')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
@@ -91,22 +98,28 @@ def main():
     args = parser()
 
     try:
-        logger.info("Starting pipeline for panorama stitching")
+        if not args.image1.exists() or not args.image2.exists():
+            logger.error(f"One of the images does not exist: {args.image1} or {args.image2}")
+            return 1
+
+        logger.info("Starting the two image stitching pipeline")
+        logger.info(f"Comparing pair: {args.image1} and {args.image2}")
+
         config = build_stitch_config(args)
         logger.info(f"Config: {config}")
 
-        imgs = read_images(args.img_dir)
+        img1 = read_image(args.image1)
+        img2 = read_image(args.image2)
 
         stitcher = Stitcher(detector=args.detector, descriptor=args.descriptor, matcher=args.matcher,
                             logger=logger, config=config)
-        panorama = stitcher.stitch_panorama(imgs)
-
+        out_image = stitcher.stitch2images(img1, img2)
 
         if args.out_file_name:
-            save_image(panorama, args.out_file_name)
+            save_image(out_image, save_path=args.out_file_name)
             logger.info(f"Result successfully saved to: {args.out_file_name}")
 
-        show_image(panorama, title="Stitched Panorama")
+        show_image(out_image, title="Stitched image")
         logger.info("Pipeline finished successfully")
         return 0
 
