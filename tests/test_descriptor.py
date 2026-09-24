@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from logging import Logger
 
-from src.image_utils import read_image
+from src.utils_image import read_image
 from src.algorithms import DNN_ALGORITHMS
 
 from src.detectors import Detector

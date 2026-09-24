@@ -1,9 +1,9 @@
-import torch
-from transformers import AutoImageProcessor, SuperPointForKeypointDetection
 from pathlib import Path
+import numpy as np
+from transformers import AutoImageProcessor, SuperPointForKeypointDetection
 
 from src.dnn_extractors import DNNFeatureExtractors
-from src.image_utils import to_numpy_bgr
+from src.utils_image import to_numpy_bgr
 
 
 class SuperPoint(DNNFeatureExtractors):
@@ -14,9 +14,11 @@ class SuperPoint(DNNFeatureExtractors):
             config = {}
 
         DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
-        checkpoint = config.pop('checkpoint', "weights/superpoint")
+
+        checkpoint = config.pop('checkpoint', 'weights/superpoint')
         local_files_only = config.pop('local_files_only', True)
-        remote_repo = "magic-leap-community/superpoint"
+        backend = config.pop('backend', 'torch')
+        remote_repo = 'magic-leap-community/superpoint'
 
         if SuperPoint._model is None:
             local_path = Path(checkpoint)
@@ -27,23 +29,36 @@ class SuperPoint(DNNFeatureExtractors):
                 local_files_only = False
 
             try:
-                self._logger.info(f"Loading SuperPoint from {checkpoint} (local={local_files_only})")
-                SuperPoint._image_processor = AutoImageProcessor.from_pretrained(
-                    checkpoint, local_files_only=local_files_only)
-                SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(
-                    checkpoint, local_files_only=local_files_only).to(self._device)
-            except Exception as e:
-                self._logger.error(f"Failed to load from {checkpoint}: {e}")
+                self._logger.info(f'Loading SuperPoint from {checkpoint} (local={local_files_only})')
+                SuperPoint._image_processor = AutoImageProcessor.from_pretrained(checkpoint,
+                                                                                 local_files_only=local_files_only)
+                SuperPoint._model = SuperPointForKeypointDetection.from_pretrained(checkpoint,
+                                                                                   local_files_only=local_files_only)
+            except Exception as exc:
+                self._logger.error(f'Failed to load from {checkpoint}: {exc}')
 
         self._processor = SuperPoint._image_processor
         self._model = SuperPoint._model
 
+        from src.inference_api import InferenceAPI
+        from src.inference_torch import TorchInferenceAPI
+        self._inference = InferenceAPI.create(backend, logger, extractor_name, self._model, config=config)
+
     def _preprocess(self, img):
-        input_type = 'torch' if isinstance(img, torch.Tensor) else 'numpy'
+        if not hasattr(img, 'shape'):
+            raise TypeError('SuperPoint expects an image with a shape')
+
+        try:
+            from src import utils_torch
+            input_type = 'tensor' if utils_torch.is_tensor(img) else 'numpy'
+        except ImportError:
+            input_type = 'numpy'
+
         img = to_numpy_bgr(img, input_type=input_type)
         height, width = img.shape[:2]
-        inputs = self._processor(img, return_tensors="pt").to(self._device)
-        return inputs, height, width
+
+        inputs = self._processor(img, return_tensors='np')
+        return dict(inputs), height, width
 
     def _forward(self, img):
         if img is None:
@@ -54,8 +69,7 @@ class SuperPoint(DNNFeatureExtractors):
         inputs, height, width = self._preprocess(img)
 
         try:
-            with torch.no_grad():
-                outputs = self._model(**inputs)
+            outputs = self._inference.run(inputs=inputs)
 
             processed = self._processor.post_process_keypoint_detection(outputs, [[height, width]])[0]
             raw_kp = processed['keypoints']
@@ -68,8 +82,10 @@ class SuperPoint(DNNFeatureExtractors):
             scores = raw_scores[mask]
 
             if self._nfeatures is not None and len(kp) > self._nfeatures:
-                scores, indices = torch.topk(scores, k=self._nfeatures, sorted=True)
+                indices = np.argpartition(scores, -self._nfeatures)[-self._nfeatures:]
+                indices = indices[np.argsort(scores[indices])[::-1]]
 
+                scores = scores[indices]
                 kp = kp[indices]
                 des = des[indices]
 
@@ -81,13 +97,17 @@ class SuperPoint(DNNFeatureExtractors):
                 'height': height
             }
             SuperPoint._extracted_data = extracted
-            if len(raw_kp[mask]) > 0:
-                self._logger.info(f"{self._detector_name} found {len(kp)} points")
-            else:
-                self._logger.warning(f"{self._detector_name} found 0 points")
 
-            if raw_des[mask] is not None:
-                self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
+            kp = extracted['keypoints']
+            des = extracted['descriptors']
+
+            if len(kp) > 0:
+                self._logger.info(f'{self._detector_name} found {len(kp)} points')
+            else:
+                self._logger.warning(f'{self._detector_name} found 0 points')
+
+            if des is not None:
+                self._logger.info(f'{self._descriptor_name} computed {len(des)} descriptors')
             else:
                 self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
 

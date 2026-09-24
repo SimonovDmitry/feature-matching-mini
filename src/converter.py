@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import cv2 as cv
 import numpy as np
-import torch
 
 
 class Converter(ABC):
@@ -42,20 +41,11 @@ class Converter(ABC):
 
     @staticmethod
     def to_numpy(data):
-        if torch.is_tensor(data):
-            return data.detach().cpu().numpy()
-        return data
+        from src.utils_torch import tensor_to_numpy
+        return tensor_to_numpy(data)
 
 
 class ImageConverter(Converter):
-    def _to_tensor(self, data, device='cpu'):
-        if data.shape[2] == 3:
-            img_rgb = cv.cvtColor(data, cv.COLOR_BGR2RGB)
-        else:
-            img_rgb = data
-        tensor = torch.from_numpy(img_rgb).permute(2, 0, 1).float() / 255.0
-        return tensor.to(device)
-
     def _to_cv(self, data):
         img_numpy = data.detach().cpu().numpy()
         if img_numpy.ndim == 2:
@@ -71,6 +61,10 @@ class ImageConverter(Converter):
             img_opencv = img_numpy
 
         return img_opencv
+
+    def _to_tensor(self, data, device='cpu'):
+        from src.utils_torch import image_to_tensor
+        return image_to_tensor(data, device=device)
 
 
 class FeaturesConverter(Converter):
@@ -98,21 +92,8 @@ class FeaturesConverter(Converter):
         return result
 
     def _to_tensor(self, data, device='cpu'):
-        kp = data.get('kp')
-        des = data.get('des')
-
-        keypoints_np = cv.KeyPoint_convert(kp)
-        keypoints = torch.from_numpy(keypoints_np).to(device)
-        descriptors = torch.from_numpy(des).to(device)
-
-        result = {'keypoints': keypoints, 'descriptors': descriptors}
-
-        if 'width' in data:
-            result['width'] = data['width']
-        if 'height' in data:
-            result['height'] = data['height']
-
-        return result
+        from src.utils_torch import features_to_tensor
+        return features_to_tensor(data, device=device)
 
 
 class MatchesConverter(Converter):
@@ -130,7 +111,5 @@ class MatchesConverter(Converter):
         return {'matches': dmatches}
 
     def _to_tensor(self, data, device='cpu'):
-        dmatches = data.get('matches')
-        matches_np = np.array([[dmatch.queryIdx, dmatch.trainIdx] for dmatch in dmatches])
-        matches = torch.from_numpy(matches_np).to(device)
-        return {'matches': matches}
+        from src.utils_torch import matches_to_tensor
+        return matches_to_tensor(data, device=device)

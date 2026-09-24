@@ -8,7 +8,7 @@ if str(XFEAT_ROOT) not in sys.path:
     sys.path.insert(0, str(XFEAT_ROOT))
 
 from src.dnn_extractors import DNNFeatureExtractors  # noqa: E402
-from src.image_utils import to_numpy_bgr  # noqa: E402
+from src.utils_image import to_numpy_bgr  # noqa: E402
 
 from modules.xfeat import XFeat as XFeatModel  # noqa: E402
 

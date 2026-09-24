@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 
-from src.image_utils import read_image
+from src.utils_image import read_image
 
 
 class HPatchesDataManager:

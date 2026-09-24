@@ -1,4 +1,3 @@
-import torch
 import cv2 as cv
 
 from src.detectors import Detector
@@ -21,15 +20,8 @@ class DNNFeatureExtractors(Detector, Descriptor, register=False):
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
 
-        if device is None:
-            if torch.cuda.is_available():
-                self._device = torch.device('cuda')
-            elif torch.backends.mps.is_available():
-                self._device = torch.device('mps')
-            else:
-                self._device = torch.device('cpu')
-        else:
-            self._device = torch.device(device)
+        from src.utils_torch import get_device
+        self._device = get_device(device)
 
     @property
     def default_norm(self):

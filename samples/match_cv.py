@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
-from src.image_utils import read_image, save_image, show_image  # noqa: E402
+from src.utils_image import read_image, save_image, show_image  # noqa: E402
 from samples.utils import build_feature_matcher_config  # noqa: E402
 from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402

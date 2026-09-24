@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
-from src.image_utils import read_image  # noqa: E402
+from src.utils_image import read_image  # noqa: E402
 from samples.utils import build_feature_matcher_config, performance_tests_parser  # noqa: E402
 from src.preprocessor import Preprocessor  # noqa: E402
 from src.algorithms import DNN_ALGORITHMS, DNN_PIPELINES  # noqa: E402

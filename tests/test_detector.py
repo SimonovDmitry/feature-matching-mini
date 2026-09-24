@@ -10,7 +10,7 @@ from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
 from src.super_point import SuperPoint  # noqa: F401
 
 from src.algorithms import DNN_ALGORITHMS
-from src.image_utils import read_image
+from src.utils_image import read_image
 
 
 @pytest.fixture

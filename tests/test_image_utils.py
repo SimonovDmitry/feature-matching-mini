@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 import tempfile
 import shutil
 
-from src.image_utils import read_image, save_image, show_image, to_numpy_bgr
+from src.utils_image import read_image, save_image, show_image, to_numpy_bgr
 from src.converter import Converter
 
 
