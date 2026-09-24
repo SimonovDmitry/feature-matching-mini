@@ -27,12 +27,12 @@ class Stitcher:
             return False
 
         perspective_strength = np.abs(H[2, 0]) + np.abs(H[2, 1])
-        if perspective_strength > 0.0015:
+        if perspective_strength > 0.15:
             return False
 
         det = np.linalg.det(H[:2, :2])
-        if det < 0.3 or det > 2.5:
-            return False
+        if det < 0.1 or det > 10.0:
+             return False
 
         return True
 
@@ -49,19 +49,10 @@ class Stitcher:
         H, mask = cv.findHomography(points1, points2, self._HOMOGRAPHY_METHODS.get(self._homography_method),
                                     self._homography_threshold)
         if not self._is_valid_transformation(H):
-            self._logger.warning('findHomography produced invalid/depth matrix. Trying estimateAffine2D...')
+            self._logger.warning('findHomography produced invalid/depth matrix. Trying estimateAffine2D')
             M, mask = cv.estimateAffine2D(points1, points2,
                                           method=self._HOMOGRAPHY_METHODS.get(self._homography_method),
                                           ransacReprojThreshold=self._homography_threshold)
-            if M is not None:
-                H = np.eye(3, dtype=np.float64)
-                H[:2, :] = M
-
-        if not self._is_valid_transformation(H):
-            self._logger.warning('estimateAffine2D failed quality check. Falling back to estimateAffinePartial2D')
-            M, mask = cv.estimateAffinePartial2D(points1, points2,
-                                                 method=self._HOMOGRAPHY_METHODS.get(self._homography_method),
-                                                 ransacReprojThreshold=(self._homography_threshold + 1))
             if M is not None:
                 H = np.eye(3, dtype=np.float64)
                 H[:2, :] = M
@@ -100,15 +91,6 @@ class Stitcher:
 
         self._logger.info(f'Transformed image size: {transformed_width:.1f} x {transformed_height:.1f}')
         self._logger.info(f'Scale ratio: {width_ratio:.2f} x {height_ratio:.2f}')
-
-        if width_ratio > 1.8 or height_ratio > 1.8:
-            self._logger.error('Homography rejected: image is stretched too much (>1.8x).')
-            return False
-
-        if width_ratio < 0.5 or height_ratio < 0.5:
-            self._logger.error('Homography rejected: image is collapsed/shrunk (<0.5x).')
-            return False
-
         self._logger.info('FINISH: Check homography')
         return True
 
@@ -227,7 +209,7 @@ class Stitcher:
         self._logger.info('FINISH: Create panorama')
         return panorama
 
-    def stitch_panorama(self, imgs):
+    def stitch_panorama(self, imgs, H_gt=None):
         self._logger.info('START: Stitch full panorama')
 
         if imgs is None or len(imgs) < 2:
@@ -237,7 +219,11 @@ class Stitcher:
         pairwise_homographies = []
         for i in range(len(imgs) - 1):
             self._logger.info(f'PAIR {i} -> {i + 1}')
-            H = self._match_images(imgs[i], imgs[i + 1])
+            if H_gt is not None and i + 1 <= len(H_gt) and H_gt[i] is not None:
+                H = H_gt[i]
+            else:
+                H = self._match_images(imgs[i], imgs[i + 1])
+
             if H is None:
                 self._logger.error(f'Failed for pair {i} -> {i + 1}')
                 return None
@@ -252,5 +238,5 @@ class Stitcher:
 
         return panorama
 
-    def stitch2images(self, img1, img2):
-        return self.stitch_panorama([img1, img2])
+    def stitch2images(self, img1, img2, H_gt=None):
+        return self.stitch_panorama([img1, img2], [H_gt])

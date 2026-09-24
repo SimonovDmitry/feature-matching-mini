@@ -11,69 +11,11 @@ sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402
 from samples.utils import (build_hpatches_benchmark_config, build_hpatches_feature_matcher_config)  # noqa: E402
 
-from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
 from src.matchers import OpenCVMatcher  # noqa: E402
+from stitching.stitcher import Stitcher
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("HPatchesStitching")
-
-HOMOGRAPHY_METHODS = {
-    "ransac": cv.RANSAC,
-    "magsac": cv.USAC_MAGSAC,
-    "lmeds": cv.LMEDS,
-    "rho": cv.RHO
-}
-
-
-def stitch_pair(img_ref, img_tgt, H):
-    if H is None or H.shape != (3, 3):
-        error_img = np.zeros((300, 600, 3), dtype=np.uint8)
-        cv.putText(error_img, "Homography Failed (None)", (30, 160), cv.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-        return error_img
-
-    h1, w1 = img_ref.shape[:2]
-    h2, w2 = img_tgt.shape[:2]
-
-    corners_ref = np.float32([[0, 0], [w1, 0], [w1, h1], [0, h1]]).reshape(-1, 1, 2)
-    corners_tgt = np.float32([[0, 0], [w2, 0], [w2, h2], [0, h2]]).reshape(-1, 2)
-
-    try:
-        corners_ref_trans = cv.perspectiveTransform(corners_ref, H).reshape(-1, 2)
-    except cv.error:
-        error_img = np.zeros((300, 600, 3), dtype=np.uint8)
-        cv.putText(error_img, "Invalid Homography Matrix", (30, 160),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-        return error_img
-
-    all_corners = np.vstack((corners_ref_trans, corners_tgt))
-    x_min, y_min = np.int32(all_corners.min(axis=0) - 0.5)
-    x_max, y_max = np.int32(all_corners.max(axis=0) + 0.5)
-
-    canvas_w = x_max - x_min
-    canvas_h = y_max - y_min
-
-    if canvas_w > 8000 or canvas_h > 8000 or canvas_w <= 0 or canvas_h <= 0:
-        error_img = np.zeros((300, 600, 3), dtype=np.uint8)
-        cv.putText(error_img, "Degenerate Canvas Size", (30, 160),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-        return error_img
-
-    translation = np.array([[1, 0, -x_min], [0, 1, -y_min], [0, 0, 1]], dtype=np.float64)
-
-    H_ref_to_canvas = translation @ H
-    warped_ref = cv.warpPerspective(img_ref, H_ref_to_canvas, (canvas_w, canvas_h))
-    warped_tgt = cv.warpPerspective(img_tgt, translation, (canvas_w, canvas_h))
-
-    mask_ref = (warped_ref > 0).astype(np.uint8)
-    mask_tgt = (warped_tgt > 0).astype(np.uint8)
-    overlap = (mask_ref & mask_tgt)
-    non_overlap = ~overlap
-
-    stitched = (warped_ref * (mask_ref & non_overlap)) + (warped_tgt * (mask_tgt & non_overlap))
-    overlap_blend = cv.addWeighted(warped_ref, 0.5, warped_tgt, 0.5, 0)
-    stitched += overlap_blend * overlap
-
-    return stitched
 
 
 def run_stitching(cli_args):
@@ -91,10 +33,8 @@ def run_stitching(cli_args):
     logger.info(f"Running stitching for combination: {combo_name}")
     logger.info(f"Saving results to: {output_dir.resolve()}")
 
-    feature_matcher = FeatureMatcherCV2(detector=det, descriptor=desc, matcher=mat, logger=logger, config=fm_config)
+    stitcher = Stitcher(detector=det, descriptor=desc, matcher=mat, logger=logger, config=fm_config)
     dm = HPatchesDataManager(logger=logger, config=base_config['dataset'])
-
-    h_method_flag = HOMOGRAPHY_METHODS.get(cli_args.homography_method.lower(), cv.RANSAC)
     total_processed = 0
 
     try:
@@ -115,17 +55,8 @@ def run_stitching(cli_args):
                     img_tgt = target['image']
                     H_gt = target['H']
 
-                    features_ref, features_tgt, correspondences = feature_matcher.match(img_ref, img_tgt)
-                    matches = correspondences['matches']
-
-                    H_pred = None
-                    if len(matches) >= 4:
-                        pts_ref = np.float32([features_ref['kp'][m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
-                        pts_tgt = np.float32([features_tgt['kp'][m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
-                        H_pred, _ = cv.findHomography(pts_ref, pts_tgt, h_method_flag, cli_args.homography_threshold)
-
-                    stitched_pred = stitch_pair(img_ref, img_tgt, H_pred)
-                    stitched_gt = stitch_pair(img_ref, img_tgt, H_gt)
+                    stitched_pred = stitcher.stitch2images(img_ref, img_tgt)
+                    stitched_gt = stitcher.stitch2images(img_ref, img_tgt, H_gt)
 
                     pair_dir = scene_dir / str(i)
                     pair_dir.mkdir(parents=True, exist_ok=True)
@@ -173,7 +104,7 @@ def parse_args():
     task_group.add_argument('-et', '--eval-thresholds', type=float, nargs='+', default=[5.0],
                             help='Pixel thresholds (1.0 3.0 5.0 10.0)')
     task_group.add_argument('-hm', '--homography-method', type=str, default='ransac',
-                            choices=list(HOMOGRAPHY_METHODS.keys()), help='Homography estimation method')
+                            choices=list(Stitcher._HOMOGRAPHY_METHODS.keys()), help='Homography estimation method')
     task_group.add_argument('-ht', '--homography-threshold', type=float, default=3.0,
                             help='RANSAC reprojection threshold')
 
