@@ -32,7 +32,7 @@ class Stitcher:
 
         det = np.linalg.det(H[:2, :2])
         if det < 0.1 or det > 10.0:
-             return False
+            return False
 
         return True
 

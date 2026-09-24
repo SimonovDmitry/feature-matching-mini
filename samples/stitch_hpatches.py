@@ -2,17 +2,15 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-
 import cv2 as cv
-import numpy as np
+
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402
 from samples.utils import (build_hpatches_benchmark_config, build_hpatches_feature_matcher_config)  # noqa: E402
-
 from src.matchers import OpenCVMatcher  # noqa: E402
-from stitching.stitcher import Stitcher
+from stitching.stitcher import Stitcher  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("HPatchesStitching")
