@@ -1,7 +1,7 @@
 import cv2 as cv
 from abc import ABC, abstractmethod
 
-from src.algorithms import ALL_DETECTORS
+from src.algorithms import ALL_DETECTORS, DNN_DETECTORS
 
 
 class Detector(ABC):
@@ -31,6 +31,9 @@ class Detector(ABC):
 
     @staticmethod
     def create(detector_name, logger, config=None):
+        if detector_name in DNN_DETECTORS:
+            return Detector._METHODS["dnnfeatureextractors"](detector_name, logger, config)
+
         if config is None:
             config = {}
 

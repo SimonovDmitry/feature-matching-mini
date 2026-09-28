@@ -1,10 +1,13 @@
 import cv2 as cv
+import numpy as np
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
+from src.backend.inference_api_base import InferenceAPI
+from src.backend.model_loader_base import ModelLoader
 
 
-class DNNFeatureExtractors(Detector, Descriptor, register=False):
+class DNNFeatureExtractors(Detector, Descriptor):
     _model = None
     _is_extracted = False
     _extracted_data = {}
@@ -16,19 +19,47 @@ class DNNFeatureExtractors(Detector, Descriptor, register=False):
         Detector.__init__(self, logger, extractor_name)
         Descriptor.__init__(self, logger, extractor_name)
 
-        device = config.get('device', None)
-        self._nfeatures = config.get('nfeatures', 4096)
-        self._threshold = config.get('threshold', 0.005)
+        backend = config.pop('backend', 'torch').lower()
+        loader_name = f"{backend}_{extractor_name.lower()}"
 
-        from src.utils_torch import get_device
-        self._device = get_device(device)
+        self._loader = ModelLoader.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
+        self._model = self._loader.load()
+        self._inference = InferenceAPI.create(backend=loader_name, logger=logger, model_name=extractor_name,
+                                              model=self._model, config=config)
+
+    def _forward(self, img):
+        if img is None:
+            self._logger.error("Input image is None. Detection aborted.")
+            return {'keypoints': (), 'descriptors': ()}
+
+        self._logger.info(f"Running inference with {self._detector_name}")
+        outputs = self._inference.run(img)
+
+        keypoints = outputs.get('keypoints', np.array([]))
+        descriptors = outputs.get('descriptors', np.array([]))
+        scores = outputs.get('scores', np.array([]))
+
+        extracted = {'keypoints': keypoints,
+                     'descriptors': descriptors,
+                     'scores': scores
+                     }
+        DNNFeatureExtractors._extracted_data = extracted
+
+        if len(keypoints) > 0:
+            self._logger.info(f"{self._detector_name} found {len(kp)} points")
+        else:
+            self._logger.warning(f"{self._detector_name} found 0 points")
+
+        if descriptors is not None:
+            self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
+        else:
+            self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
+
+        return extracted
 
     @property
     def default_norm(self):
         return cv.NORM_L2
-
-    def _forward(self, img):
-        pass
 
     def detect(self, img):
         DNNFeatureExtractors._is_extracted = True

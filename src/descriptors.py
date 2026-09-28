@@ -1,7 +1,7 @@
 import cv2 as cv
 from abc import ABC, abstractmethod
 
-from src.algorithms import ALL_DESCRIPTORS
+from src.algorithms import ALL_DESCRIPTORS, DNN_DESCRIPTORS
 
 
 class Descriptor(ABC):
@@ -30,6 +30,9 @@ class Descriptor(ABC):
 
     @staticmethod
     def create(descriptor_name, logger, config=None):
+        if descriptor_name in DNN_DESCRIPTORS:
+            return Descriptor._METHODS["dnnfeatureextractors"](descriptor_name, logger, config)
+
         if config is None:
             config = {}
 
