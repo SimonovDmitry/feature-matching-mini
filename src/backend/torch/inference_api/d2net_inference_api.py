@@ -3,8 +3,16 @@ import numpy as np
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.torch.inference_api.inference_api import TorchInferenceAPI
 
-from lib.pyramid import process_multiscale  # noqa: E402
-from lib.utils import preprocess_image  # noqa: E402
+
+import sys
+from pathlib import Path
+
+D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "d2net"
+if str(D2_ROOT) not in sys.path:
+    sys.path.insert(0, str(D2_ROOT))
+
+from lib.pyramid import process_multiscale
+from lib.utils import preprocess_image
 
 
 @InferenceAPI.register("d2net_torch")
@@ -19,9 +27,7 @@ class D2NetTorchInferenceApi(TorchInferenceAPI):
 
         return preprocess_image(img_np, preprocessing='caffe')
 
-    def run(self, inputs):
-        img = inputs.get('image')
-
+    def run(self, img):
         try:
             with torch.no_grad():
                 keypoints, scores, descriptors = process_multiscale(

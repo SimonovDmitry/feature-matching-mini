@@ -17,7 +17,6 @@ class TorchInferenceAPI(InferenceAPI):
 
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
-        self._model = model.to(self._device).eval()
 
     def run(self, inputs):
         pass

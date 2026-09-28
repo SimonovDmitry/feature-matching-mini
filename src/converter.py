@@ -41,7 +41,7 @@ class Converter(ABC):
 
     @staticmethod
     def to_numpy(data):
-        from src.utils_torch import tensor_to_numpy
+        from src.backend.torch.utils import tensor_to_numpy
         return tensor_to_numpy(data)
 
 
@@ -63,7 +63,7 @@ class ImageConverter(Converter):
         return img_opencv
 
     def _to_tensor(self, data, device='cpu'):
-        from src.utils_torch import image_to_tensor
+        from src.backend.torch.utils import image_to_tensor
         return image_to_tensor(data, device=device)
 
 
@@ -92,7 +92,7 @@ class FeaturesConverter(Converter):
         return result
 
     def _to_tensor(self, data, device='cpu'):
-        from src.utils_torch import features_to_tensor
+        from src.backend.torch.utils import features_to_tensor
         return features_to_tensor(data, device=device)
 
 
@@ -111,5 +111,5 @@ class MatchesConverter(Converter):
         return {'matches': dmatches}
 
     def _to_tensor(self, data, device='cpu'):
-        from src.utils_torch import matches_to_tensor
+        from src.backend.torch.utils import matches_to_tensor
         return matches_to_tensor(data, device=device)

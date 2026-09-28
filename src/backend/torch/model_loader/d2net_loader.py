@@ -4,7 +4,7 @@ from src.backend.model_loader_base import ModelLoader
 from src.backend.torch.model_loader.model_loader import TorchModelLoader
 from src.backend.torch.model_loader.weights_url import WEIGHTS_URL_MODELS
 
-from lib.model_test import D2Net as D2NetModel  # noqa: E402
+from thirdparty.d2net.lib.model_test import D2Net as D2NetModel
 
 
 @ModelLoader.register("d2net_torch")

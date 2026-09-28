@@ -1,0 +1,1 @@
+from .d2net_inference_api import D2NetTorchInferenceApi

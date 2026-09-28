@@ -1,0 +1,1 @@
+from .d2net_loader import D2NetTorchModelLoader

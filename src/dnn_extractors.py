@@ -3,6 +3,8 @@ import numpy as np
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
+import src.backend.torch.model_loader
+import src.backend.torch.inference_api
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_loader_base import ModelLoader
 
@@ -20,7 +22,7 @@ class DNNFeatureExtractors(Detector, Descriptor):
         Descriptor.__init__(self, logger, extractor_name)
 
         backend = config.pop('backend', 'torch').lower()
-        loader_name = f"{backend}_{extractor_name.lower()}"
+        loader_name = f"{extractor_name.lower()}_{backend}"
 
         self._loader = ModelLoader.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
         self._model = self._loader.load()
@@ -46,12 +48,12 @@ class DNNFeatureExtractors(Detector, Descriptor):
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(keypoints) > 0:
-            self._logger.info(f"{self._detector_name} found {len(kp)} points")
+            self._logger.info(f"{self._detector_name} found {len(keypoints)} points")
         else:
             self._logger.warning(f"{self._detector_name} found 0 points")
 
         if descriptors is not None:
-            self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
+            self._logger.info(f"{self._descriptor_name} computed {len(descriptors)} descriptors")
         else:
             self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
 
