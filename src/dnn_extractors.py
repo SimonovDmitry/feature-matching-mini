@@ -45,9 +45,9 @@ class DNNFeatureExtractors(Detector, Descriptor):
         outputs = self._inference.run(inputs)
         outputs = self._io_adapter.postprocess(outputs)
 
-        keypoints = outputs.get('kp', np.array([]))
-        descriptors = outputs.get('des', np.array([]))
-        scores = outputs.get('sc', np.array([]))
+        keypoints = outputs.get('kp', ())
+        descriptors = outputs.get('des', ())
+        scores = outputs.get('sc', ())
 
         extracted = {'kp': keypoints,
                      'des': descriptors,

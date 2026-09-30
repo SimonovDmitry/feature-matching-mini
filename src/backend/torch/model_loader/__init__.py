@@ -1,1 +1,2 @@
-from .d2net_loader import D2NetTorchModelLoader
+from .d2net import D2NetTorchModelLoader
+from .xfeat import XFeatTorchModelLoader

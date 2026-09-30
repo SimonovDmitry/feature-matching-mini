@@ -1,1 +1,2 @@
-from .d2net_io_adapter import D2NetTorchIOAdapter
+from .d2net import D2NetTorchIOAdapter
+from .xfeat import XFeatTorchIOAdapter

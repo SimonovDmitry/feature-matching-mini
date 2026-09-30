@@ -1,1 +1,2 @@
-from .d2net_inference_api import D2NetTorchInferenceApi
+from .d2net import D2NetTorchInferenceApi
+from .xfeat import XFeatTorchInferenceApi
