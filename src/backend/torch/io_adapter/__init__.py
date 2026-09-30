@@ -1,0 +1,1 @@
+from .d2net_io_adapter import D2NetTorchIOAdapter

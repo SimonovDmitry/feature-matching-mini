@@ -5,6 +5,8 @@ from src.detectors import Detector
 from src.descriptors import Descriptor
 import src.backend.torch.model_loader
 import src.backend.torch.inference_api
+import src.backend.torch.io_adapter
+from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_loader_base import ModelLoader
 
@@ -26,6 +28,8 @@ class DNNFeatureExtractors(Detector, Descriptor):
 
         self._loader = ModelLoader.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
         self._model = self._loader.load()
+        self._io_adapter = IOAdapter.create(backend=loader_name, model_name=extractor_name, config=config,
+                                            logger=logger)
         self._inference = InferenceAPI.create(backend=loader_name, logger=logger, model_name=extractor_name,
                                               model=self._model, config=config)
 
@@ -35,16 +39,19 @@ class DNNFeatureExtractors(Detector, Descriptor):
             return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
-        outputs = self._inference.run(img)
+        inputs = {'image': img}
 
-        keypoints = outputs.get('keypoints', np.array([]))
-        descriptors = outputs.get('descriptors', np.array([]))
-        scores = outputs.get('scores', np.array([]))
+        inputs = self._io_adapter.preprocess(inputs)
+        outputs = self._inference.run(inputs)
+        outputs = self._io_adapter.postprocess(outputs)
 
-        extracted = {'keypoints': keypoints,
-                     'descriptors': descriptors,
-                     'scores': scores
-                     }
+        keypoints = outputs.get('kp', np.array([]))
+        descriptors = outputs.get('des', np.array([]))
+        scores = outputs.get('sc', np.array([]))
+
+        extracted = {'kp': keypoints,
+                     'des': descriptors,
+                     'sc': scores}
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(keypoints) > 0:

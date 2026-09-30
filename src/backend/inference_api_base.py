@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class InferenceAPI(ABC):
-    _BACKENDS = {}
+    _METHODS = {}
 
     def __init__(self, logger, model_name, model, config=None):
         if config is None:
@@ -16,7 +16,7 @@ class InferenceAPI(ABC):
     @classmethod
     def register(cls, name):
         def decorator(subclass):
-            cls._BACKENDS[name.lower()] = subclass
+            cls._METHODS[name.lower()] = subclass
             return subclass
 
         return decorator
@@ -25,11 +25,11 @@ class InferenceAPI(ABC):
     def create(cls, backend, logger, model_name, model, config=None):
         backend_key = backend.lower()
 
-        if backend_key not in cls._BACKENDS:
+        if backend_key not in cls._METHODS:
             raise ValueError(f"Inference backend '{backend}' not found. "
-                             f"Available: {list(cls._BACKENDS.keys())}")
+                             f"Available: {list(cls._METHODS.keys())}")
 
-        return cls._BACKENDS[backend_key](logger, model_name, model, config)
+        return cls._METHODS[backend_key](logger, model_name, model, config)
 
     @abstractmethod
     def run(self, inputs):

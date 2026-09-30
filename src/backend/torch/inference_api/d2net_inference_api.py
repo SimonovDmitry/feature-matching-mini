@@ -1,32 +1,19 @@
+import sys
+from pathlib import Path
 import torch
 import numpy as np
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.torch.inference_api.inference_api import TorchInferenceAPI
-
-
-import sys
-from pathlib import Path
 
 D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "d2net"
 if str(D2_ROOT) not in sys.path:
     sys.path.insert(0, str(D2_ROOT))
 
 from lib.pyramid import process_multiscale
-from lib.utils import preprocess_image
 
 
 @InferenceAPI.register("d2net_torch")
 class D2NetTorchInferenceApi(TorchInferenceAPI):
-    def _preprocess(self, img):
-        if torch.is_tensor(img):
-            img_np = img.squeeze(0).cpu().detach().numpy().transpose(1, 2, 0)
-            if img_np.max() <= 1.0:
-                img_np = (img_np * 255)
-        else:
-            img_np = np.array(img)
-
-        return preprocess_image(img_np, preprocessing='caffe')
-
     def run(self, img):
         try:
             with torch.no_grad():
@@ -50,13 +37,13 @@ class D2NetTorchInferenceApi(TorchInferenceAPI):
                 keypoints = keypoints[:, [1, 0]].astype(np.float32)
 
                 return {
-                    'keypoints': keypoints,
-                    'scores': scores,
-                    'descriptors': descriptors
+                    'kp': keypoints,
+                    'des': descriptors,
+                    'sc': scores
                 }
             else:
-                return {'keypoints': (), 'descriptors': ()}
+                return {'kp': (), 'des': ()}
 
         except Exception as e:
             self._logger.error(f"D2-Net inference error: {e}")
-            return {'keypoints': (), 'descriptors': ()}
+            return {'kp': (), 'des': ()}

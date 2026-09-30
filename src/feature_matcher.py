@@ -1,7 +1,6 @@
 import cv2 as cv
 import numpy as np
 
-from src.preprocessor import Preprocessor
 from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY, DNN_MATCHERS,
                             OPENCV_MATCHERS, DNN_PIPELINES)
 
@@ -97,29 +96,29 @@ class FeatureMatcherCV2:
                                        config=self._descriptor_config)
         matcher = Matcher.create(matcher_name=self._matcher, descriptor_name=descriptor,
                                  logger=self._logger, config=self._matcher_config)
-        preprocessor = Preprocessor(config=self._preprocessor_config, logger=self._logger)
-
-        img0 = preprocessor.prepare_image(img0, from_algo='opencv', to_algo=self._detector)
-        img1 = preprocessor.prepare_image(img1, from_algo='opencv', to_algo=self._detector)
+        # preprocessor = Preprocessor(config=self._preprocessor_config, logger=self._logger)
+        #
+        # img0 = preprocessor.prepare_image(img0, from_algo='opencv', to_algo=self._detector)
+        # img1 = preprocessor.prepare_image(img1, from_algo='opencv', to_algo=self._detector)
 
         features0 = detector.detect(img0)
-        features0 = preprocessor.prepare_features(features0, from_algo=self._detector, to_algo=self._descriptor)
+        # features0 = preprocessor.prepare_features(features0, from_algo=self._detector, to_algo=self._descriptor)
         features0 = descriptor.compute(img0, features0)
 
         features1 = detector.detect(img1)
-        features1 = preprocessor.prepare_features(features1, from_algo=self._detector, to_algo=self._descriptor)
+        # features1 = preprocessor.prepare_features(features1, from_algo=self._detector, to_algo=self._descriptor)
         features1 = descriptor.compute(img1, features1)
 
         if not self._has_keypoints(features0) or not self._has_keypoints(features1):
             self._logger.warning("Failed to detect key points")
 
-        features0 = preprocessor.prepare_features(features0, from_algo=self._descriptor, to_algo=self._matcher)
-        features1 = preprocessor.prepare_features(features1, from_algo=self._descriptor, to_algo=self._matcher)
+        # features0 = preprocessor.prepare_features(features0, from_algo=self._descriptor, to_algo=self._matcher)
+        # features1 = preprocessor.prepare_features(features1, from_algo=self._descriptor, to_algo=self._matcher)
 
         correspondences = matcher.match(features0, features1)
-        correspondences = preprocessor.prepare_matches(correspondences, from_algo=self._matcher, to_algo='opencv')
-
-        features0 = preprocessor.prepare_features(features0, from_algo=self._matcher, to_algo='opencv')
-        features1 = preprocessor.prepare_features(features1, from_algo=self._matcher, to_algo='opencv')
+        # correspondences = preprocessor.prepare_matches(correspondences, from_algo=self._matcher, to_algo='opencv')
+        #
+        # features0 = preprocessor.prepare_features(features0, from_algo=self._matcher, to_algo='opencv')
+        # features1 = preprocessor.prepare_features(features1, from_algo=self._matcher, to_algo='opencv')
 
         return features0, features1, correspondences

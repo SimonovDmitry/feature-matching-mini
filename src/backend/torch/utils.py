@@ -82,6 +82,30 @@ def features_to_tensor(data, device='cpu'):
     return result
 
 
+def features_to_cv(data):
+    keypoints = data.get('keypoints')
+    descriptors = data.get('descriptors')
+
+    keypoints_np = keypoints.detach().cpu().numpy()
+
+    if keypoints_np.ndim == 3:
+        keypoints_np = keypoints_np.reshape(-1, 2)
+
+    keypoints_np = keypoints_np.astype(np.float32)
+
+    keypoints = cv.KeyPoint_convert(keypoints_np)
+    descriptors = descriptors.detach().cpu().numpy()
+
+    result = {'kp': keypoints, 'des': descriptors}
+
+    if 'width' in data:
+        result['width'] = data['width']
+    if 'height' in data:
+        result['height'] = data['height']
+
+    return result
+
+
 def matches_to_tensor(data, device='cpu'):
     dmatches = data.get('matches')
 
@@ -100,3 +124,17 @@ def matches_to_tensor(data, device='cpu'):
             dtype=torch.long,
         )
     }
+
+
+def matches_to_cv(data):
+    matches = data.get('matches')
+    matches_np = matches.detach().cpu().numpy()
+
+    dmatches = []
+    for query_idx, train_idx in matches_np:
+        dmatch = cv.DMatch()
+        dmatch.queryIdx = int(query_idx)
+        dmatch.trainIdx = int(train_idx)
+        dmatches.append(dmatch)
+
+    return {'matches': dmatches}
