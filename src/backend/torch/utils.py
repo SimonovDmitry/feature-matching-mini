@@ -41,6 +41,16 @@ def tensor_to_numpy(data, dtype=None):
     return array
 
 
+def to_numpy_bgr(data, input_type='numpy'):
+    if input_type == 'numpy':
+        if data.ndim == 2:
+            return cv.cvtColor(data, cv.COLOR_GRAY2BGR)
+
+        return cv.cvtColor(data, cv.COLOR_RGB2BGR)
+    else:
+        return image_to_cv(data)
+
+
 def image_to_tensor(data, device='cpu'):
     if data.ndim == 2:
         img_rgb = cv.cvtColor(data, cv.COLOR_GRAY2RGB)
@@ -55,6 +65,23 @@ def image_to_tensor(data, device='cpu'):
         tensor = tensor.permute(2, 0, 1)
 
     return (tensor / 255.0).to(device)
+
+
+def image_to_cv(data):
+    img_numpy = data.detach().cpu().numpy()
+    if img_numpy.ndim == 2:
+        img_numpy = img_numpy[:, :, np.newaxis]
+    if img_numpy.shape[0] in [1, 3]:
+        img_numpy = np.transpose(img_numpy, (1, 2, 0))
+    if img_numpy.max() <= 1.0:
+        img_numpy = img_numpy * 255
+    img_numpy = img_numpy.astype(np.uint8)
+    if img_numpy.shape[2] == 3:
+        img_opencv = cv.cvtColor(img_numpy, cv.COLOR_RGB2BGR)
+    else:
+        img_opencv = img_numpy
+
+    return img_opencv
 
 
 def features_to_tensor(data, device='cpu'):
