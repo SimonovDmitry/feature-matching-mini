@@ -12,13 +12,9 @@ class XFeatTorchInferenceApi(TorchInferenceAPI):
             with torch.no_grad():
                 output = self._model.detectAndCompute(img, top_k=self._nfeatures)[0]
 
-            raw_kp = output['keypoints'].cpu()
-            raw_des = output['descriptors'].cpu()
-            raw_scores = output['scores'].cpu()
-
-            return {'kp': raw_kp,
-                    'des': raw_des,
-                    'sc': raw_scores}
+            return {'kp': output['keypoints'],
+                    'des': output['descriptors'],
+                    'sc': output['scores']}
 
         except Exception as e:
             self._logger.warning(f"XFeat inference failed (likely 0 points): {e}")

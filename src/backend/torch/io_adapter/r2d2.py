@@ -30,4 +30,7 @@ class R2D2TorchIOAdapter(TorchIOAdapter):
         return {'image': input_tensor, **inputs}
 
     def postprocess(self, outputs):
+        xys = outputs.get('kp')
+        xys = xys[:, :2]
+        outputs['kp'] = xys
         return features_to_cv(outputs)

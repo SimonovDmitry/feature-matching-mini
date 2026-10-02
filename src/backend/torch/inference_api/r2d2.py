@@ -22,7 +22,7 @@ class R2D2TorchInferenceApi(TorchInferenceAPI):
             with torch.no_grad():
                 xys, desc, scores = extract_multiscale(model, img, nms)
 
-            return {'kp': xys[:, :2].cpu(),
+            return {'kp': xys.cpu(),
                     'des': desc.cpu(),
                     'sc': scores.cpu()}
 

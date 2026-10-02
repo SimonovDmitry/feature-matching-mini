@@ -36,8 +36,7 @@ class D2NetTorchIOAdapter(TorchIOAdapter):
         descriptors = outputs.get('des')
         scores = outputs.get('sc')
 
-        keypoints_np = keypoints
-
+        keypoints_np = keypoints[:, [1, 0]].astype(np.float32)
         if keypoints_np.ndim == 3:
             keypoints_np = keypoints_np.reshape(-1, 2)
 

@@ -23,7 +23,6 @@ class D2NetTorchInferenceApi(TorchInferenceAPI):
                     torch.from_numpy(img).float().unsqueeze(0).to(self._device),
                     self._model, scales=[1])
 
-            keypoints = keypoints[:, [1, 0]].astype(np.float32)
             return {'kp': keypoints, 'des': descriptors, 'sc': scores}
 
         except Exception as e:
