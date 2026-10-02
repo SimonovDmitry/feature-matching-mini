@@ -26,8 +26,12 @@ class DNNFeatureExtractors(Detector, Descriptor):
         backend = config.pop('backend', 'torch').lower()
         loader_name = f"{extractor_name.lower()}_{backend}"
 
+        self._nfeatures = config.get('nfeatures', 4096)
+        self._threshold = config.get('threshold', 0.005)
+
         self._loader = ModelLoader.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
-        self._model = self._loader.load()
+        self._model_components = self._loader.load()
+        self._model = self._model_components.get('model')
         self._io_adapter = IOAdapter.create(backend=loader_name, model_name=extractor_name, config=config,
                                             logger=logger)
         self._inference = InferenceAPI.create(backend=loader_name, logger=logger, model_name=extractor_name,
@@ -36,10 +40,10 @@ class DNNFeatureExtractors(Detector, Descriptor):
     def _forward(self, img):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return {'keypoints': (), 'descriptors': ()}
+            return {'kp': (), 'des': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
-        inputs = {'image': img}
+        inputs = {'image': img, **self._model_components}
 
         inputs = self._io_adapter.preprocess(inputs)
         outputs = self._inference.run(inputs)
@@ -49,9 +53,17 @@ class DNNFeatureExtractors(Detector, Descriptor):
         descriptors = outputs.get('des', ())
         scores = outputs.get('sc', ())
 
-        extracted = {'kp': keypoints,
-                     'des': descriptors,
-                     'sc': scores}
+        mask = scores > self._threshold
+        kp = keypoints[mask]
+        des = descriptors[mask]
+        sc = scores[mask]
+
+        if self._nfeatures is not None and len(kp) > self._nfeatures:
+            indices = np.argsort(sc)[::-1][:self._nfeatures]
+            kp = kp[indices]
+            des = des[indices]
+
+        extracted = {'kp': kp, 'des': des, 'sc': sc}
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(keypoints) > 0:

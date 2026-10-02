@@ -7,7 +7,6 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
-from src.super_point import SuperPoint  # noqa: F401
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
 from src.lightglue_matcher import LightGlue  # noqa: F401
@@ -58,7 +57,10 @@ class FeatureMatcherCV2:
         if self._detector in DNN_PIPELINES:
             return True
 
-        kp = features.get('kp') or features.get('keypoints')
+        kp = features.get('kp')
+        if kp is None:
+            kp = features.get('keypoints')
+
         if kp is None:
             return False
         if isinstance(kp, (list, tuple)):

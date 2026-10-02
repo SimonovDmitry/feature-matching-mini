@@ -17,4 +17,4 @@ class XFeatTorchModelLoader(TorchModelLoader):
         self._model = XFeatModel().to(self._device)
         self._model.dev = self._device
         self._model.eval()
-        return self._model
+        return {'model': self._model}

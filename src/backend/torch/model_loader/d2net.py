@@ -26,4 +26,4 @@ class D2NetTorchModelLoader(TorchModelLoader):
         self._model = D2NetModel(model_file=str(checkpoint), use_relu=use_relu, use_cuda=use_cuda)
         self._model = self._model.to(self._device)
         self._model.eval()
-        return self._model
+        return {'model': self._model}

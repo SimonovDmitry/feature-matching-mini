@@ -97,8 +97,8 @@ def features_to_tensor(data, device='cpu'):
         descriptors = np.asarray(descriptors)
 
     result = {
-        'keypoints': numpy_to_tensor(keypoints, device=device),
-        'descriptors': numpy_to_tensor(descriptors, device=device),
+        'kp': numpy_to_tensor(keypoints, device=device),
+        'des': numpy_to_tensor(descriptors, device=device),
     }
 
     if 'width' in data:
@@ -110,9 +110,9 @@ def features_to_tensor(data, device='cpu'):
 
 
 def features_to_cv(data):
-    keypoints = data.get('keypoints')
-    descriptors = data.get('descriptors')
-
+    keypoints = data.get('kp')
+    descriptors = data.get('des')
+    scors = data.get('sc')
     keypoints_np = keypoints.detach().cpu().numpy()
 
     if keypoints_np.ndim == 3:
@@ -121,9 +121,11 @@ def features_to_cv(data):
     keypoints_np = keypoints_np.astype(np.float32)
 
     keypoints = cv.KeyPoint_convert(keypoints_np)
+    keypoints = np.array(keypoints, dtype=object)
     descriptors = descriptors.detach().cpu().numpy()
+    scors = scors.detach().cpu().numpy()
 
-    result = {'kp': keypoints, 'des': descriptors}
+    result = {'kp': keypoints, 'des': descriptors, 'sc': scors}
 
     if 'width' in data:
         result['width'] = data['width']

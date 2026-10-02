@@ -3,7 +3,7 @@ import torch
 
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.torch.io_adapter.io_adapter import TorchIOAdapter
-from src.backend.torch.utils import image_to_tensor, to_numpy_bgr, features_to_cv
+from src.backend.torch.utils import to_numpy_bgr, features_to_cv
 
 
 @IOAdapter.register("xfeat_torch")
@@ -15,8 +15,8 @@ class XFeatTorchIOAdapter(TorchIOAdapter):
         img_rgb = cv.cvtColor(img_np, cv.COLOR_BGR2RGB)
 
         input_tensor = torch.from_numpy(img_rgb).permute(2, 0, 1).float().unsqueeze(0)
-        input_tensor = input_tensor.to(self._device) / 255.0
-        return input_tensor
+        img = input_tensor.to(self._device) / 255.0
+        return {'image': img}
 
     def postprocess(self, outputs):
         return features_to_cv(outputs)

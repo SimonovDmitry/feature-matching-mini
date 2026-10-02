@@ -14,35 +14,17 @@ from lib.pyramid import process_multiscale
 
 @InferenceAPI.register("d2net_torch")
 class D2NetTorchInferenceApi(TorchInferenceAPI):
-    def run(self, img):
+    def run(self, inputs):
+        img = inputs.get("image")
+
         try:
             with torch.no_grad():
                 keypoints, scores, descriptors = process_multiscale(
                     torch.from_numpy(img).float().unsqueeze(0).to(self._device),
                     self._model, scales=[1])
 
-            mask = scores > self._threshold
-            kp = keypoints[mask]
-            des = descriptors[mask]
-            sc = scores[mask]
-
-            if self._nfeatures is not None and len(kp) > self._nfeatures:
-                top_indices = np.argsort(sc)[::-1][:self._nfeatures]
-
-                keypoints = kp[top_indices]
-                descriptors = des[top_indices]
-                scores = sc[top_indices]
-
-            if len(kp) > 0:
-                keypoints = keypoints[:, [1, 0]].astype(np.float32)
-
-                return {
-                    'kp': keypoints,
-                    'des': descriptors,
-                    'sc': scores
-                }
-            else:
-                return {'kp': (), 'des': ()}
+            keypoints = keypoints[:, [1, 0]].astype(np.float32)
+            return {'kp': keypoints, 'des': descriptors, 'sc': scores}
 
         except Exception as e:
             self._logger.error(f"D2-Net inference error: {e}")

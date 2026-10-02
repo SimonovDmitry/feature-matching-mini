@@ -6,7 +6,7 @@ import numpy as np
 
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.torch.io_adapter.io_adapter import TorchIOAdapter
-from src.backend.torch.utils import image_to_tensor
+from src.backend.torch.utils import image_to_tensor, features_to_cv
 
 D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "d2net"
 if str(D2_ROOT) not in sys.path:
@@ -28,11 +28,13 @@ class D2NetTorchIOAdapter(TorchIOAdapter):
         else:
             img_np = np.array(img)
 
-        return preprocess_image(img_np, preprocessing='caffe')
+        img = preprocess_image(img_np, preprocessing='caffe')
+        return {'image': img}
 
     def postprocess(self, outputs):
         keypoints = outputs.get('kp')
         descriptors = outputs.get('des')
+        scores = outputs.get('sc')
 
         keypoints_np = keypoints
 
@@ -42,7 +44,8 @@ class D2NetTorchIOAdapter(TorchIOAdapter):
         keypoints_np = keypoints_np.astype(np.float32)
 
         keypoints = cv.KeyPoint_convert(keypoints_np)
+        keypoints = np.asarray(keypoints)
         descriptors = descriptors
 
-        result = {'kp': keypoints, 'des': descriptors}
+        result = {'kp': keypoints, 'des': descriptors, 'sc': scores}
         return result
