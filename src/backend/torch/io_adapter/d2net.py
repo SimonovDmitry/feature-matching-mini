@@ -18,7 +18,7 @@ from lib.utils import preprocess_image
 @IOAdapter.register("d2net_torch")
 class D2NetTorchIOAdapter(TorchIOAdapter):
     def preprocess(self, inputs):
-        img = inputs.get('image')
+        img = inputs.pop('image')
         img = image_to_tensor(img)
 
         if torch.is_tensor(img):
@@ -29,7 +29,7 @@ class D2NetTorchIOAdapter(TorchIOAdapter):
             img_np = np.array(img)
 
         img = preprocess_image(img_np, preprocessing='caffe')
-        return {'image': img}
+        return {'image': img, **inputs}
 
     def postprocess(self, outputs):
         keypoints = outputs.get('kp')
