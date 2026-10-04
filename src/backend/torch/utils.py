@@ -96,9 +96,16 @@ def features_to_tensor(data, device='cpu'):
     else:
         descriptors = np.asarray(descriptors)
 
+    scores = data.get('sc')
+    if scores is None:
+        scores = np.empty((len(keypoints),), dtype=np.float32)
+    else:
+        scores = np.asarray(scores)
+
     result = {
         'kp': numpy_to_tensor(keypoints, device=device),
         'des': numpy_to_tensor(descriptors, device=device),
+        'sc': numpy_to_tensor(scores, device=device)
     }
 
     if 'width' in data:

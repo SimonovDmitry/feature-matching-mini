@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import cv2 as cv
 
-from src.algorithms import ALL_MATCHERS
+from src.algorithms import ALL_MATCHERS, DNN_MATCHERS
 
 
 class Matcher(ABC):
@@ -11,9 +11,9 @@ class Matcher(ABC):
         if config is None:
             config = {}
 
-        self.matcher_name = matcher_name
-        self.descriptor_name = descriptor_name
-        self.logger = logger
+        self._matcher_name = matcher_name
+        self._descriptor_name = descriptor_name
+        self._logger = logger
 
     def __init_subclass__(cls, register=True, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -30,8 +30,11 @@ class Matcher(ABC):
 
     @staticmethod
     def create(matcher_name, logger, config, descriptor_name):
-        matcher_class_name = Matcher._METHODS.get(matcher_name.lower())
-        if not matcher_class_name:
+        matcher_name = matcher_name.lower()
+        if matcher_name in DNN_MATCHERS:
+            return Matcher._METHODS['dnn'](matcher_name, logger, config, descriptor_name)
+
+        if not Matcher._METHODS.get(matcher_name):
             raise ValueError(f"Matcher '{matcher_name}' not found."
                              f" Available: {list(Matcher._METHODS.keys())}")
 

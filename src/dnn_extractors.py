@@ -64,6 +64,11 @@ class DNNFeatureExtractors(Detector, Descriptor):
             des = des[indices]
 
         extracted = {'kp': kp, 'des': des, 'sc': sc}
+        if outputs['height'] is not None:
+            extracted['height'] = outputs['height']
+        if outputs['width'] is not None:
+            extracted['width'] = outputs['width']
+
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(keypoints) > 0:

@@ -7,13 +7,13 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
+from src.dnn_matchers import DNNMatcher
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
 from src.lightglue_matcher import LightGlue  # noqa: F401
 from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
 from src.tfeat_descriptor import TFeat  # noqa: F401
 from src.hardnet_descriptor import HardNet  # noqa: F401
-from src.super_glue import SuperGlueMatcher  # noqa: F401
 from src.loftr import LoFTR  # noqa: F401
 from src.roma import RoMa  # noqa: F401
 
