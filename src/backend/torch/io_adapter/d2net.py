@@ -32,9 +32,9 @@ class D2NetTorchIOAdapter(TorchIOAdapter):
         return {'image': img, **inputs}
 
     def postprocess(self, outputs):
-        keypoints = outputs.get('kp')
-        descriptors = outputs.get('des')
-        scores = outputs.get('sc')
+        keypoints = outputs.get('keypoints')
+        descriptors = outputs.get('descriptors')
+        scores = outputs.get('scores')
 
         keypoints_np = keypoints[:, [1, 0]].astype(np.float32)
         if keypoints_np.ndim == 3:
@@ -46,5 +46,5 @@ class D2NetTorchIOAdapter(TorchIOAdapter):
         keypoints = np.asarray(keypoints)
         descriptors = descriptors
 
-        result = {'kp': keypoints, 'des': descriptors, 'sc': scores}
+        result = {'keypoints': keypoints, 'descriptors': descriptors, 'scores': scores}
         return result

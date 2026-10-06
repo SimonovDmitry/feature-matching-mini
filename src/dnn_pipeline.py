@@ -44,7 +44,7 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
 
         if img0 is None or img1 is None:
             self._logger.error("Input image is None")
-            return {'matches': (), 'sc': ()}
+            return {'matches': (), 'scores': ()}
 
         inputs = {'image0': img0, 'image1': img1}
         inputs = self._io_adapter.preprocess(inputs)
@@ -52,13 +52,13 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
         outputs = self._io_adapter.postprocess(outputs)
 
         matches = outputs.get('matches')
-        scores = outputs.get('sc')
+        scores = outputs.get('scores')
         keypoints0 = outputs.get('keypoints0')
         keypoints1 = outputs.get('keypoints1')
 
         if matches is None or scores is None:
             self._logger.warning(f"{self._detector_name}: invalid matcher output")
-            return {'matches': (), 'sc': ()}
+            return {'matches': (), 'scores': ()}
 
         mask = scores > self._threshold
         matches = matches[mask]
@@ -72,7 +72,7 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
         extracted = {'keypoints0': keypoints0,
                      'keypoints1': keypoints1,
                      'matches': matches,
-                     'sc': scores}
+                     'scores': scores}
         DNNPipeline._extracted_data = extracted
 
         if len(matches) > 0:

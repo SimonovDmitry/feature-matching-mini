@@ -69,10 +69,10 @@ class OpenCVDescriptor(Descriptor, register=False):
     def compute(self, img, features):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return {'kp': (), 'des': ()}
+            return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Computing {self._descriptor_name} descriptors")
-        kp, des = self._extractor.compute(img, features.get('kp'))
+        kp, des = self._extractor.compute(img, features.get('keypoints'))
 
         if des is not None and self._nfeatures is not None and len(des) > self._nfeatures:
             kp = kp[:self._nfeatures]
@@ -82,7 +82,7 @@ class OpenCVDescriptor(Descriptor, register=False):
             self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
         else:
             self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
-        return {'kp': kp, 'des': des}
+        return {'keypoints': kp, 'descriptors': des}
 
 
 class SIFTDescriptor(OpenCVDescriptor):

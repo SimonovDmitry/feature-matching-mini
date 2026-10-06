@@ -20,9 +20,9 @@ from lib.utils import preprocess_image
 class SuperGlueTorchIOAdapter(TorchIOAdapter):
     def _preprocess_features(self, inputs):
         inputs = features_to_tensor(inputs)
-        kps = inputs['kp']
-        des = inputs['des']
-        scores = inputs['sc']
+        kps = inputs['keypoints']
+        des = inputs['descriptors']
+        scores = inputs['scores']
 
         if not torch.is_tensor(kps):
             kps = torch.from_numpy(kps).float()
@@ -34,9 +34,9 @@ class SuperGlueTorchIOAdapter(TorchIOAdapter):
         des = functional.normalize(des, p=2, dim=1)
 
         data = {
-            'kp': kps.unsqueeze(0).to(self._device),
-            'des': des.T.unsqueeze(0).to(self._device),
-            'sc': scores.unsqueeze(0).to(self._device),
+            'keypoints': kps.unsqueeze(0).to(self._device),
+            'descriptors': des.T.unsqueeze(0).to(self._device),
+            'scores': scores.unsqueeze(0).to(self._device),
             'image': torch.empty(1, 1, inputs['height'], inputs['width']).to(self._device)
         }
         return data
@@ -49,20 +49,20 @@ class SuperGlueTorchIOAdapter(TorchIOAdapter):
         features1 = self._preprocess_features(features1)
 
         input_dict = {
-            'keypoints0': features0['kp'],
-            'keypoints1': features1['kp'],
-            'descriptors0': features0['des'],
-            'descriptors1': features1['des'],
-            'scores0': features0['sc'],
-            'scores1': features1['sc'],
+            'keypoints0': features0['keypoints'],
+            'keypoints1': features1['keypoints'],
+            'descriptors0': features0['descriptors'],
+            'descriptors1': features1['descriptors'],
+            'scores0': features0['scores'],
+            'scores1': features1['scores'],
             'image0': features0['image'],
             'image1': features1['image'],
         }
         return input_dict
 
     def postprocess(self, outputs):
-        matches0 = outputs['matches']
-        confidences = outputs['matching_scores']
+        matches0 = outputs['matches'][0].cpu().numpy()
+        confidences = outputs['scores'][0].cpu().numpy()
 
         num_keypoints1 = outputs['keypoints1'].shape[1]
         valid = (matches0 > -1) & (matches0 < num_keypoints1)

@@ -22,9 +22,9 @@ class R2D2TorchInferenceApi(TorchInferenceAPI):
             with torch.no_grad():
                 xys, desc, scores = extract_multiscale(model, img, nms)
 
-            return {'kp': xys.cpu(),
-                    'des': desc.cpu(),
-                    'sc': scores.cpu()}
+            return {'keypoints': xys.cpu(),
+                    'descriptors': desc.cpu(),
+                    'scores': scores.cpu()}
 
         except Exception as e:
             self._logger.warning(f"R2D2 inference failed (likely 0 points): {e}")

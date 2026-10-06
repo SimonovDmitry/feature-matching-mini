@@ -40,7 +40,7 @@ class DNNFeatureExtractors(Detector, Descriptor):
     def _forward(self, img):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return {'kp': (), 'des': ()}
+            return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
         inputs = {'image': img, **self._model_components}
@@ -49,9 +49,9 @@ class DNNFeatureExtractors(Detector, Descriptor):
         outputs = self._inference.run(inputs)
         outputs = self._io_adapter.postprocess(outputs)
 
-        keypoints = outputs.get('kp', ())
-        descriptors = outputs.get('des', ())
-        scores = outputs.get('sc', ())
+        keypoints = outputs.get('keypoints', ())
+        descriptors = outputs.get('descriptors', ())
+        scores = outputs.get('scores', ())
 
         mask = scores > self._threshold
         kp = keypoints[mask]
@@ -63,10 +63,10 @@ class DNNFeatureExtractors(Detector, Descriptor):
             kp = kp[indices]
             des = des[indices]
 
-        extracted = {'kp': kp, 'des': des, 'sc': sc}
-        if outputs['height'] is not None:
+        extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc}
+        if 'height' in outputs:
             extracted['height'] = outputs['height']
-        if outputs['width'] is not None:
+        if 'width' in outputs:
             extracted['width'] = outputs['width']
 
         DNNFeatureExtractors._extracted_data = extracted

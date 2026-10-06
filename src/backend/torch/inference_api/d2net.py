@@ -23,8 +23,8 @@ class D2NetTorchInferenceApi(TorchInferenceAPI):
                     torch.from_numpy(img).float().unsqueeze(0).to(self._device),
                     self._model, scales=[1])
 
-            return {'kp': keypoints, 'des': descriptors, 'sc': scores}
+            return {'keypoints': keypoints, 'descriptors': descriptors, 'scores': scores}
 
         except Exception as e:
             self._logger.error(f"D2-Net inference error: {e}")
-            return {'kp': (), 'des': ()}
+            return {'keypoints': (), 'descriptors': ()}

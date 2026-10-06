@@ -13,7 +13,6 @@ from src.lightglue_matcher import LightGlue  # noqa: F401
 from src.lightglue_pipeline import LightGlueFeatureExtractor  # noqa: F401
 from src.tfeat_descriptor import TFeat  # noqa: F401
 from src.hardnet_descriptor import HardNet  # noqa: F401
-from src.loftr import LoFTR  # noqa: F401
 from src.roma import RoMa  # noqa: F401
 
 
@@ -73,12 +72,15 @@ class FeatureMatcherCV2:
         matches = correspondences.get('matches')
         if matches is None or len(matches) == 0:
             self._logger.warning("No matches found to visualize.")
-            return cv.drawMatches(img0, features0.get('kp'), img1, features1.get('kp'),
+            return cv.drawMatches(img0, features0.get('keypoints'), img1, features1.get('keypoints'),
                                   [], None, **draw_params)
 
         if 'keypoints0' in correspondences and 'keypoints1' in correspondences:
             kp0 = correspondences['keypoints0']
             kp1 = correspondences['keypoints1']
+        elif 'keypoints' in features0 and 'keypoints' in features1:
+            kp0 = features0.get('keypoints')
+            kp1 = features1.get('keypoints')
         elif 'kp' in features0 and 'kp' in features1:
             kp0 = features0.get('kp')
             kp1 = features1.get('kp')

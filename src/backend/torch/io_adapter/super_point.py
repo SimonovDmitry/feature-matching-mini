@@ -24,10 +24,7 @@ class SuperPointTorchIOAdapter(TorchIOAdapter):
         height, width = outputs.get('height'), outputs.get('width')
         processed = processor.post_process_keypoint_detection(inference_outputs, [[height, width]])[0]
 
-        raw_kp = processed['keypoints']
-        raw_scores = processed['scores']
-        raw_des = processed['descriptors']
-        outputs['kp'] = raw_kp
-        outputs['des'] = raw_des
-        outputs['sc'] = raw_scores
+        outputs['keypoints']  = processed['keypoints']
+        outputs['descriptors'] = processed['descriptors']
+        outputs['scores'] = processed['scores']
         return features_to_cv(outputs)

@@ -16,4 +16,4 @@ class SuperPointTorchInferenceApi(TorchInferenceAPI):
 
         except Exception as e:
             self._logger.error(f"Super Point inference error: {e}")
-            return {'kp': (), 'des': ()}
+            return {'keypoints': (), 'descriptors': ()}

@@ -14,5 +14,5 @@ class LoFTRTorchInferenceApi(TorchInferenceAPI):
             return inputs
 
         except Exception as e:
-            self._logger.error(f"D2-Net inference error: {e}")
-            return {'kp': (), 'des': (), 'matches': ()}
+            self._logger.error(f"LoFTR inference error: {e}")
+            return {'keypoints': (), 'descriptors': (), 'matches': ()}

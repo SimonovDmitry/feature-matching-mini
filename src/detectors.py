@@ -61,7 +61,7 @@ class OpenCVDetector(Detector, register=False):
     def detect(self, img):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return {'kp': ()}
+            return {'keypoints': ()}
 
         self._logger.info(f"Detecting keypoints with {self._detector_name}")
         kp = self._extractor.detect(img, None)
@@ -73,7 +73,7 @@ class OpenCVDetector(Detector, register=False):
             self._logger.info(f"{self._detector_name} found {len(kp)} points")
         else:
             self._logger.warning(f"{self._detector_name} found 0 points")
-        return {'kp': kp}
+        return {'keypoints': kp}
 
 
 class SIFTDetector(OpenCVDetector):

@@ -85,27 +85,27 @@ def image_to_cv(data):
 
 
 def features_to_tensor(data, device='cpu'):
-    keypoints = cv.KeyPoint_convert(data.get('kp'))
+    keypoints = cv.KeyPoint_convert(data.get('keypoints'))
     keypoints = np.asarray(keypoints, dtype=np.float32)
     if keypoints.size == 0:
         keypoints = np.empty((0, 2), dtype=np.float32)
 
-    descriptors = data.get('des')
+    descriptors = data.get('descriptors')
     if descriptors is None:
         descriptors = np.empty((len(keypoints), 0), dtype=np.float32)
     else:
         descriptors = np.asarray(descriptors)
 
-    scores = data.get('sc')
+    scores = data.get('scores')
     if scores is None:
         scores = np.empty((len(keypoints),), dtype=np.float32)
     else:
         scores = np.asarray(scores)
 
     result = {
-        'kp': numpy_to_tensor(keypoints, device=device),
-        'des': numpy_to_tensor(descriptors, device=device),
-        'sc': numpy_to_tensor(scores, device=device)
+        'keypoints': numpy_to_tensor(keypoints, device=device),
+        'descriptors': numpy_to_tensor(descriptors, device=device),
+        'scores': numpy_to_tensor(scores, device=device)
     }
 
     if 'width' in data:
@@ -117,9 +117,9 @@ def features_to_tensor(data, device='cpu'):
 
 
 def features_to_cv(data):
-    keypoints = data.get('kp')
-    descriptors = data.get('des')
-    scores = data.get('sc')
+    keypoints = data.get('keypoints')
+    descriptors = data.get('descriptors')
+    scores = data.get('scores')
 
     if keypoints is not None:
         keypoints_np = keypoints.detach().cpu().numpy()
@@ -137,7 +137,7 @@ def features_to_cv(data):
     if scores is not None:
         scores = scores.detach().cpu().numpy()
 
-    result = {'kp': keypoints, 'des': descriptors, 'sc': scores}
+    result = {'keypoints': keypoints, 'descriptors': descriptors, 'scores': scores}
 
     if 'width' in data:
         result['width'] = data['width']
@@ -160,7 +160,7 @@ def matches_to_tensor(data, device='cpu'):
 
 def matches_to_cv(data):
     matches = data.get('matches')
-    scores = data.get('sc')
+    scores = data.get('scores')
 
     if matches is not None:
         matches_np = matches.detach().cpu().numpy()
@@ -177,10 +177,10 @@ def matches_to_cv(data):
         scores = scores.detach().cpu().numpy()
         scores = np.asarray(scores)
 
-    output = {'matches': matches, 'sc': scores}
+    output = {'matches': matches, 'scores': scores}
 
     if 'keypoints0' in data:
-        output['keypoints0'] = features_to_cv({'kp': data['keypoints0']}).get('kp')
+        output['keypoints0'] = features_to_cv({'keypoints': data['keypoints0']}).get('keypoints')
     if 'keypoints1' in data:
-        output['keypoints1'] = features_to_cv({'kp': data['keypoints1']}).get('kp')
+        output['keypoints1'] = features_to_cv({'keypoints': data['keypoints1']}).get('keypoints')
     return output

@@ -62,11 +62,15 @@ class OpenCVMatcher(Matcher, register=False):
         self.k = config.get('k', 1)
 
     def match(self, features1, features2):
-        des1 = features1.get('des')
-        des2 = features2.get('des')
+        des1 = features1.get('descriptors')
+        des2 = features2.get('descriptors')
 
         if des1 is None or des2 is None:
-            return {'matches': ()}
+            if 'des' not in features1 and 'des' not in features2:
+                return {'matches': ()}
+
+            des1 = features1.get('des')
+            des2 = features2.get('des')
 
         matcher = self._init_matcher()
         if self.mode == 'simple':

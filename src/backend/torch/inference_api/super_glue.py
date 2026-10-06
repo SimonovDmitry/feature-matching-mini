@@ -10,9 +10,9 @@ class SuperGlueTorchInferenceApi(TorchInferenceAPI):
             with torch.no_grad():
                 outputs = self._model(inputs)
 
-            matches0 = outputs['matches0'][0].cpu().numpy()
-            confidences = outputs['matching_scores0'][0].cpu().numpy()
-            return {'matches' : matches0, 'matching_scores' : confidences, **inputs}
+            matches = outputs['matches0']
+            scores = outputs['matching_scores0']
+            return {'matches' : matches, 'scores' : scores, **inputs}
 
         except Exception as e:
             self._logger.error(f"Super Glue inference error: {e}")

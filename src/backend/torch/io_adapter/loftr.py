@@ -62,5 +62,5 @@ class LoFTRTorchIOAdapter(TorchIOAdapter):
         indices = torch.arange(num_matches, dtype=torch.long).view(-1, 1).repeat(1, 2)
 
         data = {"keypoints0": keypoints0, "keypoints1": keypoints1,
-                "matches" : indices, "sc" : scores}
+                "matches" : indices, "scores" : scores}
         return matches_to_cv(data)
