@@ -1,11 +1,12 @@
 from pathlib import Path
+import torch
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
-from src.backend.model_loader_base import ModelLoader
-from src.backend.torch.model_loader.model_loader import TorchModelLoader
+from src.backend.model_wrapper_base import ModelWrapper
+from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
 
 
-@ModelLoader.register("superpoint_torch")
-class SuperPointTorchModelLoader(TorchModelLoader):
+@ModelWrapper.register("superpoint_torch")
+class SuperPointTorchModelWrapper(TorchModelWrapper):
     def load(self):
         checkpoint = self._config.pop('checkpoint', "weights/superpoint")
         local_files_only = self._config.pop('local_files_only', True)
@@ -29,3 +30,16 @@ class SuperPointTorchModelLoader(TorchModelLoader):
 
         except Exception as e:
             self._logger.error(f"Failed to load from {checkpoint}: {e}")
+
+    def call(self, inputs):
+        img = inputs.get("image")
+
+        try:
+            with torch.no_grad():
+                outputs = self._model(**img)
+
+            return {'inference_outputs' : outputs, **inputs}
+
+        except Exception as e:
+            self._logger.error(f"Super Point inference error: {e}")
+            return {'keypoints': (), 'descriptors': ()}

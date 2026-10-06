@@ -1,9 +1,9 @@
-from src.backend.model_loader_base import ModelLoader
+from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.utils import get_device
 
 
-@ModelLoader.register("torch")
-class TorchModelLoader(ModelLoader):
+@ModelWrapper.register("torch")
+class TorchModelWrapper(ModelWrapper):
     def __init__(self, model_name, model_path=None, config=None, logger=None):
         if config is None:
             config = {}
@@ -15,6 +15,9 @@ class TorchModelLoader(ModelLoader):
             self._device = get_device()
         else:
             self._device = device
+
+        self._nfeatures = config.get('nfeatures', 4096)
+        self._threshold = config.get('threshold', 0.005)
 
     def load(self):
         pass

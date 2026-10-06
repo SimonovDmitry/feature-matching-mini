@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 import torch
 
-from src.backend.model_loader_base import ModelLoader
-from src.backend.torch.model_loader.model_loader import TorchModelLoader
-from src.backend.torch.model_loader.weights_url import WEIGHTS_URL_MODELS
+from src.backend.model_wrapper_base import ModelWrapper
+from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
+from src.backend.torch.model_wrapper.weights_url import WEIGHTS_URL_MODELS
 
 LOFTR_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "loftr" / "src"
 
@@ -15,8 +15,8 @@ from loftr import LoFTR as LoFTRModel  # noqa: E402
 from loftr import default_cfg  # noqa: E402
 
 
-@ModelLoader.register("loftr_torch")
-class LoFTRTorchModelLoader(TorchModelLoader):
+@ModelWrapper.register("loftr_torch")
+class LoFTRTorchModelWrapper(TorchModelWrapper):
     def load(self):
         self._weights_type = self._config.pop('weights', 'outdoor')
         checkpoint = Path(self._model_path or
@@ -37,3 +37,14 @@ class LoFTRTorchModelLoader(TorchModelLoader):
         self._model = model.to(self._device).eval()
         self._logger.info("LoFTR successfully loaded.")
         return {'model': self._model}
+
+    def call(self, inputs):
+        try:
+            with torch.no_grad():
+                self._model(inputs)
+
+            return inputs
+
+        except Exception as e:
+            self._logger.error(f"LoFTR inference error: {e}")
+            return {'keypoints': (), 'descriptors': (), 'matches': ()}

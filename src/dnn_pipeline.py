@@ -3,12 +3,12 @@ import numpy as np
 
 from src.dnn_extractors import DNNFeatureExtractors
 from src.dnn_matchers import DNNMatcher
-import src.backend.torch.model_loader
+import src.backend.torch.model_wrapper
 import src.backend.torch.inference_api
 import src.backend.torch.io_adapter
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
-from src.backend.model_loader_base import ModelLoader
+from src.backend.model_wrapper_base import ModelWrapper
 
 
 class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
@@ -25,13 +25,12 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
 
-        self._loader = ModelLoader.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
-        self._model_components = self._loader.load()
-        self._model = self._model_components.get('model')
+        self._model_wrapper = ModelWrapper.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
+        self._model_components = self._model_wrapper.load()
         self._io_adapter = IOAdapter.create(backend=loader_name, model_name=extractor_name, config=config,
                                             logger=logger)
-        self._inference = InferenceAPI.create(backend=loader_name, logger=logger, model_name=extractor_name,
-                                              model=self._model, config=config)
+        self._inference = InferenceAPI.create(backend=backend, logger=logger, model_name=extractor_name,
+                                              model_wrapper=self._model_wrapper, config=config)
     def detect(self, img):
         return {'image': img, 'keypoints': (), 'descriptors': ()}
 

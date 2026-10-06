@@ -4,11 +4,11 @@ from src.backend.torch.utils import get_device
 
 @InferenceAPI.register("torch")
 class TorchInferenceAPI(InferenceAPI):
-    def __init__(self, logger, model_name, model, config=None):
+    def __init__(self, logger, model_name, model_wrapper, config=None):
         if config is None:
             config = {}
 
-        super().__init__(logger, model_name, model, config)
+        super().__init__(logger, model_name, model_wrapper, config)
 
         device = config.get('device', None)
         if device is None:
@@ -20,4 +20,4 @@ class TorchInferenceAPI(InferenceAPI):
         self._threshold = config.get('threshold', 0.005)
 
     def run(self, inputs):
-        pass
+        return self._model_wrapper.call(inputs)

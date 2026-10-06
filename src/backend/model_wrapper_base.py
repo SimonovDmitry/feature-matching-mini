@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class ModelLoader(ABC):
+class ModelWrapper(ABC):
     _METHODS = {}
 
     def __init__(self, model_name, model_path=None, config=None, logger=None):
