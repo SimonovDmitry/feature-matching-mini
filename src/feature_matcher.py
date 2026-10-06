@@ -7,7 +7,6 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
-from src.dnn_matchers import DNNMatcher
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
 from src.lightglue_matcher import LightGlue  # noqa: F401
@@ -71,23 +70,29 @@ class FeatureMatcherCV2:
     def visualize_matches(self, img0, features0, img1, features1, correspondences):
         draw_params = dict(matchColor=(0, 255, 0), singlePointColor=(0, 0, 255),
                            flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-
-        if not correspondences.get('matches') or len(correspondences.get('matches')) == 0:
+        matches = correspondences.get('matches')
+        if matches is None or len(matches) == 0:
             self._logger.warning("No matches found to visualize.")
             return cv.drawMatches(img0, features0.get('kp'), img1, features1.get('kp'),
                                   [], None, **draw_params)
 
+        if 'keypoints0' in correspondences and 'keypoints1' in correspondences:
+            kp0 = correspondences['keypoints0']
+            kp1 = correspondences['keypoints1']
+        elif 'kp' in features0 and 'kp' in features1:
+            kp0 = features0.get('kp')
+            kp1 = features1.get('kp')
+        else:
+            self._logger.warning("Keypoints are missing, cannot visualize matches")
+            return cv.drawMatches(img0,[], img1,[],[],None, **draw_params)
+
         mode = self._matcher_config.get('mode', 'simple')
-
         if mode == 'simple':
-            return cv.drawMatches(img0, features0.get('kp'), img1, features1.get('kp'),
-                                  correspondences.get('matches'), None, **draw_params)
+            return cv.drawMatches(img0, kp0, img1, kp1, matches, None, **draw_params)
         if mode == 'knn':
-            return cv.drawMatchesKnn(img0, features0.get('kp'), img1, features1.get('kp'),
-                                     correspondences.get('matches'), None, **draw_params)
+            return cv.drawMatchesKnn(img0, kp0, img1, kp1, matches, None, **draw_params)
 
-        return cv.drawMatches(img0, features0.get('kp'), img1, features1.get('kp'),
-                              [], None, **draw_params)
+        return cv.drawMatches(img0, kp0, img1, kp1,[], None, **draw_params)
 
     def match(self, img0, img1):
         detector = Detector.create(detector_name=self._detector, logger=self._logger, config=self._detector_config)

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import cv2 as cv
 
-from src.algorithms import ALL_MATCHERS, DNN_MATCHERS
+from src.algorithms import ALL_MATCHERS, DNN_MATCHERS, DNN_PIPELINES
 
 
 class Matcher(ABC):
@@ -31,6 +31,10 @@ class Matcher(ABC):
     @staticmethod
     def create(matcher_name, logger, config, descriptor_name):
         matcher_name = matcher_name.lower()
+
+        if matcher_name in DNN_PIPELINES:
+            return Matcher._METHODS["dnnpipeline"](matcher_name, logger, config)
+
         if matcher_name in DNN_MATCHERS:
             return Matcher._METHODS['dnn'](matcher_name, logger, config, descriptor_name)
 
@@ -78,7 +82,7 @@ class BFMatcher(OpenCVMatcher):
         super().__init__(matcher_name, logger, config, descriptor_name)
 
     def _init_matcher(self):
-        return cv.BFMatcher(self.descriptor_name.default_norm)
+        return cv.BFMatcher(self._descriptor_name.default_norm)
 
 
 class FLANNMatcher(OpenCVMatcher):
@@ -97,7 +101,7 @@ class FLANNMatcher(OpenCVMatcher):
             raise TypeError("search_params must be dict")
 
     def _get_default_index_params(self):
-        if self.descriptor_name.default_norm == cv.NORM_HAMMING:
+        if self._descriptor_name.default_norm == cv.NORM_HAMMING:
             return {
                 'algorithm': 6,
                 'table_number': 6,

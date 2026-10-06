@@ -1,7 +1,7 @@
 import cv2 as cv
 from abc import ABC, abstractmethod
 
-from src.algorithms import ALL_DETECTORS, DNN_DETECTORS
+from src.algorithms import ALL_DETECTORS, DNN_DETECTORS, DNN_PIPELINES, DNN_DESCRIPTORS
 
 
 class Detector(ABC):
@@ -31,7 +31,10 @@ class Detector(ABC):
 
     @staticmethod
     def create(detector_name, logger, config=None):
-        if detector_name in DNN_DETECTORS:
+        if detector_name in DNN_PIPELINES:
+            return Detector._METHODS["dnnpipeline"](detector_name, logger, config)
+
+        if detector_name in DNN_DETECTORS and detector_name in DNN_DESCRIPTORS:
             return Detector._METHODS["dnnfeatureextractors"](detector_name, logger, config)
 
         if config is None:

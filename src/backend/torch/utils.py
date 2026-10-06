@@ -119,20 +119,25 @@ def features_to_tensor(data, device='cpu'):
 def features_to_cv(data):
     keypoints = data.get('kp')
     descriptors = data.get('des')
-    scors = data.get('sc')
-    keypoints_np = keypoints.detach().cpu().numpy()
+    scores = data.get('sc')
 
-    if keypoints_np.ndim == 3:
-        keypoints_np = keypoints_np.reshape(-1, 2)
+    if keypoints is not None:
+        keypoints_np = keypoints.detach().cpu().numpy()
 
-    keypoints_np = keypoints_np.astype(np.float32)
+        if keypoints_np.ndim == 3:
+            keypoints_np = keypoints_np.reshape(-1, 2)
 
-    keypoints = cv.KeyPoint_convert(keypoints_np)
-    keypoints = np.array(keypoints, dtype=object)
-    descriptors = descriptors.detach().cpu().numpy()
-    scors = scors.detach().cpu().numpy()
+        keypoints_np = keypoints_np.astype(np.float32)
+        keypoints = cv.KeyPoint_convert(keypoints_np)
+        keypoints = np.array(keypoints, dtype=object)
 
-    result = {'kp': keypoints, 'des': descriptors, 'sc': scors}
+    if descriptors is not None:
+        descriptors = descriptors.detach().cpu().numpy()
+
+    if scores is not None:
+        scores = scores.detach().cpu().numpy()
+
+    result = {'kp': keypoints, 'des': descriptors, 'sc': scores}
 
     if 'width' in data:
         result['width'] = data['width']
@@ -143,34 +148,39 @@ def features_to_cv(data):
 
 
 def matches_to_tensor(data, device='cpu'):
-    dmatches = data.get('matches')
+    matches = data.get('matches')
 
-    if not dmatches:
+    if not matches:
         matches_np = np.empty((0, 2), dtype=np.int64)
     else:
-        matches_np = np.asarray(
-            [[match.queryIdx, match.trainIdx] for match in dmatches],
-            dtype=np.int64,
-        ).reshape(-1, 2)
-
-    return {
-        'matches': numpy_to_tensor(
-            matches_np,
-            device=device,
-            dtype=torch.long,
-        )
-    }
+        matches_np = np.asarray([[match.queryIdx, match.trainIdx] for match in matches],
+                                dtype=np.int64).reshape(-1, 2)
+    return {'matches': numpy_to_tensor(matches_np, device=device, dtype=torch.long)}
 
 
 def matches_to_cv(data):
     matches = data.get('matches')
-    matches_np = matches.detach().cpu().numpy()
+    scores = data.get('sc')
 
-    dmatches = []
-    for query_idx, train_idx in matches_np:
-        dmatch = cv.DMatch()
-        dmatch.queryIdx = int(query_idx)
-        dmatch.trainIdx = int(train_idx)
-        dmatches.append(dmatch)
+    if matches is not None:
+        matches_np = matches.detach().cpu().numpy()
+        dmatches = []
+        for query_idx, train_idx in matches_np:
+            dmatch = cv.DMatch()
+            dmatch.queryIdx = int(query_idx)
+            dmatch.trainIdx = int(train_idx)
+            dmatches.append(dmatch)
 
-    return {'matches': dmatches}
+        matches = np.asarray(dmatches)
+
+    if scores is not None:
+        scores = scores.detach().cpu().numpy()
+        scores = np.asarray(scores)
+
+    output = {'matches': matches, 'sc': scores}
+
+    if 'keypoints0' in data:
+        output['keypoints0'] = features_to_cv({'kp': data['keypoints0']}).get('kp')
+    if 'keypoints1' in data:
+        output['keypoints1'] = features_to_cv({'kp': data['keypoints1']}).get('kp')
+    return output

@@ -11,7 +11,7 @@ from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_loader_base import ModelLoader
 
 
-class DNNPipeline(DNNFeatureExtractors, DNNMatcher, register=False):
+class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
     def __init__(self, extractor_name, logger, config=None):
         if config is None:
             config = {}
@@ -38,23 +38,27 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher, register=False):
     def compute(self, img, features=None):
         return features
 
-    @abstractmethod
     def match(self, features0, features1):
         img0 = features0.get('image')
         img1 = features1.get('image')
 
         if img0 is None or img1 is None:
-            self._logger.error("Input image is None. Detection aborted.")
-            return {'matches': (), 'scores': ()}
+            self._logger.error("Input image is None")
+            return {'matches': (), 'sc': ()}
 
-        inputs = {"image0": img0, "image1": img1}
-
+        inputs = {'image0': img0, 'image1': img1}
         inputs = self._io_adapter.preprocess(inputs)
         outputs = self._inference.run(inputs)
         outputs = self._io_adapter.postprocess(outputs)
 
-        matches = outputs.get('matches', ())
-        scores = outputs.get('sc', ())
+        matches = outputs.get('matches')
+        scores = outputs.get('sc')
+        keypoints0 = outputs.get('keypoints0')
+        keypoints1 = outputs.get('keypoints1')
+
+        if matches is None or scores is None:
+            self._logger.warning(f"{self._detector_name}: invalid matcher output")
+            return {'matches': (), 'sc': ()}
 
         mask = scores > self._threshold
         matches = matches[mask]
@@ -65,12 +69,15 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher, register=False):
             matches = matches[indices]
             scores = scores[indices]
 
-        extracted = {'match': matches, 'sc': scores}
-        DNNFeatureExtractors._extracted_data = extracted
+        extracted = {'keypoints0': keypoints0,
+                     'keypoints1': keypoints1,
+                     'matches': matches,
+                     'sc': scores}
+        DNNPipeline._extracted_data = extracted
 
         if len(matches) > 0:
-            self._logger.info(f"{self._detector_name} match {len(matches)} points")
+            self._logger.info(f"{self._detector_name} found {len(matches)} matches")
         else:
-            self._logger.warning(f"{self._detector_name} found 0 points")
+            self._logger.warning(f"{self._detector_name} found 0 matches")
 
         return extracted

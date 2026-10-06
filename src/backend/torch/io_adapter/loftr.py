@@ -1,5 +1,3 @@
-import sys
-from pathlib import Path
 import cv2 as cv
 import torch
 
@@ -41,24 +39,28 @@ class LoFTRTorchIOAdapter(TorchIOAdapter):
         if tensor.max() > 1.1:
             tensor /= 255.0
 
-        return tensor.unsqueeze(0).to(self._device)
+        tensor = tensor.unsqueeze(0).unsqueeze(0)
+        return tensor.to(self._device)
 
     def preprocess(self, inputs):
         img0 = inputs.pop('image0')
         img1 = inputs.pop('image1')
+
         img0 = image_to_tensor(img0)
         img1 = image_to_tensor(img1)
+
         img0 = self._preprocess_image(img0)
         img1 = self._preprocess_image(img1)
-
-        return {'image0': img0, 'image1': img1, **inputs}
+        return {'image0': img0, 'image1': img1}
 
     def postprocess(self, outputs):
-        keypoints0 = outputs['mkpts0_f']
-        scores = outputs['mconf']
+        keypoints0 = outputs['mkpts0_f'].detach().cpu()
+        keypoints1 = outputs['mkpts1_f'].detach().cpu()
+        scores = outputs['mconf'].detach().cpu()
 
         num_matches = len(keypoints0)
-        indices = torch.arange(num_matches).view(-1, 1).repeat(1, 2)
-        data = {"matches" : indices.long(),
-                "scores" : scores.cpu()}
+        indices = torch.arange(num_matches, dtype=torch.long).view(-1, 1).repeat(1, 2)
+
+        data = {"keypoints0": keypoints0, "keypoints1": keypoints1,
+                "matches" : indices, "sc" : scores}
         return matches_to_cv(data)

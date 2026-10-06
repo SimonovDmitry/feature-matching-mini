@@ -1,4 +1,5 @@
 import torch
+
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.torch.inference_api.inference_api import TorchInferenceAPI
 
