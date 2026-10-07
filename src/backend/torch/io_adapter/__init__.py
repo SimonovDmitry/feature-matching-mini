@@ -5,3 +5,5 @@ from .r2d2 import R2D2TorchIOAdapter
 from .super_glue import SuperGlueTorchIOAdapter
 from .loftr import LoFTRTorchIOAdapter
 from .roma import RoMaTorchIOAdapter
+from .lightglue_pipeline import LightGlueFeatureExtractorTorchIOAdapter
+from .lightglue_matcher import LightGlueTorchIOAdapter

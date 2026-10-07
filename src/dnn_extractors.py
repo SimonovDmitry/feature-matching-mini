@@ -24,14 +24,12 @@ class DNNFeatureExtractors(Detector, Descriptor):
         Descriptor.__init__(self, logger, extractor_name)
 
         backend = config.pop('backend', 'torch').lower()
-        loader_name = f"{extractor_name.lower()}_{backend}"
-
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
 
-        self._model_wrapper = ModelWrapper.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
+        self._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name, config=config, logger=logger)
         self._model_components = self._model_wrapper.load()
-        self._io_adapter = IOAdapter.create(backend=loader_name, model_name=extractor_name, config=config,
+        self._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name, config=config,
                                             logger=logger)
         self._inference = InferenceAPI.create(backend=backend, logger=logger, model_name=extractor_name,
                                               model_wrapper=self._model_wrapper , config=config)
@@ -48,9 +46,9 @@ class DNNFeatureExtractors(Detector, Descriptor):
         outputs = self._inference.run(inputs)
         outputs = self._io_adapter.postprocess(outputs)
 
-        keypoints = outputs.get('keypoints', ())
-        descriptors = outputs.get('descriptors', ())
-        scores = outputs.get('scores', ())
+        keypoints = outputs.pop('keypoints', ())
+        descriptors = outputs.pop('descriptors', ())
+        scores = outputs.pop('scores', ())
 
         mask = scores > self._threshold
         kp = keypoints[mask]
@@ -62,12 +60,7 @@ class DNNFeatureExtractors(Detector, Descriptor):
             kp = kp[indices]
             des = des[indices]
 
-        extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc}
-        if 'height' in outputs:
-            extracted['height'] = outputs['height']
-        if 'width' in outputs:
-            extracted['width'] = outputs['width']
-
+        extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc, **outputs}
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(keypoints) > 0:

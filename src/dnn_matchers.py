@@ -17,14 +17,15 @@ class DNNMatcher(Matcher):
         Matcher.__init__(self, matcher_name, logger, config, descriptor_name)
 
         backend = config.pop('backend', 'torch').lower()
-        loader_name = f"{matcher_name.lower()}_{backend}"
+        if 'descriptor_name' not in config:
+            config['descriptor_name'] = descriptor_name
 
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
 
-        self._model_wrapper = ModelWrapper.create(backend=loader_name, model_name=matcher_name, config=config, logger=logger)
+        self._model_wrapper = ModelWrapper.create(backend=backend, model_name=matcher_name, config=config, logger=logger)
         self._model_components = self._model_wrapper.load()
-        self._io_adapter = IOAdapter.create(backend=loader_name, model_name=matcher_name, config=config,
+        self._io_adapter = IOAdapter.create(backend=backend, model_name=matcher_name, config=config,
                                             logger=logger)
         self._inference = InferenceAPI.create(backend=backend, logger=logger, model_name=matcher_name,
                                               model_wrapper=self._model_wrapper, config=config)

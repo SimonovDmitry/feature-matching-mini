@@ -100,7 +100,7 @@ class FeatureMatcherCV2:
         detector = Detector.create(detector_name=self._detector, logger=self._logger, config=self._detector_config)
         descriptor = Descriptor.create(descriptor_name=self._descriptor, logger=self._logger,
                                        config=self._descriptor_config)
-        matcher = Matcher.create(matcher_name=self._matcher, descriptor_name=descriptor,
+        matcher = Matcher.create(matcher_name=self._matcher, descriptor_name=descriptor._descriptor_name,
                                  logger=self._logger, config=self._matcher_config)
 
         features0 = detector.detect(img0)

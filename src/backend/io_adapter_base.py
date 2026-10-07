@@ -15,6 +15,10 @@ class IOAdapter(ABC):
     @classmethod
     def register(cls, name):
         def decorator(subclass):
+            aliases = getattr(subclass, '_EXTRACTOR_CLASSES', {})
+            for key in aliases:
+                cls._METHODS[key.lower()] = subclass
+
             cls._METHODS[name.lower()] = subclass
             return subclass
 
@@ -22,13 +26,12 @@ class IOAdapter(ABC):
 
     @classmethod
     def create(cls, backend, model_name, logger=None, config=None):
-        backend_key = backend.lower()
-
-        if backend_key not in cls._METHODS:
+        loader_name = f"{model_name.lower()}_{backend.lower()}"
+        if loader_name not in cls._METHODS:
             raise ValueError(f"Model loader backend '{backend}' not found. "
                              f"Available: {list(cls._METHODS.keys())}")
 
-        return cls._METHODS[backend_key](model_name=model_name, config=config, logger=logger)
+        return cls._METHODS[loader_name](model_name=model_name, config=config, logger=logger)
 
     @abstractmethod
     def preprocess(self, inputs):

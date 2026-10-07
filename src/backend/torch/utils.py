@@ -85,18 +85,21 @@ def image_to_cv(data):
 
 
 def features_to_tensor(data, device='cpu'):
-    keypoints = cv.KeyPoint_convert(data.get('keypoints'))
-    keypoints = np.asarray(keypoints, dtype=np.float32)
-    if keypoints.size == 0:
-        keypoints = np.empty((0, 2), dtype=np.float32)
-
+    keypoints = data.get('keypoints')
     descriptors = data.get('descriptors')
+    scores = data.get('scores')
+
+    if keypoints is not None:
+        keypoints = cv.KeyPoint_convert(keypoints)
+        keypoints = np.asarray(keypoints, dtype=np.float32)
+        if keypoints.size == 0:
+            keypoints = np.empty((0, 2), dtype=np.float32)
+
     if descriptors is None:
         descriptors = np.empty((len(keypoints), 0), dtype=np.float32)
     else:
         descriptors = np.asarray(descriptors)
 
-    scores = data.get('scores')
     if scores is None:
         scores = np.empty((len(keypoints),), dtype=np.float32)
     else:

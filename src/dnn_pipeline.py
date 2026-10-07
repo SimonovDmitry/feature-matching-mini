@@ -20,14 +20,12 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
         DNNMatcher.__init__(self, extractor_name, logger, config, extractor_name)
 
         backend = config.pop('backend', 'torch').lower()
-        loader_name = f"{extractor_name.lower()}_{backend}"
-
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
 
-        self._model_wrapper = ModelWrapper.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
+        self._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name, config=config, logger=logger)
         self._model_components = self._model_wrapper.load()
-        self._io_adapter = IOAdapter.create(backend=loader_name, model_name=extractor_name, config=config,
+        self._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name, config=config,
                                             logger=logger)
         self._inference = InferenceAPI.create(backend=backend, logger=logger, model_name=extractor_name,
                                               model_wrapper=self._model_wrapper, config=config)
@@ -71,7 +69,8 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
         extracted = {'keypoints0': keypoints0,
                      'keypoints1': keypoints1,
                      'matches': matches,
-                     'scores': scores}
+                     'scores': scores,
+                     **outputs}
         DNNPipeline._extracted_data = extracted
 
         if len(matches) > 0:
