@@ -14,14 +14,14 @@ from lightglue.utils import rbd
 @IOAdapter.register("lightglue_torch")
 class LightGlueTorchIOAdapter(TorchIOAdapter):
     def preprocess(self, inputs):
-        keypoints0 = inputs['features0'].pop('keypoints')
-        descriptors0 = inputs['features0'].pop('descriptors')
-        scores0 = inputs['features0'].pop('scores')
+        keypoints0 = inputs['features0'].get('keypoints')
+        descriptors0 = inputs['features0'].get('descriptors')
+        scores0 = inputs['features0'].get('scores')
         data0 = {'keypoints': keypoints0, 'descriptors': descriptors0, 'scores': scores0}
 
-        keypoints1 = inputs['features1'].pop('keypoints')
-        descriptors1 = inputs['features1'].pop('descriptors')
-        scores1 = inputs['features1'].pop('scores')
+        keypoints1 = inputs['features1'].get('keypoints')
+        descriptors1 = inputs['features1'].get('descriptors')
+        scores1 = inputs['features1'].get('scores')
         data1 = {'keypoints': keypoints1, 'descriptors': descriptors1, 'scores': scores1}
 
         features0 = features_to_tensor(data0)
@@ -32,17 +32,20 @@ class LightGlueTorchIOAdapter(TorchIOAdapter):
                 "keypoints": features0.pop('keypoints').unsqueeze(0).to(self._device),
                 "descriptors": features0.pop('descriptors').unsqueeze(0).to(self._device),
                 "keypoint_scores": features0.pop('scores').unsqueeze(0).to(self._device),
-                **inputs['features0']
+                "scales": inputs['features0'].get('scales'),
+                "oris": inputs['features0'].get('oris'),
+                "image_size": inputs['features0'].get('image_size'),
             },
             "image1": {
                 "keypoints": features1.pop('keypoints').unsqueeze(0).to(self._device),
                 "descriptors": features1.pop('descriptors').unsqueeze(0).to(self._device),
                 "keypoint_scores": features1.pop('scores').unsqueeze(0).to(self._device),
-                **inputs['features1']
+                "scales": inputs['features1'].get('scales'),
+                "oris": inputs['features1'].get('oris'),
+                "image_size": inputs['features1'].get('image_size'),
             }
         }
 
     def postprocess(self, outputs):
         matches = rbd(outputs)
-        matches_cv = matches_to_cv(matches)
-        return {'matches': matches_cv}
+        return matches_to_cv(matches)
