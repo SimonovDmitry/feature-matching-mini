@@ -12,13 +12,7 @@ def _init_thirdparty_routes():
     for item in thirdparty_dir.iterdir():
         if item.is_dir() and not item.name.startswith("."):
             paths = [item]
-
-            # Добавляем вложенные директории, например tools или src.
-            paths.extend(
-                subdir
-                for subdir in item.iterdir()
-                if subdir.is_dir() and not subdir.name.startswith(".")
-            )
+            paths.extend(subdir for subdir in item.iterdir() if subdir.is_dir() and not subdir.name.startswith("."))
 
             for path in paths:
                 resolved_path = str(path.resolve())

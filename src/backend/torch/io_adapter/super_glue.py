@@ -1,6 +1,3 @@
-import sys
-from pathlib import Path
-import cv2 as cv
 import torch
 import torch.nn.functional as functional
 import numpy as np
@@ -8,12 +5,6 @@ import numpy as np
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.torch.io_adapter.io_adapter import TorchIOAdapter
 from src.backend.torch.utils import features_to_tensor, matches_to_cv
-
-D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "thirdparty" / "d2net"
-if str(D2_ROOT) not in sys.path:
-    sys.path.insert(0, str(D2_ROOT))
-
-from lib.utils import preprocess_image
 
 
 @IOAdapter.register("superglue_torch")

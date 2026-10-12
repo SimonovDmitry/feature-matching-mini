@@ -1,18 +1,12 @@
-import sys
-from pathlib import Path
 import cv2 as cv
 import torch
 import numpy as np
 
+from thirdparty.d2net.lib.utils import preprocess_image
+
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.torch.io_adapter.io_adapter import TorchIOAdapter
 from src.backend.torch.utils import image_to_tensor
-
-D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "thirdparty" / "d2net"
-if str(D2_ROOT) not in sys.path:
-    sys.path.insert(0, str(D2_ROOT))
-
-from lib.utils import preprocess_image
 
 
 @IOAdapter.register("d2net_torch")
