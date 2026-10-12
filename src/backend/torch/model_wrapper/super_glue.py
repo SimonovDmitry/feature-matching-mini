@@ -1,12 +1,7 @@
-import sys
-from pathlib import Path
 import torch
 
-SG_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "superglue"
-if str(SG_ROOT) not in sys.path:
-    sys.path.insert(0, str(SG_ROOT))
+from thirdparty.superglue.models.superglue import SuperGlue
 
-from models.superglue import SuperGlue
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
 

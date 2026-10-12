@@ -10,15 +10,15 @@ from src.backend.model_wrapper_base import ModelWrapper
 
 
 class DNNMatcher(Matcher):
-    def __init__(self, matcher_name, logger, config=None, descriptor_name=None):
+    def __init__(self, matcher_name, logger, config=None, descriptor_class=None):
         if config is None:
             config = {}
 
-        Matcher.__init__(self, matcher_name, logger, config, descriptor_name)
+        Matcher.__init__(self, matcher_name, logger, config, descriptor_class)
 
         backend = config.pop('backend', 'torch').lower()
-        if 'descriptor_name' not in config:
-            config['descriptor_name'] = descriptor_name
+        if 'descriptor_class' not in config:
+            config['descriptor_class'] = descriptor_class
 
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)

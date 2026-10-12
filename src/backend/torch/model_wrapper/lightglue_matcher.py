@@ -1,12 +1,7 @@
-import sys
-from pathlib import Path
 import torch
 
-LIGHTGLUE_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "lightglue"
-if str(LIGHTGLUE_ROOT) not in sys.path:
-    sys.path.insert(0, str(LIGHTGLUE_ROOT))
+from thirdparty.lightglue.lightglue import LightGlue
 
-from lightglue import LightGlue
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
 
@@ -14,7 +9,7 @@ from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
 @ModelWrapper.register("lightglue_torch")
 class LightGlueTorchModelLoader(TorchModelWrapper):
     def load(self):
-        extractor_name = self._config.get('descriptor_name').replace("_lightglue", "")
+        extractor_name = self._config.get('descriptor_class')._descriptor_name.replace("_lightglue", "")
         self._logger.info(f"Loading SuperGlue onto {self._device}")
         self._model = LightGlue(features=extractor_name, **self._config).eval().to(self._device)
         return {"model": self._model}

@@ -1,14 +1,9 @@
-import sys
-from pathlib import Path
 import torch
+
+from thirdparty.lightglue.lightglue import SuperPoint, DISK, SIFT, ALIKED, DoGHardNet
+
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
-
-LIGHTGLUE_ROOT = Path(__file__).resolve().parent.parent / "3rdparty" / "lightglue"
-if str(LIGHTGLUE_ROOT) not in sys.path:
-    sys.path.insert(0, str(LIGHTGLUE_ROOT))
-
-from lightglue import SuperPoint, DISK, SIFT, ALIKED, DoGHardNet  # noqa: E402
 
 
 @ModelWrapper.register("light_glue_feature_extractor_torch")

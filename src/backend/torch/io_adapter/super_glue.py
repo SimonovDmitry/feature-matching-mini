@@ -9,7 +9,7 @@ from src.backend.io_adapter_base import IOAdapter
 from src.backend.torch.io_adapter.io_adapter import TorchIOAdapter
 from src.backend.torch.utils import features_to_tensor, matches_to_cv
 
-D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "d2net"
+D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "thirdparty" / "d2net"
 if str(D2_ROOT) not in sys.path:
     sys.path.insert(0, str(D2_ROOT))
 

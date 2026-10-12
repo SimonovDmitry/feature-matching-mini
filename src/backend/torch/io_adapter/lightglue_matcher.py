@@ -1,14 +1,8 @@
-import sys
-from pathlib import Path
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.torch.io_adapter.io_adapter import TorchIOAdapter
 from src.backend.torch.utils import features_to_tensor, matches_to_cv
 
-LIGHTGLUE_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "lightglue"
-if str(LIGHTGLUE_ROOT) not in sys.path:
-    sys.path.insert(0, str(LIGHTGLUE_ROOT))
-
-from lightglue.utils import rbd
+from thirdparty.lightglue.lightglue.utils import rbd
 
 
 @IOAdapter.register("lightglue_torch")

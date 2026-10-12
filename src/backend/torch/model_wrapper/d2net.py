@@ -1,17 +1,12 @@
-import sys
 from pathlib import Path
 import torch
 
-D2_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "d2net"
-if str(D2_ROOT) not in sys.path:
-    sys.path.insert(0, str(D2_ROOT))
+from thirdparty.d2net.lib.model_test import D2Net as D2NetModel
+from thirdparty.d2net.lib.pyramid import process_multiscale
 
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
 from src.backend.torch.model_wrapper.weights_url import WEIGHTS_URL_MODELS
-
-from lib.model_test import D2Net as D2NetModel
-from lib.pyramid import process_multiscale
 
 
 @ModelWrapper.register("d2net_torch")

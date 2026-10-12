@@ -1,14 +1,9 @@
-import sys
-from pathlib import Path
 import torch
+
+from thirdparty.xfeat.modules.xfeat import XFeat as XFeatModel
+
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
-
-XFEAT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / "3rdparty" / "xfeat"
-if str(XFEAT_ROOT) not in sys.path:
-    sys.path.insert(0, str(XFEAT_ROOT))
-
-from modules.xfeat import XFeat as XFeatModel
 
 
 @ModelWrapper.register("xfeat_torch")

@@ -1,15 +1,9 @@
-import sys
-from pathlib import Path
 import torch
+
+from thirdparty.roma.romatch import roma_outdoor
 
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
-
-ROMA_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent / '3rdparty' / 'roma'
-if str(ROMA_ROOT) not in sys.path:
-    sys.path.insert(0, str(ROMA_ROOT))
-
-from romatch import roma_outdoor  # noqa: E402
 
 
 @ModelWrapper.register("roma_torch")

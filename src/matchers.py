@@ -29,20 +29,20 @@ class Matcher(ABC):
                 Matcher._METHODS[key] = cls
 
     @staticmethod
-    def create(matcher_name, logger, config, descriptor_name):
+    def create(matcher_name, logger, config, descriptor_class):
         matcher_name = matcher_name.lower()
 
         if matcher_name in DNN_PIPELINES:
             return Matcher._METHODS["dnnpipeline"](matcher_name, logger, config)
 
         if matcher_name in DNN_MATCHERS:
-            return Matcher._METHODS['dnn'](matcher_name, logger, config, descriptor_name)
+            return Matcher._METHODS['dnn'](matcher_name, logger, config, descriptor_class)
 
         if not Matcher._METHODS.get(matcher_name):
             raise ValueError(f"Matcher '{matcher_name}' not found."
                              f" Available: {list(Matcher._METHODS.keys())}")
 
-        return Matcher._METHODS[matcher_name](matcher_name, logger, config, descriptor_name)
+        return Matcher._METHODS[matcher_name](matcher_name, logger, config, descriptor_class)
 
     @abstractmethod
     def match(self, features1, features2):
