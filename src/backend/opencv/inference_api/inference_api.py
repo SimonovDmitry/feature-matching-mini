@@ -22,7 +22,7 @@ class OpenCVInferenceAPI(InferenceAPI):
 
     def run(self, inputs=None):
         try:
-            outputs = self._model.forward(self.output_names)
+            outputs = self._model_wrapper.forward(self.output_names)
             return outputs
 
         except Exception as e:

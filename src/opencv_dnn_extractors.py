@@ -6,7 +6,7 @@ from src.detectors import Detector
 
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
-from src.backend.model_loader_base import ModelLoader
+from src.backend.model_wrapper_base import ModelWrapper
 
 
 class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
@@ -18,14 +18,12 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
         Descriptor.__init__(self, logger, extractor_name)
         self.extractor_name = extractor_name
 
-        loader_name = f"{extractor_name.lower()}_opencv"
-
-        self._loader = ModelLoader.create(backend=loader_name, model_name=extractor_name, config=config, logger=logger)
+        self._loader = ModelWrapper.create(backend="opencv", model_name=extractor_name, config=config, logger=logger)
         self._model = self._loader.load()
-        self._io_adapter = IOAdapter.create(backend=loader_name, model_name=extractor_name, config=config,
+        self._io_adapter = IOAdapter.create(backend="opencv", model_name=extractor_name, model_wrapper=self._model, config=config,
                                             logger=logger)
-        self._inference = InferenceAPI.create(backend=loader_name, logger=logger, model_name=extractor_name,
-                                              model=self._model, config=config)
+        self._inference = InferenceAPI.create(backend="opencv", logger=logger, model_name=extractor_name,
+                                              model_wrapper=self._model, config=config)
 
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)

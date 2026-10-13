@@ -9,7 +9,7 @@ class AlikedOpenCVIOAdapter(OpenCVIOAdapter):
     def preprocess(self, inputs):
         img = inputs.pop('image')
         self.orig_h, self.orig_w = img.shape[:2]
-        blob = cv.dnn.blobFromImage(img, scalefactor=1.0, size=(640, 640), swapRB=True, crop=False)
+        blob = cv.dnn.blobFromImage(img, scalefactor=1.0/255.0, size=(640, 640), swapRB=True, crop=False)
         self._model.setInput(blob)
 
     def postprocess(self, outputs):
@@ -20,11 +20,10 @@ class AlikedOpenCVIOAdapter(OpenCVIOAdapter):
         if keypoints_np.ndim == 3:
             keypoints_np = keypoints_np.reshape(-1, 2)
 
-        scale_x = self.orig_w / 640.0
-        scale_y = self.orig_h / 640.0
+        keypoints_np = (keypoints_np + 1.0) / 2.0
 
-        keypoints_np[:, 0] *= scale_x
-        keypoints_np[:, 1] *= scale_y
+        keypoints_np[:, 0] *= self.orig_w
+        keypoints_np[:, 1] *= self.orig_h
 
         keypoints = cv.KeyPoint_convert(keypoints_np)
         keypoints = np.asarray(keypoints)

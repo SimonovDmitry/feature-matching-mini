@@ -1,7 +1,7 @@
-from src.backend.model_loader_base import ModelLoader
+from src.backend.model_wrapper_base import ModelWrapper
 
-@ModelLoader.register("opencv")
-class OpenCVModelLoader(ModelLoader):
+@ModelWrapper.register("opencv")
+class OpenCVModelLoader(ModelWrapper):
     def __init__(self, model_name, model_path=None, config=None, logger=None):
         if config is None:
             config = {}

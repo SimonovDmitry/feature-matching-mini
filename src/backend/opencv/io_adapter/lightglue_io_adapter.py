@@ -13,6 +13,11 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
         desc0 = features1.get('des')
         desc1 = features2.get('des')
 
+        if len(kpts0) > 0 and isinstance(kpts0[0], cv.KeyPoint):
+            kpts0 = cv.KeyPoint_convert(kpts0)
+        if len(kpts1) > 0 and isinstance(kpts1[0], cv.KeyPoint):
+            kpts1 = cv.KeyPoint_convert(kpts1)
+
         if kpts0.ndim == 2:
             kpts0 = np.expand_dims(kpts0, axis=0)
         if kpts1.ndim == 2:
@@ -32,7 +37,24 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
             self._model.setInput(value, name=name)
 
     def postprocess(self, outputs):
-        matches = np.squeeze(outputs[0], axis=0)
-        scores = np.squeeze(outputs[1], axis=0)
-        result = {'matches': matches, 'scores': scores}
+        matches = outputs[0]
+        if matches.ndim > 2 and matches.shape[0] == 1:
+            matches = np.squeeze(matches, axis=0)
+
+        scores = outputs[1] if len(outputs) > 1 else None
+        if scores is not None and scores.ndim > 1 and scores.shape[0] == 1:
+            scores = np.squeeze(scores, axis=0)
+
+        mask = scores > self.scoreThreshold
+        matches = matches[mask]
+        scores = scores[mask]
+
+        dmatches = []
+        for i, match in enumerate(matches):
+            query_idx, target_idx = int(match[0]), int(match[1])
+            score = float(scores[i]) if scores is not None and i < len(scores) else 1.0
+            distance = 1.0 - score if score <= 1.0 else 0.0
+            dmatches.append(cv.DMatch(_queryIdx=query_idx, _trainIdx=target_idx, _imgIdx=0, _distance=distance))
+
+        result = {'matches': dmatches, 'scores': scores}
         return result

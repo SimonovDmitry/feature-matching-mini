@@ -9,14 +9,15 @@ class DiskOpenCVIOAdapter(OpenCVIOAdapter):
     def preprocess(self, inputs):
         img = inputs.pop('image')
         h, w = img.shape[:2]
-        blob = cv.dnn.blobFromImage(img, scalefactor=1.0, size=(w, h), swapRB=True, crop=False)
+        blob = cv.dnn.blobFromImage(img, scalefactor=1.0/255.0, size=(w, h), swapRB=True, crop=False)
         self._model.setInput(blob)
 
     def postprocess(self, outputs):
         keypoints = outputs[0]
-        descriptors = outputs[1]
-        scores = outputs[2]
+        descriptors = np.squeeze(outputs[1], axis=0)
+        scores = np.squeeze(outputs[2], axis=0)
         keypoints_np = keypoints.astype(np.float32)
+
         if keypoints_np.ndim == 3:
             keypoints_np = keypoints_np.reshape(-1, 2)
 
