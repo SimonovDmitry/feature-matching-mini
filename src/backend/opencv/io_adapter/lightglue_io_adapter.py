@@ -6,17 +6,42 @@ from src.backend.opencv.io_adapter.io_adapter import OpenCVIOAdapter
 
 @IOAdapter.register("lightglue_opencv")
 class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
+    def _normalize_keypoints(self, keypoints, img_shape, extractor_name):
+        keypoints = np.asarray(keypoints, dtype=np.float32).reshape(-1, 2).copy()
+        height, width = img_shape[:2]
+
+        if "disk" in extractor_name:
+            if width <= 1 or height <= 1:
+                raise ValueError("Width and height must be more than 1")
+            keypoints[:, 0] /= width - 1
+            keypoints[:, 1] /= height - 1
+
+        elif "aliked" in extractor_name:
+            if width <= 1 or height <= 1:
+                raise ValueError("Width and height must be more than 1")
+            keypoints[:, 0] = 2.0 * keypoints[:, 0] / width - 1.0
+            keypoints[:, 1] = 2.0 * keypoints[:, 1] / height - 1.0
+
+        return keypoints
+
     def preprocess(self, inputs):
         features1, features2 = inputs.get('features1'), inputs.get('features2')
         kpts0 = features1.get('kp')
         kpts1 = features2.get('kp')
         desc0 = features1.get('des')
         desc1 = features2.get('des')
+        shape0 = features1.get("img_shape")
+        shape1 = features2.get("img_shape")
+
+        extractor_name = features1.get("extractor_name", "").lower()
 
         if len(kpts0) > 0 and isinstance(kpts0[0], cv.KeyPoint):
             kpts0 = cv.KeyPoint_convert(kpts0)
         if len(kpts1) > 0 and isinstance(kpts1[0], cv.KeyPoint):
             kpts1 = cv.KeyPoint_convert(kpts1)
+
+        kpts0 = self._normalize_keypoints(kpts0, shape0, extractor_name)
+        kpts1 = self._normalize_keypoints(kpts1, shape1, extractor_name)
 
         if kpts0.ndim == 2:
             kpts0 = np.expand_dims(kpts0, axis=0)
@@ -45,9 +70,10 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
         if scores is not None and scores.ndim > 1 and scores.shape[0] == 1:
             scores = np.squeeze(scores, axis=0)
 
-        mask = scores > self.scoreThreshold
-        matches = matches[mask]
-        scores = scores[mask]
+        if scores is not None:
+            mask = scores > self.scoreThreshold
+            matches = matches[mask]
+            scores = scores[mask]
 
         dmatches = []
         for i, match in enumerate(matches):

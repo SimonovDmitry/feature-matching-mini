@@ -8,8 +8,8 @@ from src.backend.opencv.io_adapter.io_adapter import OpenCVIOAdapter
 class DiskOpenCVIOAdapter(OpenCVIOAdapter):
     def preprocess(self, inputs):
         img = inputs.pop('image')
-        h, w = img.shape[:2]
-        blob = cv.dnn.blobFromImage(img, scalefactor=1.0/255.0, size=(w, h), swapRB=True, crop=False)
+        self.orig_h, self.orig_w = img.shape[:2]
+        blob = cv.dnn.blobFromImage(img, scalefactor=1.0/255.0, size=(1024, 1024), swapRB=True, crop=False)
         self._model.setInput(blob)
 
     def postprocess(self, outputs):
@@ -20,6 +20,9 @@ class DiskOpenCVIOAdapter(OpenCVIOAdapter):
 
         if keypoints_np.ndim == 3:
             keypoints_np = keypoints_np.reshape(-1, 2)
+
+        keypoints_np[:, 0] *= self.orig_w / 1024.0
+        keypoints_np[:, 1] *= self.orig_h / 1024.0
 
         keypoints = cv.KeyPoint_convert(keypoints_np)
         keypoints = np.asarray(keypoints)

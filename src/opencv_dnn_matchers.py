@@ -29,5 +29,6 @@ class LightGlueOpenCVMatcher(Matcher):
 
         matches = outputs.get('matches', np.array([]))
         scores = outputs.get('scores', np.array([]))
+        self._logger.info(f"LightGlue found {len(matches)} matches")
 
         return {'matches': matches, 'scores': scores}

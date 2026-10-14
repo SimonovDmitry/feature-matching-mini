@@ -63,7 +63,8 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
         else:
             self._logger.warning(f"{self.extractor_name} found 0 points")
 
-        OpenCVDNNFeatureExtractors._extracted_data = {'kp': kp, 'des': des, 'sc': sc}
+        OpenCVDNNFeatureExtractors._extracted_data = {'kp': kp, 'des': des, 'sc': sc,
+                                                      'img_shape': img.shape, 'extractor_name': self.extractor_name}
         return OpenCVDNNFeatureExtractors._extracted_data
 
     def detect(self, img):
