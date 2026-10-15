@@ -92,7 +92,7 @@ class FeatureMatcherCV2:
         if mode == 'knn':
             return cv.drawMatchesKnn(img0, kp0, img1, kp1, matches, None, **draw_params)
 
-        return cv.drawMatches(img0, kp0, img1, kp1,[], None, **draw_params)
+        return cv.drawMatches(img0, kp0, img1, kp1, [], None, **draw_params)
 
     def match(self, img0, img1):
         detector = Detector.create(detector_name=self._detector, logger=self._logger, config=self._detector_config)
