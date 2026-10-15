@@ -1,9 +1,9 @@
-import cv2 as cv
 import numpy as np
 from src.matchers import Matcher
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_wrapper_base import ModelWrapper
+
 
 class LightGlueOpenCVMatcher(Matcher):
     def __init__(self, matcher_name, logger, config, descriptor):

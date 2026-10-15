@@ -84,7 +84,6 @@ def _opencv_staged_perf_test(logger, profiler, detector, descriptor,
         res_desc_dict1, time_desc1 = profiler.profile_descriptor(descriptor, img1, res_detect_dict1)
         times_descriptors.append(time_desc1)
 
-
         res_match_dict, time_match = profiler.profile_matching(matcher, res_desc_dict0, res_desc_dict1)
         times_matchers.append(time_match)
 

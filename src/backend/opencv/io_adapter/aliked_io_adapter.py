@@ -9,7 +9,7 @@ class AlikedOpenCVIOAdapter(OpenCVIOAdapter):
     def preprocess(self, inputs):
         img = inputs.pop('image')
         self.orig_h, self.orig_w = img.shape[:2]
-        blob = cv.dnn.blobFromImage(img, scalefactor=1.0/255.0, size=(640, 640), swapRB=True, crop=False)
+        blob = cv.dnn.blobFromImage(img, scalefactor=1.0 / 255.0, size=(640, 640), swapRB=True, crop=False)
         self._model.setInput(blob)
 
     def postprocess(self, outputs):

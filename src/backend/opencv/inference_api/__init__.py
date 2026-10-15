@@ -1,1 +1,1 @@
-from .inference_api import OpenCVInferenceAPI
+from .inference_api import OpenCVInferenceAPI  # noqa: F401

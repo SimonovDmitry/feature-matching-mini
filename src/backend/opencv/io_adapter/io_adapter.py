@@ -1,5 +1,6 @@
 from src.backend.io_adapter_base import IOAdapter
 
+
 @IOAdapter.register("opencv")
 class OpenCVIOAdapter(IOAdapter):
     def __init__(self, model_name, model_wrapper, logger=None, config=None):

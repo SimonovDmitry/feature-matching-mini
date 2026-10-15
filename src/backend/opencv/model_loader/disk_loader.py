@@ -2,6 +2,7 @@ import cv2 as cv
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.opencv.model_loader.model_loader import OpenCVModelLoader
 
+
 @ModelWrapper.register("disk_opencv")
 class DiskOpenCVModelLoader(OpenCVModelLoader):
     def load(self):

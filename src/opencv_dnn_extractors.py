@@ -20,14 +20,13 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
 
         self._loader = ModelWrapper.create(backend="opencv", model_name=extractor_name, config=config, logger=logger)
         self._model = self._loader.load()
-        self._io_adapter = IOAdapter.create(backend="opencv", model_name=extractor_name, model_wrapper=self._model, config=config,
-                                            logger=logger)
+        self._io_adapter = IOAdapter.create(backend="opencv", model_name=extractor_name,
+                                            model_wrapper=self._model, config=config, logger=logger)
         self._inference = InferenceAPI.create(backend="opencv", logger=logger, model_name=extractor_name,
                                               model_wrapper=self._model, config=config)
 
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
-
 
     @property
     def default_norm(self):

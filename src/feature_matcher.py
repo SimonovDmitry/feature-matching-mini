@@ -7,7 +7,7 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
-from src.dnn_pipeline import DNNPipeline
+from src.dnn_pipeline import DNNPipeline  # noqa: F401
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
 from src.tfeat_descriptor import TFeat  # noqa: F401
@@ -84,7 +84,7 @@ class FeatureMatcherCV2:
             kp1 = features1.get('kp')
         else:
             self._logger.warning("Keypoints are missing, cannot visualize matches")
-            return cv.drawMatches(img0,[], img1,[],[],None, **draw_params)
+            return cv.drawMatches(img0, [], img1, [], [], None, **draw_params)
 
         mode = self._matcher_config.get('mode', 'simple')
         if mode == 'simple':
