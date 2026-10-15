@@ -71,7 +71,6 @@ def main():
         detector_config = config.get('detector', {})
         descriptor_config = config.get('descriptor', {})
         matcher_config = config.get('matcher', {})
-        preprocessor_config = config.get('preprocessor', {})
 
         img0 = read_image(args.image1)
         img1 = read_image(args.image2)

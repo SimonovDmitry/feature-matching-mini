@@ -123,7 +123,7 @@ def _pipeline_methods_perf_test(logger, profiler, matcher, features0, features1,
 
 
 def staged_performance_test(logger, profiler, detector, detector_name, descriptor, descriptor_name,
-                            matcher, matcher_name, img0, img1, iterations):
+                            matcher, img0, img1, iterations):
 
     if detector_name in DNN_PIPELINES:
         _pipeline_methods_perf_test(logger, profiler, matcher,
@@ -174,7 +174,6 @@ def main():
             descriptor=descriptor,
             descriptor_name=args.descriptor,
             matcher=matcher,
-            matcher_name=args.matcher,
             img0=img0,
             img1=img1,
             iterations=iterations
