@@ -74,11 +74,17 @@ class OpenCVMatcher(Matcher, register=False):
 
         matcher = self._init_matcher()
         if self.mode == 'simple':
-            return {'matches': matcher.match(des1, des2)}
+            matches = matcher.match(des1, des2)
         elif self.mode == 'knn':
-            return {'matches': matcher.knnMatch(des1, des2, self.k)}
+            matches = matcher.knnMatch(des1, des2, self.k)
         else:
             raise ValueError(f"Mode '{self.mode}' is not supported.")
+
+        if matches is not None:
+            self._logger.info(f"{self._matcher_name} match {len(matches)} points")
+        else:
+            self._logger.warning(f"{self._matcher_name} match 0 points")
+        return {'matches': matches}
 
 
 class BFMatcher(OpenCVMatcher):

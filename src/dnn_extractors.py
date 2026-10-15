@@ -12,7 +12,11 @@ from src.backend.model_wrapper_base import ModelWrapper
 
 
 class DNNFeatureExtractors(Detector, Descriptor):
-    _model = None
+    _model_wrapper = None
+    _model_components = None
+    _io_adapter = None
+    _inference = None
+
     _is_extracted = False
     _extracted_data = {}
 
@@ -27,12 +31,19 @@ class DNNFeatureExtractors(Detector, Descriptor):
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)
 
-        self._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name, config=config, logger=logger)
-        self._model_components = self._model_wrapper.load()
-        self._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name, config=config,
-                                            logger=logger)
-        self._inference = InferenceAPI.create(backend=backend, logger=logger, model_name=extractor_name,
-                                              model_wrapper=self._model_wrapper , config=config)
+        if DNNFeatureExtractors._model_wrapper is None:
+            DNNFeatureExtractors._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name,
+                                                                      config=config, logger=logger)
+            DNNFeatureExtractors._model_components = DNNFeatureExtractors._model_wrapper.load()
+
+        if DNNFeatureExtractors._io_adapter is None:
+            DNNFeatureExtractors._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name,
+                                                                config=config, logger=logger)
+
+        if DNNFeatureExtractors._inference is None:
+            DNNFeatureExtractors._inference = InferenceAPI.create(backend=backend, logger=logger, config=config,
+                                                                  model_name=extractor_name,
+                                                                  model_wrapper=DNNFeatureExtractors._model_wrapper)
 
     def _forward(self, img):
         if img is None:
@@ -40,11 +51,11 @@ class DNNFeatureExtractors(Detector, Descriptor):
             return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
-        inputs = {'image': img, **self._model_components}
+        inputs = {'image': img, **DNNFeatureExtractors._model_components}
 
-        inputs = self._io_adapter.preprocess(inputs)
-        outputs = self._inference.run(inputs)
-        outputs = self._io_adapter.postprocess(outputs)
+        inputs = DNNFeatureExtractors._io_adapter.preprocess(inputs)
+        outputs = DNNFeatureExtractors._inference.run(inputs)
+        outputs = DNNFeatureExtractors._io_adapter.postprocess(outputs)
 
         keypoints = outputs.pop('keypoints', ())
         descriptors = outputs.pop('descriptors', ())
@@ -63,13 +74,13 @@ class DNNFeatureExtractors(Detector, Descriptor):
         extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc, **outputs}
         DNNFeatureExtractors._extracted_data = extracted
 
-        if len(keypoints) > 0:
-            self._logger.info(f"{self._detector_name} found {len(keypoints)} points")
+        if len(kp) > 0:
+            self._logger.info(f"{self._detector_name} found {len(kp)} points")
         else:
             self._logger.warning(f"{self._detector_name} found 0 points")
 
-        if descriptors is not None:
-            self._logger.info(f"{self._descriptor_name} computed {len(descriptors)} descriptors")
+        if des is not None:
+            self._logger.info(f"{self._descriptor_name} computed {len(des)} descriptors")
         else:
             self._logger.warning(f"{self._descriptor_name} computed 0 descriptors")
 

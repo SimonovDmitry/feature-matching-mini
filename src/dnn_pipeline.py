@@ -12,23 +12,36 @@ from src.backend.model_wrapper_base import ModelWrapper
 
 
 class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
+    _model_wrapper = None
+    _model_components = None
+    _io_adapter = None
+    _inference = None
+
     def __init__(self, extractor_name, logger, config=None):
         if config is None:
             config = {}
 
         DNNFeatureExtractors.__init__(self, extractor_name, logger, config)
-        DNNMatcher.__init__(self, extractor_name, logger, config, extractor_name)
+        # DNNMatcher.__init__(self, extractor_name, logger, config, extractor_name)
+        #
+        # backend = config.pop('backend', 'torch').lower()
+        # self._nfeatures = config.get('nfeatures', 4096)
+        # self._threshold = config.get('threshold', 0.005)
+        #
+        # if DNNPipeline._model_wrapper is None:
+        #     DNNPipeline._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name,
+        #                                                               config=config, logger=logger)
+        #     DNNPipeline._model_components = DNNPipeline._model_wrapper.load()
+        #
+        # if DNNPipeline._io_adapter is None:
+        #     DNNPipeline._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name,
+        #                                                         config=config, logger=logger)
+        #
+        # if DNNPipeline._inference is None:
+        #     DNNPipeline._inference = InferenceAPI.create(backend=backend, logger=logger, config=config,
+        #                                                           model_name=extractor_name,
+        #                                                           model_wrapper=DNNPipeline._model_wrapper)
 
-        backend = config.pop('backend', 'torch').lower()
-        self._nfeatures = config.get('nfeatures', 4096)
-        self._threshold = config.get('threshold', 0.005)
-
-        self._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name, config=config, logger=logger)
-        self._model_components = self._model_wrapper.load()
-        self._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name, config=config,
-                                            logger=logger)
-        self._inference = InferenceAPI.create(backend=backend, logger=logger, model_name=extractor_name,
-                                              model_wrapper=self._model_wrapper, config=config)
     def detect(self, img):
         return {'image': img, 'keypoints': (), 'descriptors': ()}
 
@@ -44,9 +57,9 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
             return {'matches': (), 'scores': ()}
 
         inputs = {'image0': img0, 'image1': img1}
-        inputs = self._io_adapter.preprocess(inputs)
-        outputs = self._inference.run(inputs)
-        outputs = self._io_adapter.postprocess(outputs)
+        inputs = DNNFeatureExtractors._io_adapter.preprocess(inputs)
+        outputs = DNNFeatureExtractors._inference.run(inputs)
+        outputs = DNNFeatureExtractors._io_adapter.postprocess(outputs)
 
         matches = outputs.get('matches')
         scores = outputs.get('scores')
