@@ -32,7 +32,7 @@ class IOAdapter(ABC):
             raise ValueError(f"Model loader backend '{backend}' not found. "
                              f"Available: {list(cls._METHODS.keys())}")
 
-        return cls._METHODS[loader_name](model_name=model_name, model_wrapper=model_wrapper, 
+        return cls._METHODS[loader_name](model_name=model_name, model_wrapper=model_wrapper,
                                          config=config, logger=logger)
 
     @abstractmethod
