@@ -7,8 +7,7 @@ sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.image_utils import read_image  # noqa: E402
 from samples.utils import build_feature_matcher_config, performance_tests_parser  # noqa: E402
-from src.preprocessor import Preprocessor  # noqa: E402
-from src.algorithms import DNN_ALGORITHMS  # noqa: E402
+from src.algorithms import DNN_ALGORITHMS, DNN_PIPELINES  # noqa: E402
 from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher  # noqa: E402
@@ -17,19 +16,17 @@ from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: E402, F4
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: E402, F401
 from src.tfeat_descriptor import TFeat  # noqa: E402, F401
 from src.hardnet_descriptor import HardNet  # noqa: E402, F401
-from src.xfeat import XFeat  # noqa: E402, F401
-from src.super_glue import SuperGlueMatcher  # noqa: E402, F401
-from src.d2net import D2Net  # noqa: E402, F401
-from src.r2d2 import R2D2  # noqa: E402, F401
-from src.loftr import LoFTR  # noqa: E402, F401
-from src.roma import RoMa  # noqa: E402, F401
+import src.backend.opencv.model_loader  # noqa: E402, F401
+import src.backend.opencv.inference_api  # noqa: E402, F401
+import src.backend.opencv.io_adapter  # noqa: E402, F401
+
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("Staged_Performance_Test_Sample")
 
 
-def _dnn_staged_perf_test(logger, profiler, descriptor, descriptor_name,
-                          matcher, matcher_name, img0, img1, iterations):
+def _dnn_staged_perf_test(logger, profiler, descriptor,
+                          matcher, img0, img1, iterations):
     times_detectors_and_descriptors = []
     times_matchers = []
 
@@ -47,12 +44,8 @@ def _dnn_staged_perf_test(logger, profiler, descriptor, descriptor_name,
 
         times_detectors_and_descriptors.append(time_desc0)
         times_detectors_and_descriptors.append(time_desc1)
-        features0 = profiler.preprocessor.prepare_features(res_extract_dict0, from_algo=descriptor_name,
-                                                           to_algo=matcher_name)
-        features1 = profiler.preprocessor.prepare_features(res_extract_dict1, from_algo=descriptor_name,
-                                                           to_algo=matcher_name)
 
-        res_match_dict, time_match = profiler.profile_matching(matcher, features0, features1)
+        res_match_dict, time_match = profiler.profile_matching(matcher, res_extract_dict0, res_extract_dict1)
         times_matchers.append(time_match)
 
     min_time_detectors_and_descriptors = np.min(times_detectors_and_descriptors)
@@ -69,37 +62,30 @@ def _dnn_staged_perf_test(logger, profiler, descriptor, descriptor_name,
                 f"Descriptors dimension: {descriptor_dimension}\n")
 
 
-def _opencv_staged_perf_test(logger, profiler, detector, detector_name, descriptor, descriptor_name,
-                             matcher, matcher_name, img0, img1, iterations):
+def _opencv_staged_perf_test(logger, profiler, detector, descriptor,
+                             matcher, img0, img1, iterations):
     times_detectors = []
     times_descriptors = []
     times_matchers = []
 
     for _ in range(iterations):
         res_detect_dict0, time_detect0 = profiler.profile_detection(detector, img0)
-        count_kp0 = len(res_detect_dict0['kp'])
+        count_kp0 = len(res_detect_dict0['keypoints'])
         times_detectors.append(time_detect0)
-        kp0 = profiler.preprocessor.prepare_features(res_detect_dict0,
-                                                     from_algo=detector_name, to_algo=descriptor_name)
-        res_desc_dict0, time_desc0 = profiler.profile_descriptor(descriptor, img0, kp0)
-        des0 = res_desc_dict0.get('des')
+
+        res_desc_dict0, time_desc0 = profiler.profile_descriptor(descriptor, img0, res_detect_dict0)
+        des0 = res_desc_dict0.get('descriptors')
         descriptor_dimension = des0.shape[-1]
         times_descriptors.append(time_desc0)
 
         res_detect_dict1, time_detect1 = profiler.profile_detection(detector, img1)
-        count_kp1 = len(res_detect_dict1['kp'])
+        count_kp1 = len(res_detect_dict1['keypoints'])
         times_detectors.append(time_detect1)
-        kp1 = profiler.preprocessor.prepare_features(res_detect_dict1,
-                                                     from_algo=detector_name, to_algo=descriptor_name)
-        res_desc_dict1, time_desc1 = profiler.profile_descriptor(descriptor, img1, kp1)
+        res_desc_dict1, time_desc1 = profiler.profile_descriptor(descriptor, img1, res_detect_dict1)
         times_descriptors.append(time_desc1)
 
-        features0 = profiler.preprocessor.prepare_features(res_desc_dict0, from_algo=descriptor_name,
-                                                           to_algo=matcher_name)
-        features1 = profiler.preprocessor.prepare_features(res_desc_dict1, from_algo=descriptor_name,
-                                                           to_algo=matcher_name)
 
-        res_match_dict, time_match = profiler.profile_matching(matcher, features0, features1)
+        res_match_dict, time_match = profiler.profile_matching(matcher, res_desc_dict0, res_desc_dict1)
         times_matchers.append(time_match)
 
     min_time_detector = np.min(times_detectors)
@@ -120,15 +106,35 @@ def _opencv_staged_perf_test(logger, profiler, detector, detector_name, descript
                 f"Descriptors dimension: {descriptor_dimension}\n")
 
 
+def _pipeline_methods_perf_test(logger, profiler, matcher, features0, features1, iterations):
+    times = []
+    for _ in range(iterations):
+        res, time = profiler.profile_pipeline_methods(matcher, features0, features1)
+        count_kp0 = len(res['keypoints0'])
+        count_kp1 = len(res['keypoints1'])
+        times.append(time)
+
+    min_time = np.min(times)
+    mean_time = np.mean(times)
+    logger.info(f"\nMin time pipeline test: {min_time:.5f}\n"
+                f"Mean time pipeline test: {mean_time:.5f}\n"
+                f"Number of key points 1: {count_kp0}\n"
+                f"Number of key points 2: {count_kp1}\n")
+
+
 def staged_performance_test(logger, profiler, detector, detector_name, descriptor, descriptor_name,
                             matcher, matcher_name, img0, img1, iterations):
 
-    if detector_name in DNN_ALGORITHMS or descriptor_name in DNN_ALGORITHMS:
-        _dnn_staged_perf_test(logger, profiler, descriptor, descriptor_name,
-                              matcher, matcher_name, img0, img1, iterations)
+    if detector_name in DNN_PIPELINES:
+        _pipeline_methods_perf_test(logger, profiler, matcher,
+                                    {'image': img0}, {'image': img1}, iterations)
+
+    elif detector_name in DNN_ALGORITHMS or descriptor_name in DNN_ALGORITHMS:
+        _dnn_staged_perf_test(logger, profiler, descriptor,
+                              matcher, img0, img1, iterations)
     else:
-        _opencv_staged_perf_test(logger, profiler, detector, detector_name, descriptor, descriptor_name,
-                                 matcher, matcher_name, img0, img1, iterations)
+        _opencv_staged_perf_test(logger, profiler, detector, descriptor,
+                                 matcher, img0, img1, iterations)
 
 
 def main():
@@ -145,7 +151,6 @@ def main():
         detector_config = config.get('detector', {})
         descriptor_config = config.get('descriptor', {})
         matcher_config = config.get('matcher', {})
-        preprocessor_config = config.get('preprocessor', {})
 
         img0 = read_image(args.image1)
         img1 = read_image(args.image2)
@@ -153,14 +158,10 @@ def main():
         detector = Detector.create(detector_name=args.detector, logger=logger, config=detector_config)
         descriptor = Descriptor.create(descriptor_name=args.descriptor, logger=logger,
                                        config=descriptor_config)
-        matcher = Matcher.create(matcher_name=args.matcher, descriptor_name=descriptor,
+        matcher = Matcher.create(matcher_name=args.matcher, descriptor=descriptor,
                                  logger=logger, config=matcher_config)
-        preprocessor = Preprocessor(config=preprocessor_config, logger=logger)
 
-        img0 = preprocessor.prepare_image(img0, from_algo='opencv', to_algo=args.detector)
-        img1 = preprocessor.prepare_image(img1, from_algo='opencv', to_algo=args.detector)
-
-        profiler = PerformanceProfiler(preprocessor)
+        profiler = PerformanceProfiler()
 
         iterations = args.iterations
         logger.info(f"Running staged performance test with {iterations} iterations...")

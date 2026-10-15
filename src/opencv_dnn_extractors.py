@@ -36,7 +36,7 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
     def _forward(self, img):
         if img is None:
             self._logger.error("Input image is None. Detection aborted.")
-            return {'kp': (), 'des': ()}
+            return {'keypoints': (), 'descriptors': ()}
 
         self._logger.info(f"Running inference with {self._detector_name}")
 
@@ -44,9 +44,9 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
         outputs = self._inference.run()
         outputs = self._io_adapter.postprocess(outputs)
 
-        kp = outputs.get('kp', np.array([]))
-        des = outputs.get('des', np.array([]))
-        sc = outputs.get('sc', np.array([]))
+        kp = outputs.get('keypoints', np.array([]))
+        des = outputs.get('descriptors', np.array([]))
+        sc = outputs.get('scores', np.array([]))
 
         mask = sc > self._threshold
         kp = kp[mask]
@@ -63,7 +63,7 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
         else:
             self._logger.warning(f"{self.extractor_name} found 0 points")
 
-        OpenCVDNNFeatureExtractors._extracted_data = {'kp': kp, 'des': des, 'sc': sc,
+        OpenCVDNNFeatureExtractors._extracted_data = {'keypoints': kp, 'descriptors': des, 'scores': sc,
                                                       'img_shape': img.shape, 'extractor_name': self.extractor_name}
         return OpenCVDNNFeatureExtractors._extracted_data
 

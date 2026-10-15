@@ -27,5 +27,5 @@ class DiskOpenCVIOAdapter(OpenCVIOAdapter):
         keypoints = cv.KeyPoint_convert(keypoints_np)
         keypoints = np.asarray(keypoints)
 
-        result = {'kp': keypoints, 'des': descriptors, 'sc': scores}
+        result = {'keypoints': keypoints, 'descriptors': descriptors, 'scores': scores}
         return result

@@ -26,10 +26,10 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
 
     def preprocess(self, inputs):
         features1, features2 = inputs.get('features1'), inputs.get('features2')
-        kpts0 = features1.get('kp')
-        kpts1 = features2.get('kp')
-        desc0 = features1.get('des')
-        desc1 = features2.get('des')
+        kpts0 = features1.get('keypoints')
+        kpts1 = features2.get('keypoints')
+        desc0 = features1.get('descriptors')
+        desc1 = features2.get('descriptors')
         shape0 = features1.get("img_shape")
         shape1 = features2.get("img_shape")
 
