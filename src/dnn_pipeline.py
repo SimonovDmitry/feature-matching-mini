@@ -92,3 +92,10 @@ class DNNPipeline(DNNFeatureExtractors, DNNMatcher):
             self._logger.warning(f"{self._detector_name} found 0 matches")
 
         return extracted
+
+    def close(self):
+        DNNFeatureExtractors._inference = None
+        DNNFeatureExtractors._io_adapter = None
+        DNNFeatureExtractors._model_components = None
+        DNNFeatureExtractors._model_wrapper = None
+        DNNFeatureExtractors._extracted_data = {}

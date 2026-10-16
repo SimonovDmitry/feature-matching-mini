@@ -7,12 +7,12 @@ from src.algorithms import ALL_MATCHERS, DNN_MATCHERS, DNN_PIPELINES
 class Matcher(ABC):
     _METHODS = {}
 
-    def __init__(self, matcher_name, logger, config=None, descriptor_name=None):
+    def __init__(self, matcher_name, logger, config=None, descriptor_class=None):
         if config is None:
             config = {}
 
         self._matcher_name = matcher_name
-        self._descriptor_name = descriptor_name
+        self._descriptor_class = descriptor_class
         self._logger = logger
 
     def __init_subclass__(cls, register=True, **kwargs):
@@ -56,8 +56,8 @@ class Matcher(ABC):
 class OpenCVMatcher(Matcher, register=False):
     _MODE = {'simple', 'knn'}
 
-    def __init__(self, matcher_name, logger, config, descriptor_name):
-        super().__init__(matcher_name, logger, config, descriptor_name)
+    def __init__(self, matcher_name, logger, config, descriptor_class):
+        super().__init__(matcher_name, logger, config, descriptor_class)
         self.mode = config.get('mode', 'simple')
         self.k = config.get('k', 1)
 
@@ -88,16 +88,16 @@ class OpenCVMatcher(Matcher, register=False):
 
 
 class BFMatcher(OpenCVMatcher):
-    def __init__(self, matcher_name, logger, config, descriptor_name):
-        super().__init__(matcher_name, logger, config, descriptor_name)
+    def __init__(self, matcher_name, logger, config, descriptor_class):
+        super().__init__(matcher_name, logger, config, descriptor_class)
 
     def _init_matcher(self):
-        return cv.BFMatcher(self._descriptor_name.default_norm)
+        return cv.BFMatcher(self._descriptor_class.default_norm)
 
 
 class FLANNMatcher(OpenCVMatcher):
-    def __init__(self, matcher_name, logger, config, descriptor_name):
-        super().__init__(matcher_name, logger, config, descriptor_name)
+    def __init__(self, matcher_name, logger, config, descriptor_class):
+        super().__init__(matcher_name, logger, config, descriptor_class)
         self.index_params = config.get('index_params')
         self.search_params = config.get('search_params')
 
@@ -111,7 +111,7 @@ class FLANNMatcher(OpenCVMatcher):
             raise TypeError("search_params must be dict")
 
     def _get_default_index_params(self):
-        if self._descriptor_name.default_norm == cv.NORM_HAMMING:
+        if self._descriptor_class.default_norm == cv.NORM_HAMMING:
             return {
                 'algorithm': 6,
                 'table_number': 6,

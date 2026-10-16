@@ -43,4 +43,4 @@ class SuperPointTorchModelWrapper(TorchModelWrapper):
 
         except Exception as e:
             self._logger.error(f"Super Point inference error: {e}")
-            return {'keypoints': (), 'descriptors': ()}
+            raise

@@ -22,7 +22,7 @@ class LightGlueTorchModelLoader(TorchModelWrapper):
 
         except Exception as e:
             self._logger.error(f"LightGlue inference error: {e}")
-            return {"matches": (), "scores": ()}
+            raise
 
 
 

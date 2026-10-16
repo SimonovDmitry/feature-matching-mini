@@ -41,4 +41,4 @@ class LoFTRTorchModelWrapper(TorchModelWrapper):
 
         except Exception as e:
             self._logger.error(f"LoFTR inference error: {e}")
-            return {'keypoints': (), 'descriptors': (), 'matches': ()}
+            raise

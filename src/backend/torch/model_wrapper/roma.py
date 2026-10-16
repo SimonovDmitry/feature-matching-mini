@@ -33,5 +33,5 @@ class RoMaTorchModelWrapper(TorchModelWrapper):
             return {'keypoints0': kp0.cpu(), 'keypoints1': kp1.cpu(), 'scores': conf.cpu()}
 
         except Exception as e:
-                self._logger.error(f"RoMa match error: {e}")
-                return {'matches': (), 'scores': ()}
+            self._logger.error(f"RoMa match error: {e}")
+            raise

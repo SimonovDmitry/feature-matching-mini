@@ -46,4 +46,4 @@ class LightGlueFeatureExtractorTorchModelLoader(TorchModelWrapper):
 
         except Exception as e:
             self._logger.error(f"D2-Net inference error: {e}")
-            return {'keypoints': (), 'descriptors': ()}
+            raise

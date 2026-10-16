@@ -28,4 +28,4 @@ class XFeatTorchModelWrapper(TorchModelWrapper):
 
         except Exception as e:
             self._logger.warning(f"XFeat inference error: {e}")
-            return {'keypoints': (), 'descriptors': (), 'scores': ()}
+            raise

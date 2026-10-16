@@ -33,4 +33,4 @@ class R2D2TorchModelWrapper(TorchModelWrapper):
 
         except Exception as e:
             self._logger.warning(f"R2D2 inference failed (likely 0 points): {e}")
-            return {'keypoints': (), 'descriptors': ()}
+            raise

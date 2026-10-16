@@ -45,7 +45,7 @@ class DNNMatcher(Matcher):
         pass
 
     def match(self, features0, features1):
-        inputs = {"features0": features0, "features1": features1, "descriptor_name": self._descriptor_name,
+        inputs = {"features0": features0, "features1": features1, "descriptor_name": self._descriptor_class,
                   **DNNMatcher._model_components}
         inputs = DNNMatcher._io_adapter.preprocess(inputs)
         outputs = DNNMatcher._inference.run(inputs)
@@ -56,3 +56,9 @@ class DNNMatcher(Matcher):
         else:
             self._logger.warning(f"{self._matcher_name} match 0 points")
         return outputs
+
+    def close(self):
+        DNNMatcher._inference = None
+        DNNMatcher._io_adapter = None
+        DNNMatcher._model_components = None
+        DNNMatcher._model_wrapper = None

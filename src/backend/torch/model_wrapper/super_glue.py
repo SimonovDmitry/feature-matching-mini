@@ -30,4 +30,4 @@ class SuperGlueTorchModelWrapper(TorchModelWrapper):
 
         except Exception as e:
             self._logger.error(f"Super Glue inference error: {e}")
-            return {'matches': (), 'scores': ()}
+            raise
