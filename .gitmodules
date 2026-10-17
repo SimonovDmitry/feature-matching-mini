@@ -1,3 +1,12 @@
+[submodule "thirdparty/loftr"]
+	path = thirdparty/loftr
+	url = https://github.com/zju3dv/LoFTR
+[submodule "thirdparty/roma"]
+	path = thirdparty/roma
+	url = https://github.com/Parskatt/RoMa
+[submodule "thirdparty/r2d2"]
+	path = thirdparty/r2d2
+	url = https://github.com/naver/r2d2
 [submodule "thirdparty/xfeat"]
 	path = thirdparty/xfeat
 	url = https://github.com/verlab/accelerated_features.git
@@ -13,15 +22,6 @@
 [submodule "thirdparty/d2net"]
 	path = thirdparty/d2net
 	url = https://github.com/mihaidusmanu/d2-net.git
-[submodule "thirdparty/loftr"]
-	path = thirdparty/loftr
-	url = https://github.com/zju3dv/LoFTR
-[submodule "thirdparty/roma"]
-	path = thirdparty/roma
-	url = https://github.com/Parskatt/RoMa
-[submodule "thirdparty/r2d2"]
-	path = thirdparty/r2d2
-	url = https://github.com/naver/r2d2
 [submodule "thirdparty/lightglue"]
 	path = thirdparty/lightglue
 	url = https://github.com/cvg/lightglue.git
