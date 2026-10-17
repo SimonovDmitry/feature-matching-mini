@@ -14,6 +14,8 @@ def build_detector_config(args):
     config = dict()
     if (args.device is not None) and (args.detector in DNN_DETECTORS):
         config['device'] = args.device
+    if args.det_backend is not None:
+        config['backend'] = args.det_backend
     if args.det_nfeatures is not None:
         config['nfeatures'] = args.det_nfeatures
     if args.det_noctave is not None:
@@ -31,6 +33,8 @@ def build_descriptor_config(args):
     config = dict()
     if (args.device is not None) and (args.descriptor in DNN_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
         config['device'] = args.device
+    if args.des_backend is not None:
+        config['backend'] = args.des_backend
     if args.des_nfeatures is not None:
         config['nfeatures'] = args.des_nfeatures
     if args.des_threshold is not None:
@@ -58,6 +62,8 @@ def build_matcher_config(args):
     config = dict()
     if (args.device is not None) and (args.matcher in DNN_MATCHERS):
         config['device'] = args.device
+    if args.mat_backend is not None:
+        config['backend'] = args.mat_backend
     if args.matcher in OPENCV_MATCHERS:
         config['mode'] = args.matcher_mode
     if (args.k_knn is not None) and (args.matcher in OPENCV_MATCHERS):

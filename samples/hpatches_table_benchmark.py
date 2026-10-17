@@ -254,6 +254,7 @@ def parse_args():
                             help='Threshold for homography estimation')
 
     det_group = parser.add_argument_group('Detector config')
+    det_group.add_argument('-detb', '--det-backend', type=str, default=None, help='Backend for detector')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
                            help='Max number of features to detect')
     det_group.add_argument('-do', '--det-noctave', type=int, default=None,
@@ -262,6 +263,8 @@ def parse_args():
                            help='Detection threshold')
 
     des_group = parser.add_argument_group('Descriptor config')
+    des_group.add_argument('-desb', '--des-backend', type=str, default=None,
+                           help='Backend for descriptor')
     des_group.add_argument('-dsen', '--des-nfeatures', type=int, default=None,
                            help='Max number of features for descriptor')
     des_group.add_argument('-dsdt', '--des-threshold', type=float, default=None,
@@ -270,6 +273,8 @@ def parse_args():
                            help='Scale factor')
 
     mat_group = parser.add_argument_group('Matcher config')
+    mat_group.add_argument('-matb', '--mat-backend', type=str, default=None,
+                           help='Backend for matcher')
     mat_group.add_argument('-mat_m', '--matcher_mode', type=str, default='simple',
                            choices=OPENCV_MATCHERS_MODE, help='Matching mode')
     mat_group.add_argument('-mr', '--mat-ratio', type=float, default=None,
