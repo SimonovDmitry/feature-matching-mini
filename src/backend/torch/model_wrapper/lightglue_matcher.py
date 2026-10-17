@@ -7,7 +7,7 @@ from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
 
 
 @ModelWrapper.register("lightglue_torch")
-class LightGlueTorchModelLoader(TorchModelWrapper):
+class LightGlueTorchModelWrapper(TorchModelWrapper):
     def load(self):
         extractor_name = self._config.get('descriptor_class')._descriptor_name.replace("_lightglue", "")
         self._logger.info(f"Loading SuperGlue onto {self._device}")
@@ -23,6 +23,3 @@ class LightGlueTorchModelLoader(TorchModelWrapper):
         except Exception as e:
             self._logger.error(f"LightGlue inference error: {e}")
             raise
-
-
-

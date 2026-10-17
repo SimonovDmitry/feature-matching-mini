@@ -26,5 +26,3 @@ class LightGlueFeatureExtractorTorchIOAdapter(TorchIOAdapter):
         data = {'keypoints': keypoints, 'descriptors': descriptors, 'scores': scores}
         data = features_to_cv(data)
         return {**data, **outputs}
-
-
