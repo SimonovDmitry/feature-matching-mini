@@ -7,8 +7,9 @@ sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 from src.detectors import Detector  # noqa: E402
 from src.descriptors import Descriptor  # noqa: E402
 from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
-from src.algorithms import (ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE,
-                            DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS)  # noqa: E402
+from src.algorithms import (ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE,  # noqa: E402
+                            DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS)  
+
 
 def build_detector_config(args):
     config = dict()
@@ -101,10 +102,6 @@ def performance_tests_parser():
         description="Feature matching staged performance test",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    available_detectors = list(Detector._METHODS.keys())
-    available_descriptors = list(Descriptor._METHODS.keys())
-    available_matchers = list(Matcher._METHODS.keys())
-    available_matchers_modes = list(OpenCVMatcher._MODE)
     available_devices = ['cpu', 'cuda', 'mps']
 
     arg_parser.add_argument('-det', '--detector', type=str, default='sift',
