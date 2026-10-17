@@ -18,6 +18,7 @@ from src.hardnet_descriptor import HardNet  # noqa: E402, F401
 import src.backend.opencv.model_loader  # noqa: E402, F401
 import src.backend.opencv.inference_api  # noqa: E402, F401
 import src.backend.opencv.io_adapter  # noqa: E402, F401
+from src.dnn_pipeline import DNNPipeline  # noqa: E402, F401
 
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
@@ -78,7 +79,7 @@ def main():
         detector = Detector.create(detector_name=args.detector, logger=logger, config=detector_config)
         descriptor = Descriptor.create(descriptor_name=args.descriptor, logger=logger,
                                        config=descriptor_config)
-        matcher = Matcher.create(matcher_name=args.matcher, descriptor=descriptor,
+        matcher = Matcher.create(matcher_name=args.matcher, descriptor_class=descriptor,
                                  logger=logger, config=matcher_config)
 
         profiler = PerformanceProfiler()
