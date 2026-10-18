@@ -170,8 +170,8 @@ class TestSuperPointTorchIOAdapterPostprocess:
             "width": 320,
         }
 
-        with patch("src.backend.torch.io_adapter.superpoint.features_to_cv",return_value=processed_features,
-        ) as mock_features_to_cv:
+        with (patch("src.backend.torch.io_adapter.superpoint.features_to_cv", return_value=processed_features)
+              as mock_features_to_cv):
             adapter.postprocess(outputs)
 
         mock_features_to_cv.assert_called_once_with(outputs)

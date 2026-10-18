@@ -11,9 +11,11 @@ class RoMaTorchModelWrapper(TorchModelWrapper):
     def load(self):
         coarse_res = self._config.get('coarse_res', 560)
         upsample_res = self._config.get('upsample_res', (864, 1152))
+        use_custom_corr = self._config.get('use_custom_corr', False)
 
         self._logger.info(f"Loading RoMa weights onto {self._device}")
-        self._model = roma_outdoor(device=self._device, coarse_res=coarse_res, upsample_res=upsample_res)
+        self._model = roma_outdoor(device=self._device, coarse_res=coarse_res, upsample_res=upsample_res,
+                                   use_custom_corr=use_custom_corr)
         self._model.eval().to(self._device)
         return {'model': self._model}
 

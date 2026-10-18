@@ -84,7 +84,9 @@ class DNNFeatureExtractors(Detector, Descriptor):
             if oris is not None:
                 outputs['oris'] = oris[:, mask]
 
-        extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc, **outputs}
+        height, width = img.shape[:2]
+        extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc,
+                     'height': height, 'width': width, **outputs}
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(kp) > 0:
