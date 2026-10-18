@@ -30,14 +30,12 @@ def mock_features():
 
 
 class TestXFeatTorchIOAdapterRegistration:
-
     def test_registered_in_factory(self):
         assert "xfeat_torch" in IOAdapter._METHODS
         assert IOAdapter._METHODS["xfeat_torch"] is XFeatTorchIOAdapter
 
 
 class TestXFeatTorchIOAdapterPreprocess:
-
     def test_preprocess_returns_dict(self, adapter, random_img):
         with patch(
             f"{XFeatTorchIOAdapter.__module__}.to_numpy_bgr",
@@ -96,9 +94,7 @@ class TestXFeatTorchIOAdapterPreprocess:
         assert tensor[0, 1, 0, 0].item() == pytest.approx(20 / 255)
         assert tensor[0, 2, 0, 0].item() == pytest.approx(10 / 255)
 
-    def test_preprocess_calls_to_numpy_bgr_for_numpy_input(
-        self, adapter, random_img
-    ):
+    def test_preprocess_calls_to_numpy_bgr_for_numpy_input(self, adapter, random_img):
         with patch(
             f"{XFeatTorchIOAdapter.__module__}.to_numpy_bgr",
             return_value=random_img,
@@ -107,9 +103,7 @@ class TestXFeatTorchIOAdapterPreprocess:
 
         mock_convert.assert_called_once_with(random_img, input_type="numpy")
 
-    def test_preprocess_calls_to_numpy_bgr_for_tensor_input(
-        self, adapter, random_img
-    ):
+    def test_preprocess_calls_to_numpy_bgr_for_tensor_input(self, adapter, random_img):
         image_tensor = torch.from_numpy(random_img)
 
         with patch(

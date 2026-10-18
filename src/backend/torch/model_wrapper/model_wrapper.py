@@ -16,7 +16,7 @@ class TorchModelWrapper(ModelWrapper):
         if device is None:
             self._device = get_device()
         else:
-            self._device =  torch.device(device)
+            self._device = torch.device(device)
 
         self._nfeatures = config.get('nfeatures', 4096)
         self._threshold = config.get('threshold', 0.005)

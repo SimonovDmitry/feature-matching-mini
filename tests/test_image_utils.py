@@ -30,7 +30,6 @@ def sample_numpy():
 
 
 class TestReadImage:
-
     def test_read_image(self, test_image_path):
         img = read_image(test_image_path)
 

@@ -256,7 +256,8 @@ class TestDescriptorInvariance:
         features1 = descriptor.compute(img, features)
         features2 = descriptor.compute(bright_img, features)
         cos_sim = (np.dot(features1.get('descriptors')[0], features2.get('descriptors')[0])
-                   / (np.linalg.norm(features1.get('descriptors')[0]) * np.linalg.norm(features2.get('descriptors')[0])))
+                   / (np.linalg.norm(features1.get('descriptors')[0]) *
+                      np.linalg.norm(features2.get('descriptors')[0])))
         assert cos_sim > 0.95
 
     def test_flip_consistency(self, mock_logger, load_img):

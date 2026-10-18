@@ -5,7 +5,7 @@ from thirdparty.d2net.lib.model_test import D2Net as D2NetModel
 from thirdparty.d2net.lib.pyramid import process_multiscale
 
 from src.backend.model_wrapper_base import ModelWrapper
-from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
+from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
 from src.backend.torch.model_wrapper.weights_url import WEIGHTS_URL_MODELS
 
 

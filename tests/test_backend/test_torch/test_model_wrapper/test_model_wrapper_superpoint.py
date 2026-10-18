@@ -46,7 +46,6 @@ def inference_outputs():
 
 
 class TestSuperPointTorchModelWrapperRegistration:
-
     def test_registered_in_factory(self):
         assert "superpoint_torch" in ModelWrapper._METHODS
         assert (ModelWrapper._METHODS["superpoint_torch"] is SuperPointTorchModelWrapper)

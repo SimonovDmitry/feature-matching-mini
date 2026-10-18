@@ -3,7 +3,7 @@ import torch
 from thirdparty.lightglue.lightglue import SuperPoint, DISK, SIFT, ALIKED, DoGHardNet
 
 from src.backend.model_wrapper_base import ModelWrapper
-from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
+from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
 
 
 @ModelWrapper.register("light_glue_feature_extractor_torch")

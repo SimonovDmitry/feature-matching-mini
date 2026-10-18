@@ -14,7 +14,6 @@ def adapter():
 
 
 class TestLightGlueFeatureExtractorTorchIOAdapter:
-
     def test_registered(self):
         assert hasattr(LightGlueFeatureExtractorTorchIOAdapter, "preprocess")
         assert hasattr(LightGlueFeatureExtractorTorchIOAdapter, "postprocess")
@@ -26,9 +25,7 @@ class TestLightGlueFeatureExtractorTorchIOAdapter:
         assert "aliked_lightglue_torch" in adapter._EXTRACTOR_CLASSES
         assert "doghardnet_lightglue_torch" in adapter._EXTRACTOR_CLASSES
 
-    @patch(
-        "src.backend.torch.io_adapter.lightglue_pipeline.image_to_tensor"
-    )
+    @patch("src.backend.torch.io_adapter.lightglue_pipeline.image_to_tensor")
     def test_preprocess(self, mock_image_to_tensor, adapter):
         image = MagicMock()
         image_tensor = torch.rand(1, 3, 32, 32)
@@ -46,9 +43,7 @@ class TestLightGlueFeatureExtractorTorchIOAdapter:
         assert result["custom_param"] == 123
         assert "image" not in inputs
 
-    @patch(
-        "src.backend.torch.io_adapter.lightglue_pipeline.features_to_cv"
-    )
+    @patch("src.backend.torch.io_adapter.lightglue_pipeline.features_to_cv")
     def test_postprocess(self, mock_features_to_cv, adapter):
         keypoints = torch.rand(1, 10, 2)
         descriptors = torch.rand(1, 10, 128)
@@ -82,12 +77,8 @@ class TestLightGlueFeatureExtractorTorchIOAdapter:
         assert result["scores"] == "cv_scores"
         assert result["extra"] is extra_output
 
-    @patch(
-        "src.backend.torch.io_adapter.lightglue_pipeline.features_to_cv"
-    )
-    def test_postprocess_without_extra_outputs(
-        self, mock_features_to_cv, adapter
-    ):
+    @patch("src.backend.torch.io_adapter.lightglue_pipeline.features_to_cv")
+    def test_postprocess_without_extra_outputs(self, mock_features_to_cv, adapter):
         mock_features_to_cv.return_value = {"converted": True}
 
         result = adapter.postprocess({
@@ -98,12 +89,8 @@ class TestLightGlueFeatureExtractorTorchIOAdapter:
 
         assert result == {"converted": True}
 
-    @patch(
-        "src.backend.torch.io_adapter.lightglue_pipeline.features_to_cv"
-    )
-    def test_postprocess_empty_features(
-        self, mock_features_to_cv, adapter
-    ):
+    @patch("src.backend.torch.io_adapter.lightglue_pipeline.features_to_cv")
+    def test_postprocess_empty_features(self, mock_features_to_cv, adapter):
         mock_features_to_cv.return_value = {}
 
         result = adapter.postprocess({

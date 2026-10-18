@@ -22,7 +22,7 @@ class InferenceAPI(ABC):
         return decorator
 
     @classmethod
-    def create(cls, backend, logger, model_name, model_wrapper , config=None):
+    def create(cls, backend, logger, model_name, model_wrapper, config=None):
         backend_key = backend.lower()
 
         if backend_key not in cls._METHODS:

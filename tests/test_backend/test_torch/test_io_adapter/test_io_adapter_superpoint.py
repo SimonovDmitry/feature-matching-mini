@@ -43,7 +43,6 @@ class TestSuperPointTorchIOAdapterRegistration:
 
 
 class TestSuperPointTorchIOAdapterPreprocess:
-
     @patch("src.backend.torch.io_adapter.superpoint.image_to_tensor")
     @patch("src.backend.torch.io_adapter.superpoint.to_numpy_bgr")
     def test_preprocess_returns_dict(self, mock_to_numpy_bgr, mock_image_to_tensor,
@@ -64,8 +63,7 @@ class TestSuperPointTorchIOAdapterPreprocess:
 
     @patch("src.backend.torch.io_adapter.superpoint.image_to_tensor")
     @patch("src.backend.torch.io_adapter.superpoint.to_numpy_bgr")
-    def test_preprocess_returns_image_dimensions(self, mock_to_numpy_bgr,
-                                                 mock_image_to_tensor, adapter,
+    def test_preprocess_returns_image_dimensions(self, mock_to_numpy_bgr, mock_image_to_tensor, adapter,
                                                  random_img, mock_processor):
         mock_image_to_tensor.return_value = random_img
         mock_to_numpy_bgr.return_value = random_img
@@ -80,8 +78,7 @@ class TestSuperPointTorchIOAdapterPreprocess:
 
     @patch("src.backend.torch.io_adapter.superpoint.image_to_tensor")
     @patch("src.backend.torch.io_adapter.superpoint.to_numpy_bgr")
-    def test_preprocess_calls_image_to_tensor(self, mock_to_numpy_bgr,
-                                              mock_image_to_tensor, adapter,
+    def test_preprocess_calls_image_to_tensor(self, mock_to_numpy_bgr, mock_image_to_tensor, adapter,
                                               random_img, mock_processor):
         mock_image_to_tensor.return_value = random_img
         mock_to_numpy_bgr.return_value = random_img

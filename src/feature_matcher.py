@@ -7,9 +7,9 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
-from src.dnn_extractors import DNNFeatureExtractors
-from src.dnn_matchers import DNNMatcher
-from src.dnn_pipeline import DNNPipeline
+from src.dnn_extractors import DNNFeatureExtractors  # noqa: F401
+from src.dnn_matchers import DNNMatcher  # noqa: F401
+from src.dnn_pipeline import DNNPipeline  # noqa: F401
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
 from src.hardnet_descriptor import HardNet  # noqa: F401
@@ -50,8 +50,9 @@ class FeatureMatcherCV2:
 
         if self._descriptor_name in DESCRIPTOR_MATCHER_COMPATIBILITY:
             if self._matcher_name not in DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor_name]:
-                raise ValueError(f"Descriptor '{self._descriptor_name}' cannot be used with Matcher '{self._matcher_name}'."
-                                 f" Available: {DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor_name]}")
+                raise ValueError(f"Descriptor '{self._descriptor_name}' cannot be used with "
+                                 f"Matcher '{self._matcher_name}'"
+                                 f"Available: {DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor_name]}")
 
         if self._matcher_name in DNN_MATCHERS and 'mode' in self._matcher_config:
             raise ValueError(f"Matcher '{self._matcher_name}' does not support 'mode' parameter. "
@@ -93,7 +94,7 @@ class FeatureMatcherCV2:
             kp1 = features1.get('kp')
         else:
             self._logger.warning("Keypoints are missing, cannot visualize matches")
-            return cv.drawMatches(img0,[], img1,[],[],None, **draw_params)
+            return cv.drawMatches(img0, [], img1, [], [], None, **draw_params)
 
         mode = self._matcher_config.get('mode', 'simple')
         if mode == 'simple':
@@ -101,7 +102,7 @@ class FeatureMatcherCV2:
         if mode == 'knn':
             return cv.drawMatchesKnn(img0, kp0, img1, kp1, matches, None, **draw_params)
 
-        return cv.drawMatches(img0, kp0, img1, kp1,[], None, **draw_params)
+        return cv.drawMatches(img0, kp0, img1, kp1, [], None, **draw_params)
 
     def match(self, img0, img1):
         features0 = self._detector_class.detect(img0)

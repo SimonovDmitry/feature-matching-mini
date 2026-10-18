@@ -41,14 +41,12 @@ def model_output():
 
 
 class TestXFeatTorchModelWrapperRegistration:
-
     def test_registered_in_factory(self):
         assert "xfeat_torch" in ModelWrapper._METHODS
         assert (ModelWrapper._METHODS["xfeat_torch"] is XFeatTorchModelWrapper)
 
 
 class TestXFeatTorchModelWrapperLoad:
-
     @patch("src.backend.torch.model_wrapper.xfeat.XFeatModel")
     def test_load_creates_model(self, mock_xfeat_model, wrapper, mock_model):
         mock_xfeat_model.return_value = mock_model

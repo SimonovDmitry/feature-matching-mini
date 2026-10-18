@@ -3,7 +3,7 @@ import torch
 from transformers import AutoImageProcessor, SuperPointForKeypointDetection
 
 from src.backend.model_wrapper_base import ModelWrapper
-from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
+from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
 
 
 @ModelWrapper.register("superpoint_torch")

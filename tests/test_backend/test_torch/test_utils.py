@@ -1,9 +1,7 @@
-
 import cv2 as cv
 import numpy as np
 import pytest
 import torch
-from unittest.mock import patch
 
 from src.backend.torch.utils import (is_tensor, empty, get_device, numpy_to_tensor, tensor_to_numpy,
                                      to_numpy_bgr, image_to_tensor, image_to_cv, features_to_tensor,

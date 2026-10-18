@@ -69,8 +69,7 @@ def matcher_inputs(features0, features1):
 
 
 class TestLightGlueTorchModelWrapperLoad:
-
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load(self, mock_lightglue, wrapper):
         mock_model = MagicMock()
         mock_lightglue.return_value.eval.return_value.to.return_value = (mock_model)
@@ -91,7 +90,7 @@ class TestLightGlueTorchModelWrapperLoad:
             ("doghardnet_lightglue", "doghardnet"),
         ],
     )
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_selects_extractor(self, mock_lightglue, wrapper, descriptor_class, descriptor_name, expected):
         descriptor_class._descriptor_name = descriptor_name
         mock_lightglue.return_value.eval.return_value.to.return_value = (MagicMock())
@@ -99,7 +98,7 @@ class TestLightGlueTorchModelWrapperLoad:
         wrapper.load()
         assert mock_lightglue.call_args.kwargs["features"] == expected
 
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_sets_eval_and_device(self, mock_lightglue, wrapper):
         model_instance = mock_lightglue.return_value
         evaluated_model = model_instance.eval.return_value
@@ -110,7 +109,7 @@ class TestLightGlueTorchModelWrapperLoad:
         evaluated_model.to.assert_called_once_with(torch.device("cpu"))
         assert result["model"] is final_model
 
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_logs_initialization(self, mock_lightglue, wrapper):
         mock_lightglue.return_value.eval.return_value.to.return_value = (MagicMock())
 
@@ -155,7 +154,7 @@ class TestLightGlueTorchModelWrapperCall:
         )
         wrapper._model = mock_model
 
-        with patch(f"src.backend.torch.model_wrapper.lightglue_matcher.torch.no_grad") as mock_no_grad:
+        with patch("src.backend.torch.model_wrapper.lightglue_matcher.torch.no_grad") as mock_no_grad:
             mock_no_grad.return_value.__enter__.return_value = None
             mock_no_grad.return_value.__exit__.return_value = False
             wrapper.call(matcher_inputs)
@@ -196,7 +195,7 @@ class TestLightGlueTorchModelWrapperCall:
 
 
 class TestLightGlueTorchModelWrapperIntegration:
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_then_call(self, mock_lightglue, wrapper, matcher_inputs):
         matches = torch.tensor([[[0, 0], [1, 1]]], dtype=torch.long)
         scores = torch.tensor([[0.9, 0.8]])

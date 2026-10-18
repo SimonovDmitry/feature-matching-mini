@@ -5,7 +5,7 @@ from thirdparty.r2d2.extract import NonMaxSuppression, load_network
 from thirdparty.r2d2.extract import extract_multiscale
 
 from src.backend.model_wrapper_base import ModelWrapper
-from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
+from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
 
 
 @ModelWrapper.register("r2d2_torch")

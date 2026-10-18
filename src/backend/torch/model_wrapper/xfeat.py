@@ -3,7 +3,7 @@ import torch
 from thirdparty.xfeat.modules.xfeat import XFeat as XFeatModel
 
 from src.backend.model_wrapper_base import ModelWrapper
-from src.backend.torch.model_wrapper.model_loader import TorchModelWrapper
+from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
 
 
 @ModelWrapper.register("xfeat_torch")

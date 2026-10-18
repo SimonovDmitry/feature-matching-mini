@@ -24,7 +24,7 @@ def descriptor_class():
 
 
 class TestLightGlueTorchModelWrapperLoad:
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_creates_model(self, mock_lightglue, wrapper, descriptor_class):
         model = MagicMock()
         mock_lightglue.return_value.eval.return_value.to.return_value = model
@@ -39,7 +39,7 @@ class TestLightGlueTorchModelWrapperLoad:
         assert result == {"model": model}
         assert wrapper._model is model
 
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_uses_descriptor_name_without_suffix(self, mock_lightglue, wrapper, descriptor_class):
         wrapper._config = {"descriptor_class": descriptor_class}
         mock_lightglue.return_value.eval.return_value.to.return_value = (MagicMock())
@@ -47,7 +47,7 @@ class TestLightGlueTorchModelWrapperLoad:
         wrapper.load()
         assert (mock_lightglue.call_args.kwargs["features"] == "superpoint")
 
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_passes_additional_configuration(self, mock_lightglue, wrapper, descriptor_class):
         wrapper._config = {
             "descriptor_class": descriptor_class,
@@ -61,7 +61,7 @@ class TestLightGlueTorchModelWrapperLoad:
         assert kwargs["depth_confidence"] == 0.95
         assert kwargs["width_confidence"] == 0.99
 
-    @patch(f"src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
+    @patch("src.backend.torch.model_wrapper.lightglue_matcher.LightGlue")
     def test_load_logs_device(self, mock_lightglue, wrapper, descriptor_class):
         wrapper._config = {"descriptor_class": descriptor_class}
         mock_lightglue.return_value.eval.return_value.to.return_value = (MagicMock())
@@ -119,7 +119,7 @@ class TestLightGlueTorchModelWrapperCall:
         })
         wrapper._model = model
 
-        with patch(f"src.backend.torch.model_wrapper.lightglue_matcher.torch.no_grad") as mock_no_grad:
+        with patch("src.backend.torch.model_wrapper.lightglue_matcher.torch.no_grad") as mock_no_grad:
             mock_no_grad.return_value.__enter__ = MagicMock()
             mock_no_grad.return_value.__exit__ = MagicMock(return_value=False)
 
