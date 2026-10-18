@@ -18,10 +18,10 @@ class LightGlueOpenCVMatcher(Matcher):
         return cv.LightGlueMatcher.create(self.lightglue_model_path, scoreThreshold=self.scoreThreshold)
 
     def match(self, features1, features2):
-        des1 = features1.get('des')
-        des2 = features2.get('des')
-        kp1 = features1.get('kp')
-        kp2 = features2.get('kp')
+        des1 = features1.get('descriptors')
+        des2 = features2.get('descriptors')
+        kp1 = features1.get('keypoints')
+        kp2 = features2.get('keypoints')
         img_shape1 = features1.get('img_shape')
         img_shape2 = features2.get('img_shape')
         h1, w1 = img_shape1[:2]
