@@ -5,10 +5,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from logging import Logger
 
-from src.matchers import Matcher
 from src.feature_matcher import FeatureMatcherCV2
-from src.dnn_pipeline import DNNPipeline
-from src.algorithms import DNN_ALGORITHMS, DESCRIPTOR_MATCHER_COMPATIBILITY, ALL_MATCHERS
+from src.algorithms import DESCRIPTOR_MATCHER_COMPATIBILITY, ALL_MATCHERS, DNN_MATCHERS
 
 
 @pytest.fixture
@@ -131,8 +129,7 @@ class TestFeatureMatcherCompatibility:
         for det, descriptors in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY.items()
         for des in descriptors
         for mat in ALL_MATCHERS
-        for mode in ['simple', 'knn']
-        if det not in DNN_ALGORITHMS
+        for mode in ([None] if mat in DNN_MATCHERS else ['simple', 'knn'])
         if mat in DESCRIPTOR_MATCHER_COMPATIBILITY.get(des, [])
     ]
 
@@ -141,12 +138,16 @@ class TestFeatureMatcherCompatibility:
         img1 = load_img("box.png")
         img2 = load_img("box_in_scene.png")
 
+        config = {}
+        if mode is not None:
+            config = {'matcher': {'mode': mode}}
+
         matcher_cv = FeatureMatcherCV2(
             logger=mock_logger,
             detector=det,
             descriptor=des,
             matcher=mat,
-            config={'matcher': {'mode': mode}}
+            config=config,
         )
 
         try:
@@ -162,7 +163,7 @@ class TestFeatureMatcherCompatibility:
 
         except Exception as e:
             pytest.fail(
-                f"FAILED COMBINATION: \n"
+                f"FAILED COMBINATION:\n"
                 f"Detector: {det} | Descriptor: {des} | Matcher: {mat} | Mode: {mode}\n"
                 f"Error: {e}"
             )
@@ -241,7 +242,6 @@ class TestFeatureMatcherVisualization:
 
 
 class TestFeatureMatcherInvalidInputs:
-
     def test_raises_value_error_on_invalid_detector(self, mock_logger):
         with pytest.raises(ValueError, match="Detector 'invalid_det' is not registered in compatibility matrix"):
             FeatureMatcherCV2(logger=mock_logger, detector='invalid_det').match(

@@ -11,7 +11,6 @@ from src.algorithms import DNN_ALGORITHMS, ALL_DETECTORS, ALL_DESCRIPTORS
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
 from src.feature_matcher import FeatureMatcherCV2
-from src.dnn_pipeline import DNNPipeline  # noqa: F401
 
 
 @pytest.fixture

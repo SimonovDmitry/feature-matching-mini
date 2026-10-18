@@ -6,7 +6,10 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.detectors import Detector, SIFTDetector, OpenCVDetector
-from src.dnn_pipeline import DNNPipeline  # noqa: F401
+
+from src.dnn_extractors import DNNFeatureExtractors
+from src.dnn_matchers import DNNMatcher
+from src.dnn_pipeline import DNNPipeline
 
 from src.algorithms import DNN_ALGORITHMS, ALL_DETECTORS, DNN_PIPELINES
 from src.image_utils import read_image
