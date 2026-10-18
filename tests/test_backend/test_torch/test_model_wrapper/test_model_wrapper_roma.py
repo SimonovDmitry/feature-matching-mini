@@ -44,7 +44,8 @@ class TestRoMaTorchModelWrapper:
         mock_roma_outdoor.assert_called_once_with(
             device=torch.device("cpu"),
             coarse_res=560,
-            upsample_res=(864, 1152)
+            upsample_res=(864, 1152),
+            use_custom_corr=False,
         )
         mock_model.eval.assert_called_once_with()
         mock_model.to.assert_called_once_with(torch.device("cpu"))
@@ -64,7 +65,8 @@ class TestRoMaTorchModelWrapper:
         mock_roma_outdoor.assert_called_once_with(
             device=torch.device("cpu"),
             coarse_res=128,
-            upsample_res=(160, 160)
+            upsample_res=(160, 160),
+            use_custom_corr=False,
         )
         assert result == {"model": mock_model}
 
