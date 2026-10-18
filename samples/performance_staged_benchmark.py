@@ -19,6 +19,8 @@ from src.hardnet_descriptor import HardNet  # noqa: E402, F401
 import src.backend.opencv.model_loader  # noqa: E402, F401
 import src.backend.opencv.inference_api  # noqa: E402, F401
 import src.backend.opencv.io_adapter  # noqa: E402, F401
+from src.dnn_extractors import DNNFeatureExtractors  # noqa: E402, F401
+from src.dnn_matchers import DNNMatcher  # noqa: E402, F401
 from src.dnn_pipeline import DNNPipeline  # noqa: E402, F401
 
 
