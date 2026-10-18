@@ -4,10 +4,9 @@ import cv2 as cv
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
-from src.dnn_matchers import DNNMatcher
-import src.backend.torch.model_wrapper
-import src.backend.torch.inference_api
-import src.backend.torch.io_adapter
+import src.backend.torch.model_wrapper  # noqa: E402, F401
+import src.backend.torch.inference_api  # noqa: E402, F401
+import src.backend.torch.io_adapter  # noqa: E402, F401
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_wrapper_base import ModelWrapper
@@ -34,17 +33,18 @@ class DNNPipeline(Detector, Descriptor, Matcher):
 
         if DNNPipeline._model_wrapper is None:
             DNNPipeline._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name,
-                                                                      config=config, logger=logger)
+                                                             config=config, logger=logger)
             DNNPipeline._model_components = DNNPipeline._model_wrapper.load()
 
         if DNNPipeline._io_adapter is None:
             DNNPipeline._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name,
-                                                                config=config, logger=logger)
+                                                       config=config, logger=logger)
 
         if DNNPipeline._inference is None:
             DNNPipeline._inference = InferenceAPI.create(backend=backend, logger=logger, config=config,
-                                                                  model_name=extractor_name,
-                                                                  model_wrapper=DNNPipeline._model_wrapper)
+                                                         model_name=extractor_name,
+                                                         model_wrapper=DNNPipeline._model_wrapper)
+
     def _init_matcher(self):
         pass
 

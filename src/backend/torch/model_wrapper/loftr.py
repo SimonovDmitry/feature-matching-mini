@@ -13,15 +13,14 @@ from src.backend.torch.model_wrapper.weights_url import WEIGHTS_URL_MODELS
 class LoFTRTorchModelWrapper(TorchModelWrapper):
     def load(self):
         self._weights_type = self._config.pop('weights', 'outdoor')
-        checkpoint = Path(self._model_path or
-                          self._config.pop('checkpoint', "weights/loftr/loftr_{self._weights_type}.ckpt"))
+        checkpoint = Path(self._model_path
+                          or self._config.pop('checkpoint', "weights/loftr/loftr_{self._weights_type}.ckpt"))
         weights_url = WEIGHTS_URL_MODELS.get(self._model_name).get(self._weights_type)
 
         if not checkpoint.exists():
             self._logger.info(f"Downloading LoFTR {self._weights_type} weights to {checkpoint}")
             checkpoint.parent.mkdir(parents=True, exist_ok=True)
             torch.hub.download_url_to_file(weights_url, str(checkpoint))
-
 
         self._logger.info(f"Initializing LoFTR onto {self._device}")
         model = LoFTRModel(config=default_cfg)

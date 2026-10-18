@@ -167,6 +167,8 @@ class TestFeatureMatcherCompatibility:
                 f"Detector: {det} | Descriptor: {des} | Matcher: {mat} | Mode: {mode}\n"
                 f"Error: {e}"
             )
+        finally:
+            matcher_cv.close()
 
     def test_incompatible_descriptor_matcher_raises(self, mock_logger):
         with pytest.raises(ValueError, match="cannot be used with Matcher"):

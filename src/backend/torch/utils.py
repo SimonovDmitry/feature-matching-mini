@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 import torch
 
+
 def is_tensor(data):
     return isinstance(data, torch.Tensor)
 

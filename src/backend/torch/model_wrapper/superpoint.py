@@ -13,7 +13,6 @@ class SuperPointTorchModelWrapper(TorchModelWrapper):
         local_files_only = self._config.pop('local_files_only', True)
         remote_repo = "magic-leap-community/superpoint"
 
-
         local_path = Path(checkpoint)
         if not local_path.exists() or not any(local_path.iterdir()):
             self._logger.warning(f"Local checkpoint {checkpoint} not found or empty.")
@@ -39,7 +38,7 @@ class SuperPointTorchModelWrapper(TorchModelWrapper):
             with torch.no_grad():
                 outputs = self._model(**img)
 
-            return {'inference_outputs' : outputs, **inputs}
+            return {'inference_outputs': outputs, **inputs}
 
         except Exception as e:
             self._logger.error(f"Super Point inference error: {e}")

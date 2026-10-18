@@ -16,7 +16,7 @@ class SuperPointTorchIOAdapter(TorchIOAdapter):
         img = to_numpy_bgr(img, input_type=input_type)
         height, width = img.shape[:2]
         img = processor(img, return_tensors="pt").to(self._device)
-        return {'image' : img, 'height' : height, 'width' : width, **inputs}
+        return {'image': img, 'height': height, 'width': width, **inputs}
 
     def postprocess(self, outputs):
         processor = outputs.get('processor')
@@ -24,7 +24,7 @@ class SuperPointTorchIOAdapter(TorchIOAdapter):
         height, width = outputs.get('height'), outputs.get('width')
         processed = processor.post_process_keypoint_detection(inference_outputs, [[height, width]])[0]
 
-        outputs['keypoints']  = processed['keypoints']
+        outputs['keypoints'] = processed['keypoints']
         outputs['descriptors'] = processed['descriptors']
         outputs['scores'] = processed['scores']
         return features_to_cv(outputs)

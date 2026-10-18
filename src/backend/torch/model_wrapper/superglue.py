@@ -26,7 +26,7 @@ class SuperGlueTorchModelWrapper(TorchModelWrapper):
 
             matches = outputs['matches0']
             scores = outputs['matching_scores0']
-            return {'matches' : matches, 'scores' : scores, **inputs}
+            return {'matches': matches, 'scores': scores, **inputs}
 
         except Exception as e:
             self._logger.error(f"Super Glue inference error: {e}")
