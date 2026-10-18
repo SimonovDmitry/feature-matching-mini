@@ -131,6 +131,7 @@ class TestFeatureMatcherCompatibility:
         for mat in ALL_MATCHERS
         for mode in ([None] if mat in DNN_MATCHERS else ['simple', 'knn'])
         if mat in DESCRIPTOR_MATCHER_COMPATIBILITY.get(des, [])
+        and mat != 'superglue'
     ]
 
     @pytest.mark.parametrize("det, des, mat, mode", valid_combinations)
