@@ -30,6 +30,11 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
         kpts1 = features2.get('keypoints')
         desc0 = features1.get('descriptors')
         desc1 = features2.get('descriptors')
+
+        if kpts0 is None or kpts1 is None or len(kpts0) == 0 or len(kpts1) == 0 or \
+                desc0 is None or desc1 is None or len(desc0) == 0 or len(desc1) == 0:
+            return None
+
         shape0 = features1.get("img_shape")
         shape1 = features2.get("img_shape")
 
@@ -61,13 +66,9 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
         for name, value in input_layers.items():
             self._model.setInput(value, name=name)
 
+        return input_layers
+
     def postprocess(self, outputs):
-        if outputs is None:
-            return {
-                'matches': [],
-                'scores': []
-            }
-        
         matches = outputs[0]
         if matches.ndim > 2 and matches.shape[0] == 1:
             matches = np.squeeze(matches, axis=0)

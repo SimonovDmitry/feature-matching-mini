@@ -23,7 +23,9 @@ class LightGlueOpenCVMatcher(Matcher):
         return self._loader.load()
 
     def match(self, features1, features2):
-        self._io_adapter.preprocess({'features1': features1, 'features2': features2})
+        inputs = self._io_adapter.preprocess({'features1': features1, 'features2': features2})
+        if inputs is None:
+            return {'matches': [], 'scores': []}
         outputs = self._inference.run()
         outputs = self._io_adapter.postprocess(outputs)
 
