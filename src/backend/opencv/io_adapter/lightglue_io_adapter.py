@@ -62,6 +62,12 @@ class LightGlueOpenCVIOAdapter(OpenCVIOAdapter):
             self._model.setInput(value, name=name)
 
     def postprocess(self, outputs):
+        if outputs is None:
+            return {
+                'matches': [],
+                'scores': []
+            }
+        
         matches = outputs[0]
         if matches.ndim > 2 and matches.shape[0] == 1:
             matches = np.squeeze(matches, axis=0)
