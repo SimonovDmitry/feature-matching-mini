@@ -4,6 +4,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
+from src.detectors import Detector  # noqa: E402
+from src.descriptors import Descriptor  # noqa: E402
+from src.matchers import Matcher, OpenCVMatcher  # noqa: E402
 from src.algorithms import (ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE,  # noqa: E402
                             DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS)
 

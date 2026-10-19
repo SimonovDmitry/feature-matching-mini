@@ -7,11 +7,13 @@ from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHE
 from src.detectors import Detector
 from src.descriptors import Descriptor
 from src.matchers import Matcher
+from src.dnn_extractors import DNNFeatureExtractors  # noqa: F401
+from src.dnn_matchers import DNNMatcher  # noqa: F401
 from src.dnn_pipeline import DNNPipeline  # noqa: F401
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
-from src.tfeat_descriptor import TFeat  # noqa: F401
 from src.hardnet_descriptor import HardNet  # noqa: F401
+from src.tfeat_descriptor import TFeat  # noqa: F401
 
 
 class FeatureMatcherCV2:
@@ -21,9 +23,9 @@ class FeatureMatcherCV2:
         if config is None:
             config = {}
 
-        self._detector = detector
-        self._descriptor = descriptor
-        self._matcher = matcher
+        self._detector_name = detector
+        self._descriptor_name = descriptor
+        self._matcher_name = matcher
         self._logger = logger
 
         self._detector_config = config.get('detector', {})
@@ -32,24 +34,32 @@ class FeatureMatcherCV2:
 
         self._validate_compatibility()
 
+        self._detector_class = Detector.create(detector_name=self._detector_name, logger=self._logger,
+                                               config=self._detector_config)
+        self._descriptor_class = Descriptor.create(descriptor_name=self._descriptor_name, logger=self._logger,
+                                                   config=self._descriptor_config)
+        self._matcher_class = Matcher.create(matcher_name=self._matcher_name, descriptor_class=self._descriptor_class,
+                                             logger=self._logger, config=self._matcher_config)
+
     def _validate_compatibility(self):
-        if self._detector not in DETECTOR_DESCRIPTOR_COMPATIBILITY:
-            raise ValueError(f"Detector '{self._detector}' is not registered in compatibility matrix")
+        if self._detector_name not in DETECTOR_DESCRIPTOR_COMPATIBILITY:
+            raise ValueError(f"Detector '{self._detector_name}' is not registered in compatibility matrix")
 
-        if self._descriptor not in DETECTOR_DESCRIPTOR_COMPATIBILITY[self._detector]:
-            raise ValueError(f"Detector {self._detector} cannot be used with Descriptor {self._descriptor}")
+        if self._descriptor_name not in DETECTOR_DESCRIPTOR_COMPATIBILITY[self._detector_name]:
+            raise ValueError(f"Detector {self._detector_name} cannot be used with Descriptor {self._descriptor_name}")
 
-        if self._descriptor in DESCRIPTOR_MATCHER_COMPATIBILITY:
-            if self._matcher not in DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor]:
-                raise ValueError(f"Descriptor '{self._descriptor}' cannot be used with Matcher '{self._matcher}'."
-                                 f" Available: {DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor]}")
+        if self._descriptor_name in DESCRIPTOR_MATCHER_COMPATIBILITY:
+            if self._matcher_name not in DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor_name]:
+                raise ValueError(f"Descriptor '{self._descriptor_name}' cannot be used with "
+                                 f"Matcher '{self._matcher_name}'"
+                                 f"Available: {DESCRIPTOR_MATCHER_COMPATIBILITY[self._descriptor_name]}")
 
-        if self._matcher in DNN_MATCHERS and 'mode' in self._matcher_config:
-            raise ValueError(f"Matcher '{self._matcher}' does not support 'mode' parameter. "
+        if self._matcher_name in DNN_MATCHERS and 'mode' in self._matcher_config:
+            raise ValueError(f"Matcher '{self._matcher_name}' does not support 'mode' parameter. "
                              f"Mode is only available for OpenCV matchers: {OPENCV_MATCHERS}")
 
     def _has_keypoints(self, features):
-        if self._detector in DNN_PIPELINES:
+        if self._detector_name in DNN_PIPELINES:
             return True
 
         kp = features.get('kp')
@@ -95,20 +105,25 @@ class FeatureMatcherCV2:
         return cv.drawMatches(img0, kp0, img1, kp1, [], None, **draw_params)
 
     def match(self, img0, img1):
-        detector = Detector.create(detector_name=self._detector, logger=self._logger, config=self._detector_config)
-        descriptor = Descriptor.create(descriptor_name=self._descriptor, logger=self._logger,
-                                       config=self._descriptor_config)
-        matcher = Matcher.create(matcher_name=self._matcher, logger=self._logger,
-                                 config=self._matcher_config, descriptor=descriptor)
+        features0 = self._detector_class.detect(img0)
+        features0 = self._descriptor_class.compute(img0, features0)
 
-        features0 = detector.detect(img0)
-        features0 = descriptor.compute(img0, features0)
-
-        features1 = detector.detect(img1)
-        features1 = descriptor.compute(img1, features1)
+        features1 = self._detector_class.detect(img1)
+        features1 = self._descriptor_class.compute(img1, features1)
 
         if not self._has_keypoints(features0) or not self._has_keypoints(features1):
             self._logger.warning("Failed to detect key points")
 
-        correspondences = matcher.match(features0, features1)
+        correspondences = self._matcher_class.match(features0, features1)
         return features0, features1, correspondences
+
+    def close(self):
+        objects = (self._matcher_class, self._descriptor_class, self._detector_class)
+
+        for obj in objects:
+            if obj is not None and hasattr(obj, "close"):
+                obj.close()
+
+        self._matcher_class = None
+        self._descriptor_class = None
+        self._detector_class = None

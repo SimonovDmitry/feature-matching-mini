@@ -7,12 +7,12 @@ from src.algorithms import ALL_MATCHERS, DNN_MATCHERS, DNN_PIPELINES
 class Matcher(ABC):
     _METHODS = {}
 
-    def __init__(self, matcher_name, logger, config=None, descriptor=None):
+    def __init__(self, matcher_name, logger, config=None, descriptor_class=None):
         if config is None:
             config = {}
 
         self._matcher_name = matcher_name
-        self._descriptor = descriptor
+        self._descriptor_class = descriptor_class
         self._logger = logger
 
     def __init_subclass__(cls, register=True, **kwargs):
@@ -29,20 +29,20 @@ class Matcher(ABC):
                 Matcher._METHODS[key] = cls
 
     @staticmethod
-    def create(matcher_name, logger, config, descriptor):
+    def create(matcher_name, logger, config, descriptor_class):
         matcher_name = matcher_name.lower()
 
         if matcher_name in DNN_PIPELINES:
             return Matcher._METHODS["dnnpipeline"](matcher_name, logger, config)
 
         if matcher_name in DNN_MATCHERS:
-            return Matcher._METHODS['dnn'](matcher_name, logger, config, descriptor)
+            return Matcher._METHODS['dnn'](matcher_name, logger, config, descriptor_class)
 
         if not Matcher._METHODS.get(matcher_name):
             raise ValueError(f"Matcher '{matcher_name}' not found."
                              f" Available: {list(Matcher._METHODS.keys())}")
 
-        return Matcher._METHODS[matcher_name](matcher_name, logger, config, descriptor)
+        return Matcher._METHODS[matcher_name](matcher_name, logger, config, descriptor_class)
 
     @abstractmethod
     def match(self, features1, features2):
@@ -56,8 +56,8 @@ class Matcher(ABC):
 class OpenCVMatcher(Matcher, register=False):
     _MODE = {'simple', 'knn'}
 
-    def __init__(self, matcher_name, logger, config, descriptor_name):
-        super().__init__(matcher_name, logger, config, descriptor_name)
+    def __init__(self, matcher_name, logger, config, descriptor_class):
+        super().__init__(matcher_name, logger, config, descriptor_class)
         self.mode = config.get('mode', 'simple')
         self.k = config.get('k', 1)
 
@@ -74,24 +74,30 @@ class OpenCVMatcher(Matcher, register=False):
 
         matcher = self._init_matcher()
         if self.mode == 'simple':
-            return {'matches': matcher.match(des1, des2)}
+            matches = matcher.match(des1, des2)
         elif self.mode == 'knn':
-            return {'matches': matcher.knnMatch(des1, des2, self.k)}
+            matches = matcher.knnMatch(des1, des2, self.k)
         else:
             raise ValueError(f"Mode '{self.mode}' is not supported.")
 
+        if matches is not None:
+            self._logger.info(f"{self._matcher_name} match {len(matches)} points")
+        else:
+            self._logger.warning(f"{self._matcher_name} match 0 points")
+        return {'matches': matches}
+
 
 class BFMatcher(OpenCVMatcher):
-    def __init__(self, matcher_name, logger, config, descriptor_name):
-        super().__init__(matcher_name, logger, config, descriptor_name)
+    def __init__(self, matcher_name, logger, config, descriptor_class):
+        super().__init__(matcher_name, logger, config, descriptor_class)
 
     def _init_matcher(self):
-        return cv.BFMatcher(self._descriptor.default_norm)
+        return cv.BFMatcher(self._descriptor_class.default_norm)
 
 
 class FLANNMatcher(OpenCVMatcher):
-    def __init__(self, matcher_name, logger, config, descriptor_name):
-        super().__init__(matcher_name, logger, config, descriptor_name)
+    def __init__(self, matcher_name, logger, config, descriptor_class):
+        super().__init__(matcher_name, logger, config, descriptor_class)
         self.index_params = config.get('index_params')
         self.search_params = config.get('search_params')
 
@@ -105,7 +111,7 @@ class FLANNMatcher(OpenCVMatcher):
             raise TypeError("search_params must be dict")
 
     def _get_default_index_params(self):
-        if self._descriptor.default_norm == cv.NORM_HAMMING:
+        if self._descriptor_class.default_norm == cv.NORM_HAMMING:
             return {
                 'algorithm': 6,
                 'table_number': 6,

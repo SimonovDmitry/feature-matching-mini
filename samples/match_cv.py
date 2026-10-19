@@ -3,7 +3,7 @@ import sys
 import logging
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
+sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402, F401
 
 from src.algorithms import ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE  # noqa: E402
 from src.image_utils import read_image, save_image, show_image  # noqa: E402
@@ -46,6 +46,7 @@ def parser():
                             help='Path to save result image')
 
     det_group = arg_parser.add_argument_group('Detector config')
+    det_group.add_argument('-detb', '--det-backend', type=str, default=None, help='Backend for detector')
     det_group.add_argument('-dn', '--det-nfeatures', type=int, default=None,
                            help='Max number of features to detect')
     det_group.add_argument('-do', '--det-noctave', type=int, default=None,
@@ -58,6 +59,8 @@ def parser():
                            help='Path to ALIKED opencv model')
 
     des_group = arg_parser.add_argument_group('Descriptor config')
+    des_group.add_argument('-desb', '--des-backend', type=str, default=None,
+                           help='Backend for descriptor')
     des_group.add_argument('-dsen', '--des-nfeatures', type=int, default=None,
                            help='Max number of features for descriptor')
     des_group.add_argument('-dsdt', '--des-threshold', type=float, default=None,
@@ -76,6 +79,8 @@ def parser():
                            help='MagFactor for TFeat')
 
     mat_group = arg_parser.add_argument_group('Matcher config')
+    mat_group.add_argument('-matb', '--mat-backend', type=str, default=None,
+                           help='Backend for matcher')
     mat_group.add_argument('-mat_m', '--matcher_mode', type=str, default='simple',
                            choices=OPENCV_MATCHERS_MODE, help='Matching mode')
     mat_group.add_argument('-k', '--k_knn', type=int, default=None,
