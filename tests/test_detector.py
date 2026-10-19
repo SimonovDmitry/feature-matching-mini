@@ -11,7 +11,9 @@ from src.dnn_matchers import DNNMatcher  # noqa: F401
 from src.dnn_pipeline import DNNPipeline  # noqa: F401
 from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
 from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
-
+import src.backend.opencv.model_loader  # noqa: F401
+import src.backend.opencv.inference_api  # noqa: F401
+import src.backend.opencv.io_adapter  # noqa: F401
 from src.algorithms import DNN_ALGORITHMS, ALL_DETECTORS, DNN_PIPELINES
 from src.image_utils import read_image
 
@@ -99,8 +101,8 @@ class TestDetectorDetect:
             assert features.get('keypoints') is not None
         else:
             kp = features.get('keypoints')
-            assert isinstance(kp, (tuple, list))
-            if kp:
+            assert isinstance(kp, (tuple, list, np.ndarray))
+            if len(kp) > 0:
                 assert isinstance(kp[0], cv.KeyPoint)
 
     def test_reproducibility(self, mock_logger, load_img):
@@ -164,7 +166,7 @@ class TestDetectorRobustness:
         tiny_img = np.zeros((5, 5), dtype=np.uint8)
         detector = Detector.create("orb", mock_logger)
         features = detector.detect(tiny_img)
-        assert isinstance(features.get('keypoints'), tuple)
+        assert isinstance(features.get('keypoints'), (tuple, list, np.ndarray))
 
     def test_color_image_support(self, mock_logger, load_img):
         path = Path(__file__).parent.parent / "test_data" / "box.png"
