@@ -21,7 +21,7 @@ def mock_logger():
 def load_img():
     def _load(name):
         path = Path(__file__).parent.parent / "test_data" / name
-        img = cv.imread(str(path), cv.IMREAD_GRAYSCALE)
+        img = cv.imread(str(path))
         if img is None:
             pytest.fail(f"Failed to load image. On path: {path.absolute()}")
         return img
