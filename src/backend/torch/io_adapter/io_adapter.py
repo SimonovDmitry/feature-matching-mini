@@ -4,11 +4,11 @@ from src.backend.torch.utils import get_device
 
 @IOAdapter.register("torch")
 class TorchIOAdapter(IOAdapter):
-    def __init__(self, model_name, logger=None, config=None):
+    def __init__(self, model_name, model_wrapper=None, logger=None, config=None):
         if config is None:
             config = {}
 
-        super().__init__(model_name, logger, config)
+        super().__init__(model_name, model_wrapper, logger, config)
 
         device = config.get('device', None)
         if device is None:

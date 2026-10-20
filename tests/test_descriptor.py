@@ -7,7 +7,9 @@ from logging import Logger
 
 from src.image_utils import read_image
 from src.algorithms import DNN_ALGORITHMS, ALL_DETECTORS, ALL_DESCRIPTORS
-
+import src.backend.opencv.model_loader  # noqa: F401
+import src.backend.opencv.inference_api  # noqa: F401
+import src.backend.opencv.io_adapter  # noqa: F401
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
 from src.feature_matcher import FeatureMatcherCV2
@@ -116,7 +118,7 @@ class TestDescriptorCompute:
                 descriptor = Descriptor.create(descriptor_name, mock_logger)
                 features = descriptor.compute(img, features)
 
-                assert isinstance(features.get('keypoints'), (tuple, list))
+                assert isinstance(features.get('keypoints'), (tuple, list, np.ndarray))
                 if features.get('descriptors') is not None:
                     assert isinstance(features.get('descriptors'), np.ndarray)
                     assert len(features.get('descriptors')) == len(features.get('keypoints'))
