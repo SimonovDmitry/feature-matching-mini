@@ -1,190 +1,57 @@
-import cv2 as cv
-import numpy as np
 import torch
+import torch.nn.functional as F
 
 
-def is_tensor(data):
-    return isinstance(data, torch.Tensor)
+def nms_topk(scores, num_keypoints, radius=4):
+    if scores.ndim != 2:
+        raise ValueError(f"Expected an HxW score map, got {tuple(scores.shape)}")
+
+    height, width = scores.shape
+    if not 0 < num_keypoints <= height * width:
+        raise ValueError(f"num_keypoints must be in [1, {height * width}], got {num_keypoints}")
+
+    local_max = F.max_pool2d(scores[None, None], kernel_size=radius * 2 + 1,
+                             stride=1, padding=radius)[0, 0]
+    filtered = scores.masked_fill(scores != local_max, float("-inf"))
+    values, indices = torch.topk(filtered.reshape(-1), num_keypoints)
+    keypoints = torch.stack((indices % width, torch.div(indices, width, rounding_mode="floor")), dim=1)
+
+    return keypoints.to(torch.float32), values
 
 
-def empty(shape, dtype=torch.float32, device='cpu'):
-    return torch.empty(shape, dtype=dtype, device=device)
+def sample_descriptors(dense, keypoints, image_height, image_width):
+    if dense.ndim != 4 or dense.shape[0] != 1:
+        raise ValueError(f"Expected descriptors shaped (1, C, H, W), got {tuple(dense.shape)}")
+
+    x = keypoints[:, 0] / max(image_width - 1, 1) * 2 - 1
+    y = keypoints[:, 1] / max(image_height - 1, 1) * 2 - 1
+    grid = torch.stack((x, y), dim=-1).reshape(1, 1, -1, 2)
+
+    descriptors = F.grid_sample(dense, grid, align_corners=True)[0, :, 0].transpose(0, 1)
+    return F.normalize(descriptors, p=2, dim=1)
 
 
-def get_device(device=None):
-    if device is not None:
-        return torch.device(device)
+def prepare_image_tensor(image, input_shape=None):
+    if not isinstance(image, torch.Tensor):
+        raise TypeError("Expected image to be a torch.Tensor")
 
-    if torch.cuda.is_available():
-        return torch.device('cuda')
+    if image.ndim == 3:
+        image = image.unsqueeze(0)
 
-    if torch.backends.mps.is_available():
-        return torch.device('mps')
+    if image.ndim != 4 or image.shape[0] != 1:
+        raise ValueError(f"Expected CHW or [1, C, H, W] image, got {tuple(image.shape)}")
 
-    return torch.device('cpu')
+    image = image.to(dtype=torch.float32).cpu()
 
+    if input_shape is not None:
+        if len(input_shape) != 4 or input_shape[0] != 1:
+            raise ValueError("input_shape must have the form [1, C, H, W]")
 
-def numpy_to_tensor(data, device='cpu', dtype=None):
-    array = np.ascontiguousarray(data)
-    tensor = torch.from_numpy(array)
-    if dtype is not None:
-        tensor = tensor.to(dtype=dtype)
-    return tensor.to(device)
+        _, channels, height, width = input_shape
+        if image.shape[1] != channels:
+            raise ValueError(f"Model expects {channels} channels, got {image.shape[1]}")
 
+        if image.shape[-2:] != (height, width):
+            image = F.interpolate(image, size=(height, width), mode="bilinear", align_corners=False)
 
-def tensor_to_numpy(data, dtype=None):
-    if not is_tensor(data):
-        return data
-
-    array = data.detach().cpu().numpy()
-    if dtype is not None:
-        array = array.astype(dtype, copy=False)
-    return array
-
-
-def to_numpy_bgr(data, input_type='numpy'):
-    if input_type == 'numpy':
-        if data.ndim == 2:
-            return cv.cvtColor(data, cv.COLOR_GRAY2BGR)
-
-        return cv.cvtColor(data, cv.COLOR_RGB2BGR)
-    else:
-        return image_to_cv(data)
-
-
-def image_to_tensor(data, device='cpu'):
-    if data.ndim == 2:
-        img_rgb = cv.cvtColor(data, cv.COLOR_GRAY2RGB)
-    elif data.ndim == 3 and data.shape[2] == 3:
-        img_rgb = cv.cvtColor(data, cv.COLOR_BGR2RGB)
-    else:
-        img_rgb = data
-
-    tensor = torch.from_numpy(np.ascontiguousarray(img_rgb)).to(torch.float32)
-
-    if tensor.ndim == 3 and tensor.shape[-1] in (1, 3):
-        tensor = tensor.permute(2, 0, 1)
-
-    return (tensor / 255.0).to(device)
-
-
-def image_to_cv(data):
-    img_numpy = data.detach().cpu().numpy()
-    if img_numpy.ndim == 2:
-        img_numpy = img_numpy[:, :, np.newaxis]
-    if img_numpy.shape[0] in [1, 3]:
-        img_numpy = np.transpose(img_numpy, (1, 2, 0))
-    if img_numpy.max() <= 1.0:
-        img_numpy = img_numpy * 255
-    img_numpy = img_numpy.astype(np.uint8)
-    if img_numpy.shape[2] == 3:
-        img_opencv = cv.cvtColor(img_numpy, cv.COLOR_RGB2BGR)
-    else:
-        img_opencv = img_numpy
-
-    return img_opencv
-
-
-def features_to_tensor(data, device='cpu'):
-    keypoints = data.get('keypoints')
-    descriptors = data.get('descriptors')
-    scores = data.get('scores')
-
-    if keypoints is not None:
-        keypoints = cv.KeyPoint_convert(keypoints)
-        keypoints = np.asarray(keypoints, dtype=np.float32)
-        if keypoints.size == 0:
-            keypoints = np.empty((0, 2), dtype=np.float32)
-
-    if descriptors is None:
-        descriptors = np.empty((len(keypoints), 0), dtype=np.float32)
-    else:
-        descriptors = np.asarray(descriptors)
-
-    if scores is None:
-        scores = np.empty((len(keypoints),), dtype=np.float32)
-    else:
-        scores = np.asarray(scores)
-
-    result = {
-        'keypoints': numpy_to_tensor(keypoints, device=device),
-        'descriptors': numpy_to_tensor(descriptors, device=device),
-        'scores': numpy_to_tensor(scores, device=device)
-    }
-
-    if 'width' in data:
-        result['width'] = data['width']
-    if 'height' in data:
-        result['height'] = data['height']
-
-    return result
-
-
-def features_to_cv(data):
-    keypoints = data.get('keypoints')
-    descriptors = data.get('descriptors')
-    scores = data.get('scores')
-
-    if keypoints is not None:
-        keypoints_np = keypoints.detach().cpu().numpy()
-
-        if keypoints_np.ndim == 3:
-            keypoints_np = keypoints_np.reshape(-1, 2)
-
-        keypoints_np = keypoints_np.astype(np.float32)
-        keypoints = cv.KeyPoint_convert(keypoints_np)
-        keypoints = np.array(keypoints, dtype=object)
-
-    if descriptors is not None:
-        descriptors = descriptors.detach().cpu().numpy()
-
-    if scores is not None:
-        scores = scores.detach().cpu().numpy()
-
-    result = {'keypoints': keypoints, 'descriptors': descriptors, 'scores': scores}
-
-    if 'width' in data:
-        result['width'] = data['width']
-    if 'height' in data:
-        result['height'] = data['height']
-
-    return result
-
-
-def matches_to_tensor(data, device='cpu'):
-    matches = data.get('matches')
-
-    if not matches:
-        matches_np = np.empty((0, 2), dtype=np.int64)
-    else:
-        matches_np = np.asarray([[match.queryIdx, match.trainIdx] for match in matches],
-                                dtype=np.int64).reshape(-1, 2)
-    return {'matches': numpy_to_tensor(matches_np, device=device, dtype=torch.long)}
-
-
-def matches_to_cv(data):
-    matches = data.get('matches')
-    scores = data.get('scores')
-
-    if matches is not None:
-        matches_np = matches.detach().cpu().numpy()
-        dmatches = []
-        for query_idx, train_idx in matches_np:
-            dmatch = cv.DMatch()
-            dmatch.queryIdx = int(query_idx)
-            dmatch.trainIdx = int(train_idx)
-            dmatches.append(dmatch)
-
-        matches = np.asarray(dmatches)
-
-    if scores is not None:
-        scores = scores.detach().cpu().numpy()
-        scores = np.asarray(scores)
-
-    output = {'matches': matches, 'scores': scores}
-
-    if 'keypoints0' in data:
-        output['keypoints0'] = features_to_cv({'keypoints': data['keypoints0']}).get('keypoints')
-    if 'keypoints1' in data:
-        output['keypoints1'] = features_to_cv({'keypoints': data['keypoints1']}).get('keypoints')
-    return output
+    return image

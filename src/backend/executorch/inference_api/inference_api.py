@@ -10,4 +10,4 @@ class ExecuTorchInferenceAPI(InferenceAPI):
         super().__init__(logger, model_name, model_wrapper, config)
 
     def run(self, inputs):
-        pass
+        return self._model_wrapper.call(inputs)

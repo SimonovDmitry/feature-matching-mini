@@ -5,12 +5,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.algorithms import (ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE,  # noqa: E402
-                            DNN_DETECTORS, DNN_DESCRIPTORS, DNN_MATCHERS, OPENCV_MATCHERS)
+                            TORCH_DETECTORS, TORCH_DESCRIPTORS, TORCH_MATCHERS, OPENCV_MATCHERS)
 
 
 def build_detector_config(args):
     config = dict()
-    if (args.device is not None) and (args.detector in DNN_DETECTORS):
+    if (args.device is not None) and (args.detector in TORCH_DETECTORS):
         config['device'] = args.device
     if args.det_backend is not None:
         config['backend'] = args.det_backend
@@ -35,7 +35,7 @@ def build_detector_config(args):
 
 def build_descriptor_config(args):
     config = dict()
-    if (args.device is not None) and (args.descriptor in DNN_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
+    if (args.device is not None) and (args.descriptor in TORCH_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
         config['device'] = args.device
     if args.des_backend is not None:
         config['backend'] = args.des_backend
@@ -68,7 +68,7 @@ def build_descriptor_config(args):
 
 def build_matcher_config(args):
     config = dict()
-    if (args.device is not None) and (args.matcher in DNN_MATCHERS):
+    if (args.device is not None) and (args.matcher in TORCH_MATCHERS):
         config['device'] = args.device
     if args.mat_backend is not None:
         config['backend'] = args.mat_backend
@@ -207,7 +207,7 @@ def build_hpatches_task_config(args):
 
 def build_hpatches_detector_config(args):
     config = dict()
-    if (args.device is not None) and (args.detector in DNN_DETECTORS):
+    if (args.device is not None) and (args.detector in TORCH_DETECTORS):
         config['device'] = args.device
     if args.det_nfeatures is not None:
         config['nfeatures'] = args.det_nfeatures
@@ -220,7 +220,7 @@ def build_hpatches_detector_config(args):
 
 def build_hpatches_descriptor_config(args):
     config = dict()
-    if (args.device is not None) and (args.descriptor in DNN_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
+    if (args.device is not None) and (args.descriptor in TORCH_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
         config['device'] = args.device
     if args.des_nfeatures is not None:
         config['nfeatures'] = args.des_nfeatures
@@ -233,7 +233,7 @@ def build_hpatches_descriptor_config(args):
 
 def build_hpatches_matcher_config(args):
     config = dict()
-    if (args.device is not None) and (args.matcher in DNN_MATCHERS):
+    if (args.device is not None) and (args.matcher in TORCH_MATCHERS):
         config['device'] = args.device
     if args.matcher in OPENCV_MATCHERS:
         config['mode'] = args.matcher_mode
