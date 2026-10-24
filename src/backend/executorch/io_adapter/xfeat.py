@@ -50,17 +50,11 @@ class XFeatExecuTorchIOAdapter(ExecuTorchIOAdapter):
 
         probabilities = F.softmax(logits[:, :-1], dim=1)
         _, _, coarse_height, coarse_width = probabilities.shape
-        scores = probabilities.permute(0, 2, 3, 1).reshape(
-            1, coarse_height, coarse_width, 8, 8
-        )
-        scores = scores.permute(0, 1, 3, 2, 4).reshape(
-            coarse_height * 8, coarse_width * 8
-        )
+        scores = probabilities.permute(0, 2, 3, 1).reshape(1, coarse_height, coarse_width, 8, 8)
+        scores = scores.permute(0, 1, 3, 2, 4).reshape(coarse_height * 8, coarse_width * 8)
 
         keypoints, values = nms_topk(scores, self._num_keypoints, self._nms_radius)
-        descriptors = sample_descriptors(
-            dense, keypoints / 8, coarse_height, coarse_width
-        )
+        descriptors = sample_descriptors(dense, keypoints / 8, coarse_height, coarse_width)
 
         input_height = self._input_height or coarse_height * 8
         input_width = self._input_width or coarse_width * 8

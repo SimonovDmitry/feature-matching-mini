@@ -3,86 +3,145 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from thirdparty.d2net.lib.model_test import HardDetectionModule, HandcraftedLocalizationModule
+
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.executorch.io_adapter.io_adapter import ExecuTorchIOAdapter
-from src.backend.executorch.utils import nms_topk, sample_descriptors
+
 
 @IOAdapter.register("d2net_executorch")
 class D2NetExecuTorchIOAdapter(ExecuTorchIOAdapter):
-    def __init__(self, model_name, model_wrapper, logger, config=None):
+    def __init__(self, model_name, model_wrapper=None, logger=None, config=None):
         super().__init__(model_name, model_wrapper, logger, config)
 
         self._input_shape = self._config.get("input_shape", (1, 3, 480, 640))
-        self._num_keypoints = self._config.get("num_keypoints", 256)
-        self._nms_radius = self._config.get("nms_radius", 4)
+        self._num_keypoints = self._config.get("num_keypoints", self._config.get("nfeatures", 4096))
+        self._detection = HardDetectionModule()
+        self._localization = HandcraftedLocalizationModule()
+        self._original_height = None
+        self._original_width = None
+        self._processed_height = None
+        self._processed_width = None
 
     def preprocess(self, inputs):
-        image = inputs.get("image")
+        if not isinstance(inputs, dict) or "image" not in inputs:
+            raise ValueError("D2-Net ExecuTorch adapter expects a dictionary containing 'image'")
 
+        image = inputs["image"]
         if not isinstance(image, np.ndarray):
-            raise TypeError("Expected image as numpy.ndarray")
+            raise TypeError("D2-Net ExecuTorch adapter expects an OpenCV numpy image")
 
-        if image.ndim == 2:
-            image = cv.cvtColor(image, cv.COLOR_GRAY2RGB)
-        elif image.ndim == 3 and image.shape[2] == 3:
-            image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-        else:
-            raise ValueError(f"Unsupported image shape: {image.shape}")
+        processed = super().preprocess(inputs)
+        image_tensor = processed["image"]
+        caffe_mean = image_tensor.new_tensor([103.939, 116.779, 123.68]).view(1, 3, 1, 1)
 
-        if len(self._input_shape) != 4 or self._input_shape[0] != 1:
-            raise ValueError("input_shape must be [1, C, H, W]")
-
-        self.orig_h, self.orig_w = image.shape[:2]
-        _, channels, input_height, input_width = self._input_shape
-        self.input_h = input_height
-        self.input_width = input_width
-
-        image = np.ascontiguousarray(image.transpose(2, 0, 1))
-        tensor = torch.from_numpy(image).float().div_(255.0)
-
-        if tensor.shape[0] != channels:
-            raise ValueError(f"Model expects {channels} channels, got {tensor.shape[0]}")
-
-        tensor = F.interpolate(tensor.unsqueeze(0), size=(input_height, input_width), mode="bilinear",
-                               align_corners=False).contiguous()
-        return {**inputs, "image": tensor}
+        processed["image"] = image_tensor[:, [2, 1, 0]].mul(255.0).sub(caffe_mean)
+        self._original_height, self._original_width = image.shape[:2]
+        self._processed_height, self._processed_width = image_tensor.shape[-2:]
+        return processed
 
     def postprocess(self, outputs):
-        dense = outputs[0] if isinstance(outputs, (tuple, list)) else outputs
+        if isinstance(outputs, (tuple, list)):
+            dense = outputs[0]
+        else:
+            dense = outputs
 
-        if not isinstance(dense, torch.Tensor) or dense.ndim != 4:
+        if not isinstance(dense, torch.Tensor) or dense.ndim != 4 or dense.shape[0] != 1:
             raise ValueError("Expected D2-Net dense output with shape [1, C, H, W]")
 
-        score_map = self._d2net_score_map(dense)
-        keypoints, scores = nms_topk(score_map, self._num_keypoints, self._nms_radius)
+        keypoints, descriptors, scores = self._extract_features(dense)
 
-        _, _, feature_height, feature_width = dense.shape
-        descriptors = sample_descriptors(dense, keypoints, feature_height, feature_width)
+        if self._original_width is not None and self._original_height is not None:
+            keypoints[:, 0] *= self._original_width / self._processed_width
+            keypoints[:, 1] *= self._original_height / self._processed_height
 
-        if hasattr(self, "orig_w") and hasattr(self, "orig_h"):
-            keypoints[:, 0] *= self.orig_w / feature_width
-            keypoints[:, 1] *= self.orig_h / feature_height
-
-        keypoints_np = keypoints.detach().cpu().numpy()
-        if keypoints_np.ndim == 3:
-            keypoints_np = keypoints_np.reshape(-1, 2)
-        keypoints_np = keypoints_np.astype(np.float32)
-        keypoints = cv.KeyPoint_convert(keypoints_np)
-        keypoints = np.asarray(keypoints)
+        keypoints_np = keypoints.numpy().astype(np.float32, copy=False)
+        keypoints_cv = np.asarray(cv.KeyPoint_convert(keypoints_np), dtype=object)
 
         return {
-            "keypoints": keypoints,
-            "descriptors": descriptors.detach().cpu().numpy(),
-            "scores": scores.detach().cpu().numpy(),
+            "keypoints": keypoints_cv,
+            "descriptors": descriptors.numpy().astype(np.float32, copy=False),
+            "scores": scores.numpy().astype(np.float32, copy=False),
         }
 
+    def _extract_features(self, dense):
+        dense = dense.detach().cpu()
+        detections = self._detection(dense)
+        feature_positions = torch.nonzero(detections[0]).t()
+
+        if feature_positions.shape[1] == 0:
+            return self._empty_features(dense.shape[1])
+
+        displacements = self._localization(dense)[0]
+        displacement_i = displacements[
+            0, feature_positions[0], feature_positions[1], feature_positions[2]
+        ]
+        displacement_j = displacements[
+            1, feature_positions[0], feature_positions[1], feature_positions[2]
+        ]
+        valid = (displacement_i.abs() < 0.5) & (displacement_j.abs() < 0.5)
+
+        feature_positions = feature_positions[:, valid]
+        if feature_positions.shape[1] == 0:
+            return self._empty_features(dense.shape[1])
+
+        feature_keypoints = feature_positions[1:].float()
+        feature_keypoints += torch.stack((displacement_i[valid], displacement_j[valid]))
+        descriptors, valid_ids = self._interpolate_descriptors(feature_keypoints, dense[0])
+
+        feature_positions = feature_positions[:, valid_ids]
+        feature_keypoints = feature_keypoints[:, valid_ids]
+        scores = dense[
+            0, feature_positions[0], feature_positions[1], feature_positions[2]
+        ]
+
+        keypoints = feature_keypoints * 4.0 + 1.5
+        keypoints = keypoints[[1, 0]].t().contiguous()
+        descriptors = F.normalize(descriptors, p=2, dim=0).t().contiguous()
+
+        if self._num_keypoints is not None and scores.numel() > self._num_keypoints:
+            scores, indices = torch.topk(scores, self._num_keypoints)
+            keypoints = keypoints[indices]
+            descriptors = descriptors[indices]
+
+        return keypoints, descriptors, scores
+
     @staticmethod
-    def _d2net_score_map(dense):
-        exp_dense = torch.exp(dense - dense.amax(dim=(2, 3), keepdim=True))
-        local_sum = F.avg_pool2d(exp_dense, kernel_size=3, stride=1, padding=1) * 9
+    def _interpolate_descriptors(keypoints, dense):
+        height, width = dense.shape[-2:]
+        rows, columns = keypoints
 
-        alpha = exp_dense / (local_sum + 1e-8)
-        channel_max = dense.amax(dim=1, keepdim=True)
-        beta = dense / (channel_max + 1e-8)
+        top = torch.floor(rows).long()
+        left = torch.floor(columns).long()
+        bottom = torch.ceil(rows).long()
+        right = torch.ceil(columns).long()
+        valid = (top >= 0) & (left >= 0) & (bottom < height) & (right < width)
+        valid_ids = torch.nonzero(valid).flatten()
 
-        return (alpha * beta).amax(dim=1)[0]
+        if valid_ids.numel() == 0:
+            return dense.new_empty((dense.shape[0], 0)), valid_ids
+
+        rows = rows[valid_ids]
+        columns = columns[valid_ids]
+        top = top[valid_ids]
+        left = left[valid_ids]
+        bottom = bottom[valid_ids]
+        right = right[valid_ids]
+
+        row_offset = rows - top.float()
+        column_offset = columns - left.float()
+        descriptors = (
+            (1.0 - row_offset) * (1.0 - column_offset) * dense[:, top, left]
+            + (1.0 - row_offset) * column_offset * dense[:, top, right]
+            + row_offset * (1.0 - column_offset) * dense[:, bottom, left]
+            + row_offset * column_offset * dense[:, bottom, right]
+        )
+        return descriptors, valid_ids
+
+    @staticmethod
+    def _empty_features(descriptor_size):
+        return (
+            torch.empty((0, 2), dtype=torch.float32),
+            torch.empty((0, descriptor_size), dtype=torch.float32),
+            torch.empty(0, dtype=torch.float32),
+        )
