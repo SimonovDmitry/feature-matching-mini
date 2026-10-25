@@ -1,3 +1,5 @@
+import torch
+
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.executorch.model_wrapper.model_wrapper import ExecuTorchModelWrapper
 
@@ -5,7 +7,20 @@ from src.backend.executorch.model_wrapper.model_wrapper import ExecuTorchModelWr
 @ModelWrapper.register("superpoint_lightglue_executorch")
 class SuperPointLightGlueExecuTorchModelWrapper(ExecuTorchModelWrapper):
     def load(self):
-        pass
+        return super().load()
 
     def call(self, inputs):
-        pass
+        if self._method is None:
+            raise RuntimeError("ExecuTorch model is not loaded. Call load() first.")
+
+        image = inputs.get("image") if isinstance(inputs, dict) else inputs
+        if not isinstance(image, torch.Tensor):
+            raise TypeError("SuperPoint ExecuTorch expects a torch.Tensor input")
+
+        try:
+            with torch.no_grad():
+                return self._method.execute((image.contiguous().cpu(),))
+        except Exception as error:
+            if self._logger:
+                self._logger.warning(f"SuperPoint ExecuTorch inference error: {error}")
+            raise
