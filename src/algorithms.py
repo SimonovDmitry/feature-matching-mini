@@ -3,33 +3,31 @@ TORCH_DETECTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift
                  'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma'}
 
 TORCH_DESCRIPTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
-                   'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma'}
+                   'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma', 'tfeat', 'hardnet'}
 
 TORCH_MATCHERS = {'lightglue', 'superglue', 'loftr', 'roma'}
 
 TORCH_PIPELINES = {'loftr', 'roma'}
 
 OPENCV_DETECTORS = {'sift', 'orb', 'fast', 'akaze', 'brisk', 'kaze', 'gftt', 'mser', 'agast', 'blob', 'star',
-                    'harrislaplace', 'msd', 'disk_opencv', 'aliked_opencv'}
+                    'harrislaplace', 'msd', 'disk', 'aliked'}
 
 OPENCV_DESCRIPTORS = {'sift', 'orb', 'akaze', 'brisk', 'kaze', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid',
-                      'vgg', 'boostdesc', 'disk_opencv', 'aliked_opencv', 'tfeat', 'hardnet'}
+                      'vgg', 'boostdesc', 'disk', 'aliked'}
 
-OPENCV_MATCHERS = {'bf', 'flann', 'lightglue_opencv'}
+OPENCV_MATCHERS = {'bf', 'flann', 'lightglue'}
 OPENCV_MATCHERS_MODE = {'simple', 'knn'}
 
-EXECUTORCH_DETECTORS = {'superpoint_lightglue_executorch', 'disk_lightglue_executorch', 'd2net_executorch',
-                            'xfeat_executorch'}
-EXECUTORCH_DESCRIPTORS = {'superpoint_lightglue_executorch', 'disk_lightglue_executorch', 'd2net_executorch',
-                              'xfeat_executorch', 'tfeat_executorch', 'hardnet_executorch'}
-EXECUTORCH_MATCHERS = {'lightglue_executorch', 'superglue_executorch'}
+EXECUTORCH_DETECTORS = {'superpoint_lightglue', 'disk_lightglue', 'd2net', 'xfeat'}
+EXECUTORCH_DESCRIPTORS = {'superpoint_lightglue', 'disk_lightglue', 'd2net', 'xfeat', 'tfeat', 'hardnet'}
+EXECUTORCH_MATCHERS = {'lightglue'}
 
 TORCH_ALGORITHMS = TORCH_DETECTORS | TORCH_DESCRIPTORS | TORCH_MATCHERS | TORCH_PIPELINES
 OPENCV_ALGORITHMS = OPENCV_DETECTORS | OPENCV_DESCRIPTORS | OPENCV_MATCHERS
 EXECUTORCH_ALGORITHMS = EXECUTORCH_DETECTORS | EXECUTORCH_DESCRIPTORS | EXECUTORCH_MATCHERS
 
 DNN_DETECTORS = TORCH_DETECTORS | EXECUTORCH_DETECTORS
-DNN_DESCRIPTORS = TORCH_DESCRIPTORS | EXECUTORCH_DETECTORS
+DNN_DESCRIPTORS = TORCH_DESCRIPTORS | EXECUTORCH_DESCRIPTORS
 DNN_MATCHERS = TORCH_MATCHERS | EXECUTORCH_MATCHERS
 DNN_PIPELINES = TORCH_PIPELINES
 DNN_ALGORITHMS = DNN_DETECTORS | DNN_DESCRIPTORS | DNN_MATCHERS | DNN_PIPELINES
@@ -40,87 +38,182 @@ ALL_MATCHERS = TORCH_MATCHERS | OPENCV_MATCHERS | EXECUTORCH_MATCHERS
 ALL_PIPELINES = TORCH_PIPELINES
 ALL_ALGORITHMS = ALL_DETECTORS | ALL_DESCRIPTORS | ALL_MATCHERS | ALL_PIPELINES
 
-DETECTOR_DESCRIPTOR_COMPATIBILITY = {
-    'sift': ['sift', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc', 'tfeat',
-             'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'orb': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-            'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'fast': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-             'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'akaze': ['sift', 'orb', 'akaze', 'brisk', 'kaze', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid',
-              'vgg', 'boostdesc', 'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'brisk': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-              'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'kaze': ['sift', 'orb', 'brisk', 'kaze', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
-             'boostdesc', 'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'gftt': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-             'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'mser': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-             'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'agast': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-              'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'blob': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-             'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'star': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-             'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'harrislaplace': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
-                      'boostdesc', 'tfeat', 'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
-    'msd': ['orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc', 'tfeat',
-            'hardnet', 'tfeat_executorch', 'hardnet_executorch'],
+BACKEND_ALGORITHMS = {
+    'opencv': (OPENCV_DETECTORS, OPENCV_DESCRIPTORS, OPENCV_MATCHERS),
+    'torch': (TORCH_DETECTORS, TORCH_DESCRIPTORS, TORCH_MATCHERS),
+    'executorch': (EXECUTORCH_DETECTORS, EXECUTORCH_DESCRIPTORS, EXECUTORCH_MATCHERS),
+}
 
-    'superpoint': ['superpoint'],
-    'superpoint_lightglue': ['superpoint_lightglue'],
-    'disk_lightglue': ['disk_lightglue'],
-    'disk_opencv': ['disk_opencv'],
-    'sift_lightglue': ['sift_lightglue'],
-    'aliked_lightglue': ['aliked_lightglue'],
-    'aliked_opencv': ['aliked_opencv'],
-    'doghardnet_lightglue': ['doghardnet_lightglue'],
-    'd2net': ['d2net'],
-    'xfeat': ['xfeat'],
-    'r2d2': ['r2d2'],
-    'loftr': ['loftr'],
-    'roma': ['roma'],
-    'superpoint_lightglue_executorch': ['superpoint_lightglue_executorch'],
-    'disk_lightglue_executorch': ['disk_lightglue_executorch'],
-    'd2net_executorch': ['d2net_executorch'],
-    'xfeat_executorch': ['xfeat_executorch'],
+DETECTOR_DESCRIPTOR_COMPATIBILITY = {
+    'sift': {'opencv': {
+        'opencv': ['sift', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'orb': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'fast': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'akaze': {'opencv': {
+        'opencv': ['sift', 'orb', 'akaze', 'brisk', 'kaze', 'brief', 'freak', 'daisy', 'latch', 'beblid',
+                   'teblid', 'vgg', 'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'brisk': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'kaze': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'kaze', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid',
+                   'vgg', 'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'gftt': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'mser': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'agast': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'blob': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'star': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'harrislaplace': {'opencv': {
+        'opencv': ['sift', 'orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg',
+                   'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'msd': {'opencv': {
+        'opencv': ['orb', 'brisk', 'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc'],
+        'torch': ['tfeat', 'hardnet'],
+        'executorch': ['tfeat', 'hardnet'],
+    }},
+    'superpoint': {'torch': {'torch': ['superpoint']}},
+    'superpoint_lightglue': {
+        'torch': {'torch': ['superpoint_lightglue']},
+        'executorch': {'executorch': ['superpoint_lightglue']},
+    },
+    'disk_lightglue': {
+        'torch': {'torch': ['disk_lightglue']},
+        'executorch': {'executorch': ['disk_lightglue']},
+    },
+    'disk': {'opencv': {'opencv': ['disk']}},
+    'sift_lightglue': {'torch': {'torch': ['sift_lightglue']}},
+    'aliked_lightglue': {'torch': {'torch': ['aliked_lightglue']}},
+    'aliked': {'opencv': {'opencv': ['aliked']}},
+    'doghardnet_lightglue': {'torch': {'torch': ['doghardnet_lightglue']}},
+    'd2net': {
+        'torch': {'torch': ['d2net']},
+        'executorch': {'executorch': ['d2net']},
+    },
+    'xfeat': {
+        'torch': {'torch': ['xfeat']},
+        'executorch': {'executorch': ['xfeat']},
+    },
+    'r2d2': {'torch': {'torch': ['r2d2']}},
+    'loftr': {'torch': {'torch': ['loftr']}},
+    'roma': {'torch': {'torch': ['roma']}},
 }
 
 DESCRIPTOR_MATCHER_COMPATIBILITY = {
-    'sift': ['bf', 'flann'],
-    'orb': ['bf', 'flann'],
-    'akaze': ['bf', 'flann'],
-    'brisk': ['bf', 'flann'],
-    'kaze': ['bf', 'flann'],
-    'brief': ['bf', 'flann'],
-    'freak': ['bf', 'flann'],
-    'daisy': ['bf', 'flann'],
-    'latch': ['bf', 'flann'],
-    'beblid': ['bf', 'flann'],
-    'teblid': ['bf', 'flann'],
-    'vgg': ['bf', 'flann'],
-    'boostdesc': ['bf', 'flann'],
-
-    'superpoint': ['bf', 'flann', 'superglue'],
-    'superpoint_lightglue': ['lightglue'],
-    'disk_lightglue': ['lightglue'],
-    'disk_opencv': ['bf', 'flann', 'lightglue_opencv'],
-    'sift_lightglue': ['lightglue'],
-    'aliked_lightglue': ['lightglue'],
-    'aliked_opencv': ['bf', 'flann', 'lightglue_opencv'],
-    'doghardnet_lightglue': ['lightglue'],
-    'xfeat': ['bf', 'flann'],
-    'tfeat': ['bf', 'flann'],
-    'hardnet': ['bf', 'flann'],
-    'd2net': ['bf', 'flann'],
-    'r2d2': ['bf', 'flann'],
-    'loftr': ['loftr'],
-    'roma': ['roma'],
-    'superpoint_lightglue_executorch': ['lightglue_executorch'],
-    'disk_lightglue_executorch': ['lightglue_executorch'],
-    'd2net_executorch': ['bf', 'flann'],
-    'tfeat_executorch': ['bf', 'flann'],
-    'hardnet_executorch': ['bf', 'flann'],
-    'xfeat_executorch': ['bf', 'flann'],
+    'sift': {'opencv': {'opencv': ['bf', 'flann']}},
+    'orb': {'opencv': {'opencv': ['bf', 'flann']}},
+    'akaze': {'opencv': {'opencv': ['bf', 'flann']}},
+    'brisk': {'opencv': {'opencv': ['bf', 'flann']}},
+    'kaze': {'opencv': {'opencv': ['bf', 'flann']}},
+    'brief': {'opencv': {'opencv': ['bf', 'flann']}},
+    'freak': {'opencv': {'opencv': ['bf', 'flann']}},
+    'daisy': {'opencv': {'opencv': ['bf', 'flann']}},
+    'latch': {'opencv': {'opencv': ['bf', 'flann']}},
+    'beblid': {'opencv': {'opencv': ['bf', 'flann']}},
+    'teblid': {'opencv': {'opencv': ['bf', 'flann']}},
+    'vgg': {'opencv': {'opencv': ['bf', 'flann']}},
+    'boostdesc': {'opencv': {'opencv': ['bf', 'flann']}},
+    'superpoint': {'torch': {
+        'opencv': ['bf', 'flann'],
+        'torch': ['superglue'],
+    }},
+    'superpoint_lightglue': {
+        'torch': {'torch': ['lightglue']},
+        'executorch': {'executorch': ['lightglue']},
+    },
+    'disk_lightglue': {
+        'torch': {'torch': ['lightglue']},
+        'executorch': {'executorch': ['lightglue']},
+    },
+    'disk': {'opencv': {'opencv': ['bf', 'flann', 'lightglue']}},
+    'sift_lightglue': {'torch': {'torch': ['lightglue']}},
+    'aliked_lightglue': {'torch': {'torch': ['lightglue']}},
+    'aliked': {'opencv': {'opencv': ['bf', 'flann', 'lightglue']}},
+    'doghardnet_lightglue': {'torch': {'torch': ['lightglue']}},
+    'xfeat': {
+        'torch': {'opencv': ['bf', 'flann']},
+        'executorch': {'opencv': ['bf', 'flann']},
+    },
+    'tfeat': {
+        'torch': {'opencv': ['bf', 'flann']},
+        'executorch': {'opencv': ['bf', 'flann']},
+    },
+    'hardnet': {
+        'torch': {'opencv': ['bf', 'flann']},
+        'executorch': {'opencv': ['bf', 'flann']},
+    },
+    'd2net': {
+        'torch': {'opencv': ['bf', 'flann']},
+        'executorch': {'opencv': ['bf', 'flann']},
+    },
+    'r2d2': {'torch': {'opencv': ['bf', 'flann']}},
+    'loftr': {'torch': {'torch': ['loftr']}},
+    'roma': {'torch': {'torch': ['roma']}},
 }
+
+
+def get_default_backend(algorithm_name, algorithm_index):
+    if algorithm_name in BACKEND_ALGORITHMS['torch'][algorithm_index]:
+        return 'torch'
+    if algorithm_name in BACKEND_ALGORITHMS['opencv'][algorithm_index]:
+        return 'opencv'
+    if algorithm_name in BACKEND_ALGORITHMS['executorch'][algorithm_index]:
+        return 'executorch'
+    return None
+
+
+def get_compatible_descriptors(detector, detector_backend, descriptor_backend):
+    return DETECTOR_DESCRIPTOR_COMPATIBILITY.get(detector, {}).get(detector_backend, {}).get(descriptor_backend, [])
+
+
+def get_compatible_matchers(descriptor, descriptor_backend, matcher_backend):
+    return DESCRIPTOR_MATCHER_COMPATIBILITY.get(descriptor, {}).get(descriptor_backend, {}).get(matcher_backend, [])

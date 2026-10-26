@@ -2,6 +2,9 @@ from src.matchers import Matcher
 import src.backend.torch.model_wrapper  # noqa: E402, F401
 import src.backend.torch.inference_api  # noqa: E402, F401
 import src.backend.torch.io_adapter  # noqa: E402, F401
+import src.backend.executorch.model_wrapper  # noqa: E402, F401
+import src.backend.executorch.inference_api  # noqa: E402, F401
+import src.backend.executorch.io_adapter  # noqa: E402, F401
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_wrapper_base import ModelWrapper
@@ -16,10 +19,13 @@ class DNNMatcher(Matcher):
     def __init__(self, matcher_name, logger, config=None, descriptor_class=None):
         if config is None:
             config = {}
+        else:
+            config = config.copy()
 
         Matcher.__init__(self, matcher_name, logger, config, descriptor_class)
 
         backend = config.pop('backend', 'torch').lower()
+        self._backend = backend
         if 'descriptor_class' not in config:
             config['descriptor_class'] = descriptor_class
 
@@ -43,6 +49,9 @@ class DNNMatcher(Matcher):
         pass
 
     def match(self, features0, features1):
+        self._logger.info(
+            f"Running inference with {self._matcher_name} on {self._backend} backend"
+        )
         inputs = {"features0": features0, "features1": features1, "descriptor_name": self._descriptor_class,
                   **DNNMatcher._model_components}
         inputs = DNNMatcher._io_adapter.preprocess(inputs)

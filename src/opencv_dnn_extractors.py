@@ -37,7 +37,7 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
             self._logger.error("Input image is None. Detection aborted.")
             return {'keypoints': (), 'descriptors': ()}
 
-        self._logger.info(f"Running inference with {self._detector_name}")
+        self._logger.info(f"Running inference with {self._detector_name} on opencv backend")
 
         self._io_adapter.preprocess({'image': img})
         outputs = self._inference.run()
@@ -82,10 +82,14 @@ class OpenCVDNNFeatureExtractors(Detector, Descriptor, register=False):
 
 
 class ALIKEDOpenCV(OpenCVDNNFeatureExtractors):
+    _EXTRACTOR_CLASSES = {'aliked': None}
+
     def __init__(self, extractor_name, logger, config):
         super().__init__(extractor_name, logger, config)
 
 
 class DISKOpenCV(OpenCVDNNFeatureExtractors):
+    _EXTRACTOR_CLASSES = {'disk': None}
+
     def __init__(self, extractor_name, logger, config):
         super().__init__(extractor_name, logger, config)
