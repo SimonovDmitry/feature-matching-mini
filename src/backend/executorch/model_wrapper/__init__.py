@@ -1,1 +1,6 @@
 from src.backend.executorch.model_wrapper.d2net import D2NetExecuTorchModelWrapper
+from src.backend.executorch.model_wrapper.disk_lightglue import DiskLightGlueExecuTorchModelWrapper
+from src.backend.executorch.model_wrapper.lightglue_matcher import LightGlueExecuTorchModelWrapper
+from src.backend.executorch.model_wrapper.descriptors import PatchDescriptorExecuTorchModelWrapper
+from src.backend.executorch.model_wrapper.superpoint_lightglue import SuperPointLightGlueExecuTorchModelWrapper
+from src.backend.executorch.model_wrapper.xfeat import XFeatExecuTorchModelWrapper

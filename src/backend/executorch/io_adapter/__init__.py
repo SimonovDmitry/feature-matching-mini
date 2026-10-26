@@ -1,1 +1,6 @@
 from src.backend.executorch.io_adapter.d2net import D2NetExecuTorchIOAdapter
+from src.backend.executorch.io_adapter.disk_lightglue import DiskLightGlueExecuTorchIOAdapter
+from src.backend.executorch.io_adapter.descriptors import PatchDescriptorExecuTorchIOAdapter
+from src.backend.executorch.io_adapter.lightglue_matcher import LightGlueExecuTorchIOAdapter
+from src.backend.executorch.io_adapter.superpoint_lightglue import SuperPointLightGlueExecuTorchIOAdapter
+from src.backend.executorch.io_adapter.xfeat import XFeatExecuTorchIOAdapter
