@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.algorithms import (ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE,  # noqa: E402
-                            TORCH_DETECTORS, TORCH_DESCRIPTORS, TORCH_MATCHERS, OPENCV_MATCHERS)
+                            TORCH_DETECTORS, TORCH_DESCRIPTORS, get_default_backend)
 
 
 def build_detector_config(args):
@@ -28,7 +28,7 @@ def build_detector_config(args):
         config['executorch_model_path'] = args.det_et_model
         if args.det_et_input_shape:
             config['input_shape'] = args.det_et_input_shape
-        if args.det_et_num_keypoints:
+        if args.det_et_num_keypoints is not None:
             config['num_keypoints'] = args.det_et_num_keypoints
     return config
 
@@ -68,13 +68,14 @@ def build_descriptor_config(args):
 
 def build_matcher_config(args):
     config = dict()
-    if (args.device is not None) and (args.matcher in TORCH_MATCHERS):
+    matcher_backend = args.mat_backend or get_default_backend(args.matcher, 2)
+    if args.device is not None and matcher_backend == 'torch':
         config['device'] = args.device
     if args.mat_backend is not None:
         config['backend'] = args.mat_backend
-    if args.matcher in OPENCV_MATCHERS:
+    if matcher_backend == 'opencv':
         config['mode'] = args.matcher_mode
-    if (args.k_knn is not None) and (args.matcher in OPENCV_MATCHERS):
+    if (args.k_knn is not None) and matcher_backend == 'opencv':
         config['k'] = args.k_knn
     if args.mat_ratio is not None:
         config['ratio'] = args.mat_ratio
@@ -209,12 +210,24 @@ def build_hpatches_detector_config(args):
     config = dict()
     if (args.device is not None) and (args.detector in TORCH_DETECTORS):
         config['device'] = args.device
+    if args.det_backend is not None:
+        config['backend'] = args.det_backend
     if args.det_nfeatures is not None:
         config['nfeatures'] = args.det_nfeatures
     if args.det_noctave is not None:
         config['nOctaveLayers'] = args.det_noctave
     if args.det_threshold is not None:
         config['threshold'] = args.det_threshold
+    if getattr(args, 'disk_model_path', None) is not None:
+        config['disk_model_path'] = args.disk_model_path
+    if getattr(args, 'aliked_model_path', None) is not None:
+        config['aliked_model_path'] = args.aliked_model_path
+    if args.det_et_model is not None:
+        config['executorch_model_path'] = args.det_et_model
+        if args.det_et_input_shape is not None:
+            config['input_shape'] = args.det_et_input_shape
+        if args.det_et_num_keypoints is not None:
+            config['num_keypoints'] = args.det_et_num_keypoints
     return config
 
 
@@ -222,25 +235,41 @@ def build_hpatches_descriptor_config(args):
     config = dict()
     if (args.device is not None) and (args.descriptor in TORCH_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
         config['device'] = args.device
+    if args.des_backend is not None:
+        config['backend'] = args.des_backend
     if args.des_nfeatures is not None:
         config['nfeatures'] = args.des_nfeatures
     if args.des_threshold is not None:
         config['threshold'] = args.des_threshold
     if args.des_scale is not None:
         config['scale_factor'] = args.des_scale
+    if args.des_et_model is not None:
+        config['executorch_model_path'] = args.des_et_model
+        config['patch_size'] = args.des_et_patch_size
     return config
 
 
 def build_hpatches_matcher_config(args):
     config = dict()
-    if (args.device is not None) and (args.matcher in TORCH_MATCHERS):
+    matcher_backend = args.mat_backend or get_default_backend(args.matcher, 2)
+    if args.device is not None and matcher_backend == 'torch':
         config['device'] = args.device
-    if args.matcher in OPENCV_MATCHERS:
+    if args.mat_backend is not None:
+        config['backend'] = args.mat_backend
+    if matcher_backend == 'opencv':
         config['mode'] = args.matcher_mode
     if args.mat_ratio is not None:
         config['ratio'] = args.mat_ratio
     if args.mat_cross_check is not None:
         config['cross_check'] = args.mat_cross_check
+    if getattr(args, 'lightglue_model_path', None) is not None:
+        config['lightglue_model_path'] = args.lightglue_model_path
+    if args.mat_et_model is not None:
+        config['executorch_model_path'] = args.mat_et_model
+        num_keypoints = args.mat_et_num_keypoints
+        if num_keypoints is None:
+            num_keypoints = args.det_et_num_keypoints
+        config['num_keypoints'] = num_keypoints if num_keypoints is not None else 256
     return config
 
 

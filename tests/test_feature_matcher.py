@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.feature_matcher import FeatureMatcherCV2
-from src.algorithms import DESCRIPTOR_MATCHER_COMPATIBILITY, ALL_MATCHERS, TORCH_MATCHERS
+from src.algorithms import (ALL_DESCRIPTORS, ALL_MATCHERS, TORCH_MATCHERS, get_compatible_descriptors,
+                            get_compatible_matchers, get_default_backend)
 import src.backend.opencv.model_loader  # noqa: F401
 import src.backend.opencv.inference_api  # noqa: F401
 import src.backend.opencv.io_adapter  # noqa: F401
@@ -129,11 +130,20 @@ class TestFeatureMatcherMatch:
 class TestFeatureMatcherCompatibility:
     valid_combinations = [
         (det, des, mat, mode)
-        for det, descriptors in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY.items()
-        for des in descriptors
+        for det in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY
+        for des in ALL_DESCRIPTORS
         for mat in ALL_MATCHERS
         for mode in ([None] if mat in TORCH_MATCHERS or 'opencv' in mat else ['simple', 'knn'])
-        if mat in DESCRIPTOR_MATCHER_COMPATIBILITY.get(des, [])
+        if des in get_compatible_descriptors(
+            det,
+            get_default_backend(det, 0),
+            get_default_backend(des, 1),
+        )
+        and mat in get_compatible_matchers(
+            des,
+            get_default_backend(des, 1),
+            get_default_backend(mat, 2),
+        )
         and mat != 'superglue'
     ]
 
@@ -189,6 +199,22 @@ class TestFeatureMatcherCompatibility:
                 logger=mock_logger,
                 detector='msd',
                 descriptor='sift'
+            )
+
+    def test_incompatible_executorch_descriptor_and_torch_matcher_raises(self, mock_logger):
+        config = {
+            'detector': {'backend': 'executorch'},
+            'descriptor': {'backend': 'executorch'},
+            'matcher': {'backend': 'torch'},
+        }
+
+        with pytest.raises(ValueError, match="cannot be used with Matcher"):
+            FeatureMatcherCV2(
+                logger=mock_logger,
+                detector='superpoint_lightglue',
+                descriptor='superpoint_lightglue',
+                matcher='lightglue',
+                config=config,
             )
 
 

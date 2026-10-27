@@ -65,8 +65,8 @@ class TestOpenCVDNN:
         assert base_instance.default_norm == cv.NORM_L2
 
     def test_registered_in_factories(self):
-        assert "aliked_opencv" in Detector._METHODS or "aliked_opencv" in Descriptor._METHODS
-        assert "disk_opencv" in Detector._METHODS or "disk_opencv" in Descriptor._METHODS
+        assert "aliked" in Detector._METHODS and "aliked" in Descriptor._METHODS
+        assert "disk" in Detector._METHODS and "disk" in Descriptor._METHODS
 
 
 class TestALIKEDOpenCV:
@@ -85,28 +85,28 @@ class TestALIKEDOpenCV:
             yield
 
     def test_default_initialization(self, mock_logger):
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={})
-        assert extractor.extractor_name == "aliked_opencv"
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={})
+        assert extractor.extractor_name == "aliked"
 
     def test_custom_nfeatures(self, mock_logger):
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={'nfeatures': 2048})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={'nfeatures': 2048})
         assert extractor is not None
 
     def test_custom_threshold(self, mock_logger):
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={'threshold': 0.05})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={'threshold': 0.05})
         assert extractor is not None
 
     def test_custom_scale_factor(self, mock_logger):
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={'scale_factor': 1.2})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={'scale_factor': 1.2})
         assert extractor is not None
 
     def test_unknown_params_ignored(self, mock_logger):
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={'unknown_param': 999, 'nfeatures': 1000})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={'unknown_param': 999, 'nfeatures': 1000})
         assert extractor is not None
 
     def test_custom_model_path(self, mock_logger):
         custom_path = "models/aliked-n32-top2k-640.onnx"
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={'aliked_model_path': custom_path})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={'aliked_model_path': custom_path})
         assert extractor is not None
 
     def test_black_image(self, mock_logger):
@@ -120,7 +120,7 @@ class TestALIKEDOpenCV:
             mock_io_patch.create.return_value = mock_io_instance
 
             img = np.zeros((200, 200, 3), dtype=np.uint8)
-            extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={})
+            extractor = ALIKEDOpenCV("aliked", mock_logger, config={})
             result = extractor.compute(img, {'keypoints': []})
 
             assert isinstance(result, dict)
@@ -129,7 +129,7 @@ class TestALIKEDOpenCV:
 
     def test_very_small_image(self, mock_logger):
         tiny_img = np.random.randint(0, 255, (10, 10, 3), dtype=np.uint8)
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={})
 
         try:
             result = extractor.compute(tiny_img, {'keypoints': []})
@@ -141,7 +141,7 @@ class TestALIKEDOpenCV:
 
     def test_high_noise_image(self, mock_logger):
         noise = np.random.randint(0, 255, (200, 200, 3), dtype=np.uint8)
-        extractor = ALIKEDOpenCV("aliked_opencv", mock_logger, config={})
+        extractor = ALIKEDOpenCV("aliked", mock_logger, config={})
         result = extractor.compute(noise, {'keypoints': []})
 
         assert isinstance(result, dict)
@@ -165,29 +165,29 @@ class TestDISKOpenCV:
             yield
 
     def test_default_initialization(self, mock_logger):
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={})
-        assert extractor.extractor_name == "disk_opencv"
+        extractor = DISKOpenCV("disk", mock_logger, config={})
+        assert extractor.extractor_name == "disk"
 
     def test_custom_nfeatures(self, mock_logger):
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={'nfeatures': 1024})
+        extractor = DISKOpenCV("disk", mock_logger, config={'nfeatures': 1024})
         assert extractor is not None
 
     def test_custom_threshold(self, mock_logger):
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={'threshold': 0.3})
+        extractor = DISKOpenCV("disk", mock_logger, config={'threshold': 0.3})
         assert extractor is not None
 
     def test_unknown_params_not_passed(self, mock_logger):
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={'unknown': 123, 'nfeatures': 500})
+        extractor = DISKOpenCV("disk", mock_logger, config={'unknown': 123, 'nfeatures': 500})
         assert extractor is not None
 
     def test_custom_model_path(self, mock_logger):
         custom_path = "models/disk_1024.onnx"
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={'disk_model_path': custom_path})
+        extractor = DISKOpenCV("disk", mock_logger, config={'disk_model_path': custom_path})
         assert extractor is not None
 
     def test_black_image(self, mock_logger):
         img = np.zeros((200, 200, 3), dtype=np.uint8)
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={})
+        extractor = DISKOpenCV("disk", mock_logger, config={})
         result = extractor.compute(img, {'keypoints': []})
 
         assert isinstance(result, dict)
@@ -196,7 +196,7 @@ class TestDISKOpenCV:
 
     def test_very_small_image(self, mock_logger):
         tiny_img = np.random.randint(0, 255, (10, 10, 3), dtype=np.uint8)
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={})
+        extractor = DISKOpenCV("disk", mock_logger, config={})
 
         try:
             result = extractor.compute(tiny_img, {'keypoints': []})
@@ -208,7 +208,7 @@ class TestDISKOpenCV:
 
     def test_high_noise_image(self, mock_logger):
         noise = np.random.randint(0, 255, (200, 200, 3), dtype=np.uint8)
-        extractor = DISKOpenCV("disk_opencv", mock_logger, config={})
+        extractor = DISKOpenCV("disk", mock_logger, config={})
         result = extractor.compute(noise, {'keypoints': []})
 
         assert isinstance(result, dict)

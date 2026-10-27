@@ -8,8 +8,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
-from src.algorithms import (DETECTOR_DESCRIPTOR_COMPATIBILITY, DESCRIPTOR_MATCHER_COMPATIBILITY,  # noqa: E402
-                            TORCH_PIPELINES)
+from src.algorithms import (ALL_DESCRIPTORS, ALL_MATCHERS, DETECTOR_DESCRIPTOR_COMPATIBILITY,  # noqa: E402
+                            TORCH_PIPELINES, get_compatible_descriptors, get_compatible_matchers,
+                            get_default_backend)
 
 logging.basicConfig(level=logging.INFO, format='[ %(levelname)s ] %(message)s')
 logger = logging.getLogger("PerformanceBenchmark")
@@ -99,13 +100,26 @@ def get_all_combinations():
     combinations = []
 
     for detector in DETECTOR_DESCRIPTOR_COMPATIBILITY:
-        descriptors = DETECTOR_DESCRIPTOR_COMPATIBILITY.get(detector, [])
+        detector_backend = get_default_backend(detector, 0)
+        for descriptor in ALL_DESCRIPTORS:
+            descriptor_backend = get_default_backend(descriptor, 1)
+            descriptors = get_compatible_descriptors(
+                detector,
+                detector_backend,
+                descriptor_backend,
+            )
+            if descriptor not in descriptors:
+                continue
 
-        for descriptor in descriptors:
-            matchers = DESCRIPTOR_MATCHER_COMPATIBILITY.get(descriptor, [])
-
-            for matcher in matchers:
-                combinations.append((detector, descriptor, matcher))
+            for matcher in ALL_MATCHERS:
+                matcher_backend = get_default_backend(matcher, 2)
+                matchers = get_compatible_matchers(
+                    descriptor,
+                    descriptor_backend,
+                    matcher_backend,
+                )
+                if matcher in matchers:
+                    combinations.append((detector, descriptor, matcher))
 
     return combinations
 

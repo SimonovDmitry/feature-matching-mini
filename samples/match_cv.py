@@ -61,8 +61,8 @@ def parser():
                            help='Path to a detector .pte file')
     det_group.add_argument('--det-et-input-shape', type=int, nargs=4, metavar=('N', 'C', 'H', 'W'),
                            help='Static detector .pte input shape')
-    det_group.add_argument('--det-et-num-keypoints', type=int, default=256,
-                           help='Fixed K emitted by the ExecuTorch detector')
+    det_group.add_argument('--det-et-num-keypoints', type=int, default=None,
+                           help='Number of keypoints emitted by the ExecuTorch detector')
 
     des_group = arg_parser.add_argument_group('Descriptor config')
     des_group.add_argument('-desb', '--des-backend', type=str, default=None,
@@ -105,6 +105,8 @@ def parser():
                            help='Path to LightGlue opencv model')
     mat_group.add_argument('--mat-et-model', type=Path,
                            help='Path to a fixed-K matcher .pte file')
+    mat_group.add_argument('--mat-et-num-keypoints', type=int, default=None,
+                           help='Number of keypoints expected by the ExecuTorch matcher')
     return arg_parser.parse_args()
 
 

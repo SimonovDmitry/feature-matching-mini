@@ -52,11 +52,7 @@ class FeatureMatcherCV2:
         self._validate_backend(self._descriptor_name, self._descriptor_backend, 1, 'Descriptor')
         self._validate_backend(self._matcher_name, self._matcher_backend, 2, 'Matcher')
 
-        descriptors = get_compatible_descriptors(
-            self._detector_name,
-            self._detector_backend,
-            self._descriptor_backend,
-        )
+        descriptors = get_compatible_descriptors(self._detector_name, self._detector_backend, self._descriptor_backend)
         if self._descriptor_name not in descriptors:
             raise ValueError(
                 f"Detector '{self._detector_name}' on {self._detector_backend} backend cannot be used with "
