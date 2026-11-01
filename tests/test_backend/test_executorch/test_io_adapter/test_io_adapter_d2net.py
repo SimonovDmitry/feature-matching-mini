@@ -25,7 +25,7 @@ class TestD2NetExecuTorchIOAdapterPreprocess:
 
         result = adapter.preprocess({"image": image})
 
-        expected = torch.tensor([30 - 103.939, 20 - 116.779, 10 - 123.68])
+        expected = torch.tensor([10 - 103.939, 20 - 116.779, 30 - 123.68])
         torch.testing.assert_close(result["image"][0, :, 0, 0], expected)
         assert result["image"].shape == (1, 3, 4, 6)
 

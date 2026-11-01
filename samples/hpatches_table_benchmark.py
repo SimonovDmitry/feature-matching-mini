@@ -13,13 +13,14 @@ from src.algorithms import (BACKEND_ALGORITHMS, OPENCV_MATCHERS_MODE,  # noqa: E
                             get_compatible_descriptors, get_compatible_matchers)
 from src.feature_matcher import FeatureMatcherCV2  # noqa: E402
 
-from src.backend.executorch.model_wrapper.model_wrapper import (
+from src.backend.executorch.model_wrapper.model_wrapper import (  # noqa: E402
     EXECUTORCH_DESCRIPTOR_MODELS,
     EXECUTORCH_DETECTOR_MODELS,
     EXECUTORCH_MATCHER_MODELS,
 )
-from src.backend.opencv.model_loader.model_loader import (OPENCV_DETECTOR_MODELS, OPENCV_DESCRIPTOR_MODELS,
-                                                          OPENCV_MATCHER_MODELS)
+from src.backend.opencv.model_loader.model_loader import (  # noqa: E402
+    OPENCV_DESCRIPTOR_MODELS, OPENCV_DETECTOR_MODELS, OPENCV_MATCHER_MODELS,
+)
 import src.backend.opencv.inference_api  # noqa: E402, F401
 import src.backend.opencv.io_adapter  # noqa: E402, F401
 from samples.utils import build_hpatches_benchmark_config, build_hpatches_feature_matcher_config  # noqa: E402

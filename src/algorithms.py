@@ -1,9 +1,9 @@
 
 TORCH_DETECTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
-                 'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma'}
+                   'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma'}
 
 TORCH_DESCRIPTORS = {'superpoint', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue', 'aliked_lightglue',
-                   'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma', 'tfeat', 'hardnet'}
+                     'doghardnet_lightglue', 'd2net', 'xfeat', 'r2d2', 'loftr', 'roma', 'tfeat', 'hardnet'}
 
 TORCH_MATCHERS = {'lightglue', 'superglue', 'loftr', 'roma'}
 

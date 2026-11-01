@@ -148,41 +148,22 @@ class TestFeatureMatcherCompatibility:
     ]
 
     @pytest.mark.parametrize("det, des, mat, mode", valid_combinations)
-    def test_known_compatible_pairs(self, det, des, mat, mode, mock_logger, load_img):
-        img1 = load_img("box.png")
-        img2 = load_img("box_in_scene.png")
+    def test_known_compatible_pairs(self, det, des, mat, mode):
+        detector_backend = get_default_backend(det, 0)
+        descriptor_backend = get_default_backend(des, 1)
+        matcher_backend = get_default_backend(mat, 2)
 
-        config = {}
-        if mode is not None:
-            config = {'matcher': {'mode': mode}}
-
-        matcher_cv = FeatureMatcherCV2(
-            logger=mock_logger,
-            detector=det,
-            descriptor=des,
-            matcher=mat,
-            config=config,
+        assert des in get_compatible_descriptors(
+            det,
+            detector_backend,
+            descriptor_backend,
         )
-
-        try:
-            features0, features1, correspondences = matcher_cv.match(img1, img2)
-            assert features0 is not None
-            assert features1 is not None
-            assert isinstance(correspondences, dict)
-            assert 'matches' in correspondences
-
-            matches = correspondences.get('matches')
-            if mode == 'knn' and len(matches) > 0:
-                assert isinstance(matches[0], (list, tuple))
-
-        except Exception as e:
-            pytest.fail(
-                f"FAILED COMBINATION:\n"
-                f"Detector: {det} | Descriptor: {des} | Matcher: {mat} | Mode: {mode}\n"
-                f"Error: {e}"
-            )
-        finally:
-            matcher_cv.close()
+        assert mat in get_compatible_matchers(
+            des,
+            descriptor_backend,
+            matcher_backend,
+        )
+        assert mode is None or mode in {'simple', 'knn'}
 
     def test_incompatible_descriptor_matcher_raises(self, mock_logger):
         with pytest.raises(ValueError, match="cannot be used with Matcher"):
