@@ -72,6 +72,11 @@ class TestExecuTorchModelWrapperLoad:
         with pytest.raises(FileNotFoundError, match="does not exist"):
             wrapper.load()
 
+    @patch("src.backend.executorch.model_wrapper.model_wrapper.Runtime", None)
+    def test_requires_executorch_runtime_for_existing_model(self, wrapper):
+        with pytest.raises(ModuleNotFoundError, match="ExecuTorch runtime is not installed"):
+            wrapper.load()
+
 
 class TestExecuTorchModelWrapperCall:
     def test_call_wraps_single_input_in_tuple(self, wrapper):

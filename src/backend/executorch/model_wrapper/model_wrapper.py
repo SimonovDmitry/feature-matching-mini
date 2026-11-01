@@ -1,5 +1,10 @@
 from pathlib import Path
-from executorch.runtime import Runtime, Verification
+
+try:
+    from executorch.runtime import Runtime, Verification
+except ModuleNotFoundError:
+    Runtime = None
+    Verification = None
 
 from src.backend.model_wrapper_base import ModelWrapper
 
@@ -43,7 +48,13 @@ class ExecuTorchModelWrapper(ModelWrapper):
         if not model_path.is_file():
             raise FileNotFoundError(f"ExecuTorch model does not exist: {model_path}")
 
-        self._program = Runtime.get().load_program(str(model_path), verification=Verification.Minimal)
+        if Runtime is None:
+            raise ModuleNotFoundError(
+                "ExecuTorch runtime is not installed. Install 'executorch' to load .pte models."
+            )
+
+        verification = Verification.Minimal if Verification is not None else None
+        self._program = Runtime.get().load_program(str(model_path), verification=verification)
         self._method = self._program.load_method(self._config.get("method_name", "forward"))
         self._model = self._method
 
