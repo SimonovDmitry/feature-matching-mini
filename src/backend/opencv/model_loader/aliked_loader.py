@@ -12,4 +12,4 @@ class AlikedOpenCVModelLoader(OpenCVModelLoader):
         checkpoint = self._config.pop('aliked_model_path', f"models/{OPENCV_DETECTOR_MODELS['aliked']}")
         self._logger.info(f"Initializing Aliked from {checkpoint}")
         self._model = cv.dnn.readNet(checkpoint)
-        return self._model
+        return {'model': self._model}

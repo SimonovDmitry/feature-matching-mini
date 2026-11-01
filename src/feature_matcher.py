@@ -10,8 +10,6 @@ from src.matchers import Matcher
 from src.dnn_extractors import DNNFeatureExtractors  # noqa: F401
 from src.dnn_matchers import DNNMatcher  # noqa: F401
 from src.dnn_pipeline import DNNPipeline  # noqa: F401
-from src.opencv_dnn_extractors import ALIKEDOpenCV, DISKOpenCV  # noqa: F401
-from src.opencv_dnn_matchers import LightGlueOpenCVMatcher  # noqa: F401
 from src.hardnet_descriptor import HardNet  # noqa: F401
 from src.tfeat_descriptor import TFeat  # noqa: F401
 
@@ -52,7 +50,11 @@ class FeatureMatcherCV2:
         self._validate_backend(self._descriptor_name, self._descriptor_backend, 1, 'Descriptor')
         self._validate_backend(self._matcher_name, self._matcher_backend, 2, 'Matcher')
 
-        descriptors = get_compatible_descriptors(self._detector_name, self._detector_backend, self._descriptor_backend)
+        descriptors = get_compatible_descriptors(
+            self._detector_name,
+            self._detector_backend,
+            self._descriptor_backend,
+        )
         if self._descriptor_name not in descriptors:
             raise ValueError(
                 f"Detector '{self._detector_name}' on {self._detector_backend} backend cannot be used with "

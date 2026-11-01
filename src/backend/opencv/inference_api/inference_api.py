@@ -8,11 +8,8 @@ from src.backend.inference_api_base import InferenceAPI
 class OpenCVInferenceAPI(InferenceAPI):
     _OUTPUT_NAMES = {
         'aliked': ["keypoints", "descriptors", "scores"],
-        'aliked_opencv': ["keypoints", "descriptors", "scores"],
         'disk': ["keypoints", "descriptors", "scores"],
-        'disk_opencv': ["keypoints", "descriptors", "scores"],
         'lightglue': ["matches0", "mscores0"],
-        'lightglue_opencv': ["matches0", "mscores0"]
     }
 
     def __init__(self, logger, model_name, model, config=None):

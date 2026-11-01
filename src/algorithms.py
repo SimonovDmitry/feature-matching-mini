@@ -16,6 +16,18 @@ OPENCV_DESCRIPTORS = {'sift', 'orb', 'akaze', 'brisk', 'kaze', 'brief', 'freak',
                       'vgg', 'boostdesc', 'disk', 'aliked'}
 
 OPENCV_MATCHERS = {'bf', 'flann', 'lightglue'}
+
+OPENCV_DNN_DETECTORS = {'disk', 'aliked'}
+
+OPENCV_DNN_DESCRIPTORS = {'disk', 'aliked'}
+
+OPENCV_DNN_MATCHERS = {'lightglue'}
+
+ONNX_DETECTORS = {'disk', 'aliked'}
+
+ONNX_DESCRIPTORS = {'disk', 'aliked'}
+
+ONNX_MATCHERS = {'lightglue'}
 OPENCV_MATCHERS_MODE = {'simple', 'knn'}
 
 EXECUTORCH_DETECTORS = {'superpoint_lightglue', 'disk_lightglue', 'd2net', 'xfeat'}
@@ -25,16 +37,17 @@ EXECUTORCH_MATCHERS = {'lightglue'}
 TORCH_ALGORITHMS = TORCH_DETECTORS | TORCH_DESCRIPTORS | TORCH_MATCHERS | TORCH_PIPELINES
 OPENCV_ALGORITHMS = OPENCV_DETECTORS | OPENCV_DESCRIPTORS | OPENCV_MATCHERS
 EXECUTORCH_ALGORITHMS = EXECUTORCH_DETECTORS | EXECUTORCH_DESCRIPTORS | EXECUTORCH_MATCHERS
+ONNX_ALGORITHMS = ONNX_DETECTORS | ONNX_DESCRIPTORS | ONNX_MATCHERS
 
-DNN_DETECTORS = TORCH_DETECTORS | EXECUTORCH_DETECTORS
-DNN_DESCRIPTORS = TORCH_DESCRIPTORS | EXECUTORCH_DESCRIPTORS
-DNN_MATCHERS = TORCH_MATCHERS | EXECUTORCH_MATCHERS
+DNN_DETECTORS = TORCH_DETECTORS | OPENCV_DNN_DETECTORS | ONNX_DETECTORS | EXECUTORCH_DETECTORS
+DNN_DESCRIPTORS = TORCH_DESCRIPTORS | OPENCV_DNN_DESCRIPTORS | ONNX_DESCRIPTORS | EXECUTORCH_DESCRIPTORS
+DNN_MATCHERS = TORCH_MATCHERS | OPENCV_DNN_MATCHERS | ONNX_MATCHERS | EXECUTORCH_MATCHERS
 DNN_PIPELINES = TORCH_PIPELINES
 DNN_ALGORITHMS = DNN_DETECTORS | DNN_DESCRIPTORS | DNN_MATCHERS | DNN_PIPELINES
 
-ALL_DETECTORS = TORCH_DETECTORS | OPENCV_DETECTORS | EXECUTORCH_DETECTORS
-ALL_DESCRIPTORS = TORCH_DESCRIPTORS | OPENCV_DESCRIPTORS | EXECUTORCH_DESCRIPTORS
-ALL_MATCHERS = TORCH_MATCHERS | OPENCV_MATCHERS | EXECUTORCH_MATCHERS
+ALL_DETECTORS = TORCH_DETECTORS | OPENCV_DETECTORS | ONNX_DETECTORS | EXECUTORCH_DETECTORS
+ALL_DESCRIPTORS = TORCH_DESCRIPTORS | OPENCV_DESCRIPTORS | ONNX_DESCRIPTORS | EXECUTORCH_DESCRIPTORS
+ALL_MATCHERS = TORCH_MATCHERS | OPENCV_MATCHERS | ONNX_MATCHERS | EXECUTORCH_MATCHERS
 ALL_PIPELINES = TORCH_PIPELINES
 ALL_ALGORITHMS = ALL_DETECTORS | ALL_DESCRIPTORS | ALL_MATCHERS | ALL_PIPELINES
 
@@ -42,6 +55,7 @@ BACKEND_ALGORITHMS = {
     'opencv': (OPENCV_DETECTORS, OPENCV_DESCRIPTORS, OPENCV_MATCHERS),
     'torch': (TORCH_DETECTORS, TORCH_DESCRIPTORS, TORCH_MATCHERS),
     'executorch': (EXECUTORCH_DETECTORS, EXECUTORCH_DESCRIPTORS, EXECUTORCH_MATCHERS),
+    'onnx': (ONNX_DETECTORS, ONNX_DESCRIPTORS, ONNX_MATCHERS),
 }
 
 DETECTOR_DESCRIPTOR_COMPATIBILITY = {
@@ -130,10 +144,10 @@ DETECTOR_DESCRIPTOR_COMPATIBILITY = {
         'torch': {'torch': ['disk_lightglue']},
         'executorch': {'executorch': ['disk_lightglue']},
     },
-    'disk': {'opencv': {'opencv': ['disk']}},
+    'disk': {'opencv': {'opencv': ['disk']}, 'onnx': {'onnx': ['disk']}},
     'sift_lightglue': {'torch': {'torch': ['sift_lightglue']}},
     'aliked_lightglue': {'torch': {'torch': ['aliked_lightglue']}},
-    'aliked': {'opencv': {'opencv': ['aliked']}},
+    'aliked': {'opencv': {'opencv': ['aliked']}, 'onnx': {'onnx': ['aliked']}},
     'doghardnet_lightglue': {'torch': {'torch': ['doghardnet_lightglue']}},
     'd2net': {
         'torch': {'torch': ['d2net']},
@@ -174,10 +188,12 @@ DESCRIPTOR_MATCHER_COMPATIBILITY = {
         'torch': {'torch': ['lightglue']},
         'executorch': {'executorch': ['lightglue']},
     },
-    'disk': {'opencv': {'opencv': ['bf', 'flann', 'lightglue']}},
+    'disk': {'opencv': {'opencv': ['bf', 'flann', 'lightglue']},
+             'onnx': {'opencv': ['bf', 'flann'], 'onnx': ['lightglue']}},
     'sift_lightglue': {'torch': {'torch': ['lightglue']}},
     'aliked_lightglue': {'torch': {'torch': ['lightglue']}},
-    'aliked': {'opencv': {'opencv': ['bf', 'flann', 'lightglue']}},
+    'aliked': {'opencv': {'opencv': ['bf', 'flann', 'lightglue']},
+               'onnx': {'opencv': ['bf', 'flann'], 'onnx': ['lightglue']}},
     'doghardnet_lightglue': {'torch': {'torch': ['lightglue']}},
     'xfeat': {
         'torch': {'opencv': ['bf', 'flann']},
@@ -208,6 +224,8 @@ def get_default_backend(algorithm_name, algorithm_index):
         return 'opencv'
     if algorithm_name in BACKEND_ALGORITHMS['executorch'][algorithm_index]:
         return 'executorch'
+    if algorithm_name in BACKEND_ALGORITHMS['onnx'][algorithm_index]:
+        return 'onnx'
     return None
 
 

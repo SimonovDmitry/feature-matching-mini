@@ -23,6 +23,9 @@ from src.backend.opencv.model_loader.model_loader import (  # noqa: E402
 )
 import src.backend.opencv.inference_api  # noqa: E402, F401
 import src.backend.opencv.io_adapter  # noqa: E402, F401
+import src.backend.onnx.model_loader  # noqa: E402, F401
+import src.backend.onnx.inference_api  # noqa: E402, F401
+import src.backend.onnx.io_adapter  # noqa: E402, F401
 from samples.utils import build_hpatches_benchmark_config, build_hpatches_feature_matcher_config  # noqa: E402
 from samples.hpatches_task import HPatchesTask  # noqa: E402
 from samples.hpatches_data_manager import HPatchesDataManager  # noqa: E402

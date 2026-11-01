@@ -5,7 +5,7 @@ from src.algorithms import (BACKEND_ALGORITHMS, OPENCV_DETECTORS, OPENCV_DESCRIP
 
 class TestBackendAlgorithms:
     def test_contains_all_supported_backends(self):
-        assert set(BACKEND_ALGORITHMS) == {'opencv', 'torch', 'executorch'}
+        assert set(BACKEND_ALGORITHMS) == {'opencv', 'torch', 'onnx', 'executorch'}
 
     def test_resolves_default_backend(self):
         assert get_default_backend('sift', 0) == 'opencv'

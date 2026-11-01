@@ -12,4 +12,4 @@ class LightGlueOpenCVModelLoader(OpenCVModelLoader):
         checkpoint = self._config.pop('lightglue_model_path', f"models/{OPENCV_MATCHER_MODELS['disk']}")
         self._logger.info(f"Initializing LightGlue from {checkpoint}")
         self._model = cv.dnn.readNet(checkpoint)
-        return self._model
+        return {'model': self._model}

@@ -29,6 +29,7 @@ class DNNFeatureExtractors(Detector, Descriptor):
         else:
             config = config.copy()
 
+        self.extractor_name = extractor_name
         Detector.__init__(self, logger, extractor_name)
         Descriptor.__init__(self, logger, extractor_name)
 
@@ -41,15 +42,18 @@ class DNNFeatureExtractors(Detector, Descriptor):
             DNNFeatureExtractors._model_wrapper = ModelWrapper.create(backend=backend, model_name=extractor_name,
                                                                       config=config, logger=logger)
             DNNFeatureExtractors._model_components = DNNFeatureExtractors._model_wrapper.load()
+            DNNFeatureExtractors.model_wrap_loaded = DNNFeatureExtractors._model_components.get('model') \
+                if backend in ['opencv', 'onnx'] else DNNFeatureExtractors._model_wrapper
 
         if DNNFeatureExtractors._io_adapter is None:
             DNNFeatureExtractors._io_adapter = IOAdapter.create(backend=backend, model_name=extractor_name,
+                                                                model_wrapper=DNNFeatureExtractors.model_wrap_loaded,
                                                                 config=config, logger=logger)
 
         if DNNFeatureExtractors._inference is None:
             DNNFeatureExtractors._inference = InferenceAPI.create(backend=backend, logger=logger, config=config,
                                                                   model_name=extractor_name,
-                                                                  model_wrapper=DNNFeatureExtractors._model_wrapper)
+                                                                  model_wrapper=DNNFeatureExtractors.model_wrap_loaded)
 
     def _forward(self, img, features=None):
         if img is None:
@@ -98,7 +102,7 @@ class DNNFeatureExtractors(Detector, Descriptor):
 
         height, width = img.shape[:2]
         extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc,
-                     'height': height, 'width': width, **outputs}
+                     'height': height, 'width': width, 'extractor_name': self.extractor_name, **outputs}
         DNNFeatureExtractors._extracted_data = extracted
 
         if len(kp) > 0:

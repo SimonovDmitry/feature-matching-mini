@@ -6,11 +6,14 @@ from unittest.mock import MagicMock
 from logging import Logger
 
 from src.feature_matcher import FeatureMatcherCV2
-from src.algorithms import (ALL_DESCRIPTORS, ALL_MATCHERS, TORCH_MATCHERS, get_compatible_descriptors,
-                            get_compatible_matchers, get_default_backend)
+from src.algorithms import (DESCRIPTOR_MATCHER_COMPATIBILITY, DETECTOR_DESCRIPTOR_COMPATIBILITY, TORCH_MATCHERS,
+                            get_compatible_descriptors, get_compatible_matchers)
 import src.backend.opencv.model_loader  # noqa: F401
 import src.backend.opencv.inference_api  # noqa: F401
 import src.backend.opencv.io_adapter  # noqa: F401
+import src.backend.onnx.model_loader  # noqa: F401
+import src.backend.onnx.inference_api  # noqa: F401
+import src.backend.onnx.io_adapter  # noqa: F401
 
 
 @pytest.fixture
@@ -128,40 +131,41 @@ class TestFeatureMatcherMatch:
 
 
 class TestFeatureMatcherCompatibility:
-    valid_combinations = [
-        (det, des, mat, mode)
-        for det in FeatureMatcherCV2._DETECTOR_DESCRIPTOR_COMPATIBILITY
-        for des in ALL_DESCRIPTORS
-        for mat in ALL_MATCHERS
-        for mode in ([None] if mat in TORCH_MATCHERS or 'opencv' in mat else ['simple', 'knn'])
-        if des in get_compatible_descriptors(
-            det,
-            get_default_backend(det, 0),
-            get_default_backend(des, 1),
-        )
-        and mat in get_compatible_matchers(
-            des,
-            get_default_backend(des, 1),
-            get_default_backend(mat, 2),
-        )
-        and mat != 'superglue'
-    ]
+    valid_combinations = []
+    for detector, det_backends_dict in DETECTOR_DESCRIPTOR_COMPATIBILITY.items():
+        for det_backend, desc_backends_dict in det_backends_dict.items():
+            for desc_backend in desc_backends_dict.keys():
+                descriptors = get_compatible_descriptors(detector, det_backend, desc_backend)
+                for descriptor in descriptors:
+                    match_backends_dict = DESCRIPTOR_MATCHER_COMPATIBILITY.get(descriptor, {})
+                    if desc_backend in match_backends_dict:
+                        for match_backend in match_backends_dict[desc_backend].keys():
+                            matchers = get_compatible_matchers(descriptor, desc_backend, match_backend)
+                            for matcher in matchers:
+                                if matcher == 'superglue':
+                                    continue
+                                modes = [None] if matcher in TORCH_MATCHERS or 'opencv' in match_backend else ['simple',
+                                                                                                               'knn']
+                                for mode in modes:
+                                    valid_combinations.append((
+                                        detector, det_backend,
+                                        descriptor, desc_backend,
+                                        matcher, match_backend,
+                                        mode
+                                    ))
 
-    @pytest.mark.parametrize("det, des, mat, mode", valid_combinations)
-    def test_known_compatible_pairs(self, det, des, mat, mode):
-        detector_backend = get_default_backend(det, 0)
-        descriptor_backend = get_default_backend(des, 1)
-        matcher_backend = get_default_backend(mat, 2)
-
+    @pytest.mark.parametrize("det, det_backend, des, desc_backend, mat, match_backend, mode", valid_combinations)
+    def test_known_compatible_pairs(self, det, det_backend, des, desc_backend,
+                                    mat, match_backend, mode):
         assert des in get_compatible_descriptors(
             det,
-            detector_backend,
-            descriptor_backend,
+            det_backend,
+            desc_backend,
         )
         assert mat in get_compatible_matchers(
             des,
-            descriptor_backend,
-            matcher_backend,
+            desc_backend,
+            match_backend,
         )
         assert mode is None or mode in {'simple', 'knn'}
 

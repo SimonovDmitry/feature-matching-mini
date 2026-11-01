@@ -5,13 +5,21 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))  # noqa: E402
 
 from src.algorithms import (ALL_DETECTORS, ALL_DESCRIPTORS, ALL_MATCHERS, OPENCV_MATCHERS_MODE,  # noqa: E402
-                            TORCH_DETECTORS, TORCH_DESCRIPTORS, get_default_backend)
+                            OPENCV_MATCHERS, TORCH_DETECTORS, TORCH_DESCRIPTORS, get_default_backend)
 
 
 def build_detector_config(args):
     config = dict()
     if (args.device is not None) and (args.detector in TORCH_DETECTORS):
         config['device'] = args.device
+    if args.provider_option:
+        config['provider_option'] = args.provider_option
+    if args.intra_op_threads is not None:
+        config['intra_op_num_threads'] = args.intra_op_threads
+    if args.inter_op_threads is not None:
+        config['inter_op_num_threads'] = args.inter_op_threads
+    if args.execution_mode is not None:
+        config['execution_mode'] = args.execution_mode
     if args.det_backend is not None:
         config['backend'] = args.det_backend
     if args.det_nfeatures is not None:
@@ -37,6 +45,14 @@ def build_descriptor_config(args):
     config = dict()
     if (args.device is not None) and (args.descriptor in TORCH_DESCRIPTORS or args.descriptor in ['tfeat', 'hardnet']):
         config['device'] = args.device
+    if args.provider_option:
+        config['provider_option'] = args.provider_option
+    if args.intra_op_threads is not None:
+        config['intra_op_num_threads'] = args.intra_op_threads
+    if args.inter_op_threads is not None:
+        config['inter_op_num_threads'] = args.inter_op_threads
+    if args.execution_mode is not None:
+        config['execution_mode'] = args.execution_mode
     if args.des_backend is not None:
         config['backend'] = args.des_backend
     if args.des_nfeatures is not None:
@@ -74,9 +90,19 @@ def build_matcher_config(args):
     if args.mat_backend is not None:
         config['backend'] = args.mat_backend
     if matcher_backend == 'opencv':
-        config['mode'] = args.matcher_mode
-    if (args.k_knn is not None) and matcher_backend == 'opencv':
-        config['k'] = args.k_knn
+        if args.matcher in OPENCV_MATCHERS:
+            config['mode'] = args.matcher_mode
+        if (args.k_knn is not None) and (args.matcher in OPENCV_MATCHERS):
+            config['k'] = args.k_knn
+
+    if args.provider_option:
+        config['provider_option'] = args.provider_option
+    if args.intra_op_threads is not None:
+        config['intra_op_num_threads'] = args.intra_op_threads
+    if args.inter_op_threads is not None:
+        config['inter_op_num_threads'] = args.inter_op_threads
+    if args.execution_mode is not None:
+        config['execution_mode'] = args.execution_mode
     if args.mat_ratio is not None:
         config['ratio'] = args.mat_ratio
     if args.mat_cross_check is not None:
@@ -113,8 +139,6 @@ def performance_tests_parser():
         description="Feature matching staged performance test",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    available_devices = ['cpu', 'cuda', 'mps']
-
     arg_parser.add_argument('-det', '--detector', type=str, default='sift',
                             choices=ALL_DETECTORS, help='Detector algorithm')
     arg_parser.add_argument('-des', '--descriptor', type=str, default='sift',
@@ -128,7 +152,17 @@ def performance_tests_parser():
                             help='Path to the second image')
 
     arg_parser.add_argument('-d', '--device', type=str, default=None,
-                            choices=available_devices, help='The device on which the script will be run')
+                            help='The device on which the script will be run')
+    arg_parser.add_argument('-po', '--provider-option', action='append', default=[],
+                            help='ONNX provider options in format Provider.Key=Value '
+                                 '(e.g., -po CUDAExecutionProvider.device_id=0)')
+    arg_parser.add_argument('--intra-op-threads', type=int, default=None,
+                            help='Intra-op threads number for ONNX Runtime')
+    arg_parser.add_argument('--inter-op-threads', type=int, default=None,
+                            help='Inter-op threads number for ONNX Runtime')
+    arg_parser.add_argument('--execution-mode', type=str, default=None,
+                            choices=['ORT_SEQUENTIAL', 'ORT_PARALLEL'],
+                            help='Execution mode for ONNX Runtime')
 
     det_group = arg_parser.add_argument_group('Detector config')
     det_group.add_argument('-detb', '--det-backend', type=str, default=None, help='Backend for detector')
@@ -142,6 +176,12 @@ def performance_tests_parser():
                            help='Path to DISK opencv model')
     det_group.add_argument('-mpa', '--aliked-model-path', type=str, default=None,
                            help='Path to ALIKED opencv model')
+    det_group.add_argument('--det-et-model', type=Path,
+                           help='Path to a detector .pte file')
+    det_group.add_argument('--det-et-input-shape', type=int, nargs=4, metavar=('N', 'C', 'H', 'W'),
+                           help='Static detector .pte input shape')
+    det_group.add_argument('--det-et-num-keypoints', type=int, default=None,
+                           help='Number of keypoints emitted by the ExecuTorch detector')
 
     des_group = arg_parser.add_argument_group('Descriptor config')
     des_group.add_argument('-desb', '--des-backend', type=str, default=None,
@@ -162,6 +202,10 @@ def performance_tests_parser():
                            help='Batch size for HardNet model')
     des_group.add_argument('-mag', '--magfactor', type=int, default=None,
                            help='MagFactor for TFeat')
+    des_group.add_argument('--des-et-model', type=Path,
+                           help='Path to a descriptor .pte file')
+    des_group.add_argument('--des-et-patch-size', type=int, default=32,
+                           help='Patch size for descriptor model')
 
     mat_group = arg_parser.add_argument_group('Matcher config')
     mat_group.add_argument('-matb', '--mat-backend', type=str, default=None,
@@ -178,6 +222,10 @@ def performance_tests_parser():
                            help='scoreThreshold for LightGlue matcher')
     mat_group.add_argument('-mplg', '--lightglue-model-path', type=str, default=None,
                            help='Path to LightGlue opencv model')
+    mat_group.add_argument('--mat-et-model', type=Path,
+                           help='Path to a fixed-K matcher .pte file')
+    mat_group.add_argument('--mat-et-num-keypoints', type=int, default=None,
+                           help='Number of keypoints expected by the ExecuTorch matcher')
 
     arg_parser.add_argument('-n', '--iterations', type=int, default=10,
                             help='Number of iterations for performance testing (default: 10)')

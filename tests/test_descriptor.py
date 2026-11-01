@@ -11,6 +11,9 @@ from src.algorithms import (ALL_DESCRIPTORS, ALL_DETECTORS, DNN_ALGORITHMS, get_
 import src.backend.opencv.model_loader  # noqa: F401
 import src.backend.opencv.inference_api  # noqa: F401
 import src.backend.opencv.io_adapter  # noqa: F401
+import src.backend.onnx.model_loader  # noqa: F401
+import src.backend.onnx.inference_api  # noqa: F401
+import src.backend.onnx.io_adapter  # noqa: F401
 from src.detectors import Detector
 from src.descriptors import Descriptor, SIFTDescriptor, OpenCVDescriptor
 
