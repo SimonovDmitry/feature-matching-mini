@@ -9,6 +9,7 @@ class XFeatIOAdapter(IOAdapter):
     def preprocess(self, inputs):
         if not isinstance(inputs, dict) or "image" not in inputs:
             raise ValueError("XFeat expects a dictionary containing 'image'")
+
         image = np.asarray(inputs["image"])
         if image.ndim == 2:
             image = np.repeat(image[:, :, None], 3, axis=2)
