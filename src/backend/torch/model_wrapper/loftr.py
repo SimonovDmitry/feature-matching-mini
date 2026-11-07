@@ -8,7 +8,7 @@ from thirdparty.loftr.src.loftr import default_cfg
 
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
-from src.backend.torch.model_wrapper.weights_url import WEIGHTS_URL_MODELS
+from src.backend.torch.weights_url import WEIGHTS_URL_MODELS
 
 
 @ModelWrapper.register("loftr_torch")
