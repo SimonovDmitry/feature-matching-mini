@@ -3,7 +3,7 @@ import onnxruntime as ort
 from unittest.mock import MagicMock
 from logging import Logger
 
-from src.backend.onnx.onnx_utils import OnnxSessionConfiguration
+from src.backend.onnx.utils import OnnxSessionConfiguration
 
 
 @pytest.fixture

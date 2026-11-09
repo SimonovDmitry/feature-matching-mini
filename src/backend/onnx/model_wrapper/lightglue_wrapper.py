@@ -1,13 +1,14 @@
 import onnxruntime as ort
+from src.backend.model_paths import ONNX_MATCHER_MODELS
 from src.backend.model_wrapper_base import ModelWrapper
-from src.backend.onnx.model_loader.model_loader import OnnxModelLoader
-from src.backend.onnx.onnx_utils import OnnxSessionConfiguration
+from src.backend.onnx.model_wrapper.model_wrapper import OnnxModelWrapper
+from src.backend.onnx.utils import OnnxSessionConfiguration
 
 
-@ModelWrapper.register("disk_onnx")
-class DiskOnnxModelLoader(OnnxModelLoader):
+@ModelWrapper.register("lightglue_onnx")
+class LightGlueOnnxModelWrapper(OnnxModelWrapper):
     def load(self):
-        model_path = self._config.pop('disk_model_path', "models/disk_1024.onnx")
+        model_path = self._config.pop('lightglue_model_path', f"models/{ONNX_MATCHER_MODELS['disk']}")
         self._logger.info(f"Initializing {self._model_name} from {model_path} (ONNX Runtime)")
         try:
             session_config = OnnxSessionConfiguration(self._logger, self._config)

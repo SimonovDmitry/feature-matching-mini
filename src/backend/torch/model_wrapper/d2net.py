@@ -9,7 +9,7 @@ from thirdparty.d2net.lib.pyramid import process_multiscale
 
 from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.torch.model_wrapper.model_wrapper import TorchModelWrapper
-from src.backend.torch.model_wrapper.weights_url import WEIGHTS_URL_MODELS
+from src.backend.torch.weights_url import WEIGHTS_URL_MODELS
 
 
 @ModelWrapper.register("d2net_torch")
