@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from src.backend.opencv.model_wrapper.lightglue_loader import LightGlueOpenCVModelWrapper
+from src.backend.opencv.model_wrapper.lightglue_wrapper import LightGlueOpenCVModelWrapper
 
 
 @pytest.fixture

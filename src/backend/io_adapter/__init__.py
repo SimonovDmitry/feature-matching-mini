@@ -13,3 +13,12 @@ from src.backend.io_adapter.disk import DISKIOAdapter
 from src.backend.io_adapter.aliked import ALIKEDIOAdapter
 from src.backend.io_adapter.tfeat import TFeatIOAdapter
 from src.backend.io_adapter.hardnet import HardNetIOAdapter
+
+__all__ = [
+    'D2NetIOAdapter', 'XFeatIOAdapter', 'LoFTRIOAdapter', 'R2D2IOAdapter',
+    'RoMaIOAdapter', 'SuperGlueIOAdapter', 'SuperPointIOAdapter',
+    'LightGlueIOAdapter', 'SuperPointLightGlueIOAdapter',
+    'DISKLightGlueIOAdapter', 'SIFTLightGlueIOAdapter',
+    'ALIKEDLightGlueIOAdapter', 'DoGHardNetLightGlueIOAdapter',
+    'DISKIOAdapter', 'ALIKEDIOAdapter', 'TFeatIOAdapter', 'HardNetIOAdapter',
+]

@@ -29,8 +29,6 @@ class TestXFeatExecuTorchModelWrapperLoad:
 
 
 class TestXFeatExecuTorchModelWrapperCall:
-
-
     def test_call_requires_loaded_model(self):
         with pytest.raises(RuntimeError, match="load"):
             XFeatExecuTorchModelWrapper("xfeat_executorch").call(torch.zeros(1))

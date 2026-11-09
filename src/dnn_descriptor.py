@@ -26,16 +26,18 @@ class DNNDescriptor(Descriptor):
 
         if DNNDescriptor._model_wrapper is None:
             DNNDescriptor._model_wrapper = ModelWrapper.create(backend=backend, model_name=descriptor_name,
-                                                      config=config, logger=logger)
+                                                               config=config, logger=logger)
 
         if DNNDescriptor._io_adapter is None:
             DNNDescriptor._model_components = self._model_wrapper.load()
             DNNDescriptor._io_adapter = IOAdapter.create(backend=backend, model_name=descriptor_name,
-                                                model_wrapper=self._model_wrapper, config=config, logger=logger)
+                                                         model_wrapper=self._model_wrapper, config=config,
+                                                         logger=logger)
 
         if DNNDescriptor._inference is None:
             DNNDescriptor._inference = InferenceAPI.create(backend=backend, logger=logger, config=config,
-                                                  model_name=descriptor_name, model_wrapper=self._model_wrapper)
+                                                           model_name=descriptor_name,
+                                                           model_wrapper=self._model_wrapper)
 
     @property
     def default_norm(self):

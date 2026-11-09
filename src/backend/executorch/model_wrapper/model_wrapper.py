@@ -1,5 +1,12 @@
 from pathlib import Path
-from executorch.runtime import Runtime, Verification
+
+try:
+    from executorch.runtime import Runtime, Verification
+except ModuleNotFoundError as error:
+    if error.name != 'executorch':
+        raise
+    Runtime = None
+    Verification = None
 
 
 from src.backend.model_wrapper_base import ModelWrapper

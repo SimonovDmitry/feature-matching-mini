@@ -29,8 +29,6 @@ class TestD2NetExecuTorchModelWrapperLoad:
 
 
 class TestD2NetExecuTorchModelWrapperCall:
-
-
     def test_call_requires_loaded_model(self):
         with pytest.raises(RuntimeError, match="load"):
             D2NetExecuTorchModelWrapper("d2net_executorch").call(torch.zeros(1))

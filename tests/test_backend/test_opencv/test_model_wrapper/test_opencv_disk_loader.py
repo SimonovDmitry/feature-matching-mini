@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from src.backend.opencv.model_wrapper.disk_loader import DiskOpenCVModelWrapper
+from src.backend.opencv.model_wrapper.disk_wrapper import DiskOpenCVModelWrapper
 
 
 @pytest.fixture

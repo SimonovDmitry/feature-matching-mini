@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from src.backend.opencv.model_wrapper.aliked_loader import AlikedOpenCVModelWrapper
+from src.backend.opencv.model_wrapper.aliked_wrapper import AlikedOpenCVModelWrapper
 
 
 @pytest.fixture

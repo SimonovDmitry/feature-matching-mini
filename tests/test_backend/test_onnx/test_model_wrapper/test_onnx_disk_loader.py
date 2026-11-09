@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from logging import Logger
 
-from src.backend.onnx.model_wrapper.disk_loader import DiskOnnxModelWrapper
+from src.backend.onnx.model_wrapper.disk_wrapper import DiskOnnxModelWrapper
 from src.backend.model_wrapper_base import ModelWrapper
 
 
@@ -21,7 +21,7 @@ def test_load_default_path_success(mock_logger):
     config = {}
     loader = DiskOnnxModelWrapper(model_name="disk_onnx", config=config, logger=mock_logger)
 
-    with patch('src.backend.onnx.model_wrapper.disk_loader.OnnxSessionConfiguration') as mock_session_config_cls, \
+    with patch('src.backend.onnx.model_wrapper.disk_wrapper.OnnxSessionConfiguration') as mock_session_config_cls, \
             patch('onnxruntime.InferenceSession') as mock_inference_session:
         mock_session_config_instance = MagicMock()
         mock_session_config_instance.set_session_options.return_value = "dummy_sess_options"
@@ -49,7 +49,7 @@ def test_load_custom_path_success(mock_logger):
     config = {'disk_model_path': custom_path}
     loader = DiskOnnxModelWrapper(model_name="disk_onnx", config=config, logger=mock_logger)
 
-    with patch('src.backend.onnx.model_wrapper.disk_loader.OnnxSessionConfiguration') as mock_session_config_cls, \
+    with patch('src.backend.onnx.model_wrapper.disk_wrapper.OnnxSessionConfiguration') as mock_session_config_cls, \
             patch('onnxruntime.InferenceSession') as mock_inference_session:
         mock_session_config_instance = MagicMock()
         mock_session_config_instance.set_session_options.return_value = "dummy_sess_options"
@@ -74,7 +74,7 @@ def test_load_exception_handling(mock_logger):
     config = {}
     loader = DiskOnnxModelWrapper(model_name="disk_onnx", config=config, logger=mock_logger)
 
-    with patch('src.backend.onnx.model_wrapper.disk_loader.OnnxSessionConfiguration'), \
+    with patch('src.backend.onnx.model_wrapper.disk_wrapper.OnnxSessionConfiguration'), \
             patch('onnxruntime.InferenceSession', side_effect=Exception("Disk model not found")):
         with pytest.raises(Exception, match="Disk model not found"):
             loader.load()
