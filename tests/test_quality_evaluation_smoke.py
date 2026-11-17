@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
-def hpatches_two_pairs(tmp_path):
+def two_pairs(tmp_path):
     reference = cv.imread(str(REPO_ROOT / "test_data" / "box.png"))
     assert reference is not None
     height, width = reference.shape[:2]
@@ -24,7 +24,6 @@ def hpatches_two_pairs(tmp_path):
     scene.mkdir(parents=True)
     assert cv.imwrite(str(scene / "1.ppm"), reference)
 
-    # Generate each target and its reference-to-target ground truth together.
     for index in (2, 3):
         homography = np.eye(3)
         homography[:2, 2] = (3 * index, -2 * index)
@@ -34,11 +33,11 @@ def hpatches_two_pairs(tmp_path):
     return dataset
 
 
-def test_hpatches_quality_evaluation_cli(tmp_path, hpatches_two_pairs):
+def test_hpatches_quality_evaluation_cli(tmp_path, two_pairs):
     result = subprocess.run(
         [
             sys.executable, str(REPO_ROOT / "samples" / "hpatches_benchmark.py"),
-            "--path", str(hpatches_two_pairs),
+            "--path", str(two_pairs),
             "--detector", "sift", "--descriptor", "sift", "--matcher", "bf",
             "--tasks", "matchingap", "matchingscore", "homographyauc",
             "--eval-thresholds", "3",
@@ -61,14 +60,14 @@ def test_hpatches_quality_evaluation_cli(tmp_path, hpatches_two_pairs):
     os.environ.get("RUN_HPATCHES_ALL_COMBINATIONS") != "1",
     reason="Full matrix needs the model weights and ExecuTorch runtime",
 )
-def test_hpatches_all_combinations_on_two_pairs(tmp_path, hpatches_two_pairs):
+def test_hpatches_all_combinations_on_two_pairs(tmp_path, two_pairs):
     from samples.hpatches_table_benchmark import get_all_combinations
 
     output_path = tmp_path / "results.csv"
     result = subprocess.run(
         [
             sys.executable, "-m", "samples.hpatches_table_benchmark",
-            "--path", str(hpatches_two_pairs), "--output", str(output_path),
+            "--path", str(two_pairs), "--output", str(output_path),
             "--num-scenes", "1", "--no-skip", "--strict", "--eval-thresholds", "3",
         ],
         cwd=REPO_ROOT,
