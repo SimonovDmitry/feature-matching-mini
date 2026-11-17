@@ -1,6 +1,6 @@
 - stitching_params:
     stitcher_type: 'DetailedStitcher'
-    images_dir: '/home/ivmukhin/data/114_широкоуг'
+    images_dir: 'test_panorama'
     out_file_name: 'panorama_src_superpoint_executorch.jpg'
     report_file_name: 'stitching_report_executorch.yaml'
 
@@ -9,17 +9,19 @@
     descriptor: 'superpoint_lightglue'
     matcher: 'lightglue'
     sequential_matching: true
-    keypoints_num: 5000
+    # Keep all 256 SuperPoint keypoints for the fixed-shape LightGlue model.
     src_config:
       detector:
         backend: executorch
-        model_path: models/executorch/superpoint_lightglue_xnnpack_1x3x480x640.pte
+        model_path: models/superpoint_lightglue_xnnpack_1x3x480x640.pte
+        threshold: -1.0
       descriptor:
         backend: executorch
-        model_path: models/executorch/superpoint_lightglue_xnnpack_1x3x480x640.pte
+        model_path: models/superpoint_lightglue_xnnpack_1x3x480x640.pte
+        threshold: -1.0
       matcher:
         backend: executorch
-        model_path: models/executorch/lightglue_superpoint_k256_xnnpack_1x3x480x640.pte
+        model_path: models/lightglue_superpoint_k256_xnnpack_1x3x480x640.pte
 
   processing_params:
     try_cuda: false

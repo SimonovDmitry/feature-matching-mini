@@ -8,3 +8,25 @@
 - Директория `tests` содержит тесты корректной работоспособности различных модулей проекта.
 - Директория `results` содержит результаты измерения метрик качества и производительности
   решения задачи сопоставления признаков.
+
+## Сшивка панорам
+
+Из корня репозитория запустите пример на двух или более фотографиях с перекрытием.
+Скрипт читает файлы по имени, поэтому при последовательной сшивке назовите кадры
+`01.jpg`, `02.jpg` и так далее в порядке съёмки.
+
+```sh
+PYTHONPATH=. ./.venv/bin/python -m samples.panorama_stitching_sample \
+  -c samples/configs/detailed_stitching_src_opencv_config.yaml \
+  --images-dir "/путь/к/фотографиям" \
+  --output panorama.jpg \
+  --report stitching_report.yaml
+```
+
+Этот конфиг использует SIFT и BF из `src`. После запуска проверьте `panorama.jpg`
+и поле `num_images` в отчёте, чтобы узнать, сколько кадров вошло в результат.
+
+В той же команде можно выбрать другой конфиг через `-c`.
+
+- `samples/configs/detailed_stitching_src_config.yaml` использует ALIKED и LightGlue через PyTorch.
+- `samples/configs/detailed_stitching_src_executorch_config.yaml` использует SuperPoint и LightGlue через ExecuTorch. Пути к двум файлам `.pte` задаются в `matching_params.src_config`.
