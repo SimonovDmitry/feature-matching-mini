@@ -125,7 +125,7 @@ class DetailedPanoramaStitcher(PanoramaStitcher):
         self.logger.info(f'Stitch: match features ({self.parameters.get("matcher", "pipeline")})')
         pairs = self._match_features(features)
         t_stage = self._measure_stage('match features', t_stage)
-        images_scaling, images, full_img_sizes = self.subset_selector.select(
+        features, pairs, images_scaling, images, full_img_sizes = self.subset_selector.select(
             features, pairs, images_scaling, images, self.transformer.full_img_sizes)
         t_stage = self._measure_stage('select subset', t_stage)
         self.logger.info(f'Stitch: estimate homographies ({self.parameters["estimator"]})')
