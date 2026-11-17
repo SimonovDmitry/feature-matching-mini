@@ -51,8 +51,16 @@ class LoFTRTorchModelWrapper(TorchModelWrapper):
         return tensor.unsqueeze(0).unsqueeze(0).to(self._device)
 
     def preprocess(self, inputs):
-        return {'image0': self._preprocess_image(inputs['image0']),
-                'image1': self._preprocess_image(inputs['image1'])}
+        data = {}
+        for index in (0, 1):
+            image = inputs[f'image{index}']
+            tensor = self._preprocess_image(image)
+            height, width = image.shape[:2]
+            processed_height, processed_width = tensor.shape[-2:]
+            data[f'image{index}'] = tensor
+            data[f'scale{index}'] = torch.tensor([[width / processed_width, height / processed_height]],
+                                                 dtype=torch.float32, device=self._device)
+        return data
 
     @staticmethod
     def postprocess(outputs):

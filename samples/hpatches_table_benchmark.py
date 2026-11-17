@@ -320,6 +320,8 @@ def parse_args():
                            help='Patch size for descriptor model')
 
     mat_group = parser.add_argument_group('Matcher config')
+    mat_group.add_argument('-mn', '--mat-nfeatures', type=int, default=None,
+                           help='Max number of matches for a combined pipeline')
     mat_group.add_argument('-mat_m', '--matcher_mode', type=str, default='simple',
                            choices=OPENCV_MATCHERS_MODE, help='Matching mode')
     mat_group.add_argument('-mr', '--mat-ratio', type=float, default=None,

@@ -2,7 +2,7 @@ import pytest
 import cv2 as cv
 import numpy as np
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from logging import Logger
 
 from src.feature_matcher import FeatureMatcherCV2

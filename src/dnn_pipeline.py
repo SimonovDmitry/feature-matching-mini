@@ -81,20 +81,19 @@ class DNNPipeline(Detector, Descriptor, Matcher):
             self._logger.warning(f"{self._detector_name}: invalid matcher output")
             return {'matches': (), 'scores': ()}
 
-        mask = scores > self._threshold
-        matches = matches[mask]
-        scores = scores[mask]
+        indices = np.flatnonzero(scores > self._threshold)
+        if self._nfeatures is not None and len(indices) > self._nfeatures:
+            indices = indices[np.argsort(scores[indices])[::-1][:self._nfeatures]]
 
-        if self._nfeatures is not None and len(matches) > self._nfeatures:
-            indices = np.argsort(scores)[::-1][:self._nfeatures]
-            matches = matches[indices]
-            scores = scores[indices]
+        selected = matches[indices]
+        keypoints0 = np.asarray(keypoints0, dtype=object)[[match.queryIdx for match in selected]]
+        keypoints1 = np.asarray(keypoints1, dtype=object)[[match.trainIdx for match in selected]]
+        matches = np.asarray([cv.DMatch(i, i, match.distance) for i, match in enumerate(selected)], dtype=object)
+        scores = scores[indices]
 
-        extracted = {'keypoints0': keypoints0,
-                     'keypoints1': keypoints1,
-                     'matches': matches,
-                     'scores': scores,
-                     **outputs}
+        extracted = {**outputs, 'keypoints0': keypoints0,
+                     'keypoints1': keypoints1, 'matches': matches,
+                     'scores': scores}
         DNNPipeline._extracted_data = extracted
 
         if len(matches) > 0:

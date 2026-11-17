@@ -1,5 +1,7 @@
 import pytest
 import torch
+import cv2 as cv
+import numpy as np
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from logging import Logger
@@ -36,6 +38,18 @@ def wrapper(mock_logger, mock_model, tmp_path):
 class TestLoFTRTorchModelWrapper:
     def test_register(self):
         assert ModelWrapper._METHODS["loftr_torch"] == LoFTRTorchModelWrapper
+
+    def test_preprocess_preserves_original_image_coordinates(self, wrapper):
+        color = np.random.default_rng(0).integers(0, 256, (1154, 1728, 3), dtype=np.uint8)
+        gray = cv.cvtColor(color, cv.COLOR_BGR2GRAY)
+
+        data = wrapper.preprocess({'image0': color, 'image1': gray})
+
+        assert data['image0'].shape == (1, 1, 424, 640)
+        assert torch.equal(data['image0'], data['image1'])
+        expected_scale = torch.tensor([[1728 / 640, 1154 / 424]])
+        torch.testing.assert_close(data['scale0'], expected_scale)
+        torch.testing.assert_close(data['scale1'], expected_scale)
 
     @patch("src.backend.torch.model_wrapper.loftr.torch.load")
     @patch("src.backend.torch.model_wrapper.loftr.LoFTRModel")
