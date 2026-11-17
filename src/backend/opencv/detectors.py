@@ -62,7 +62,8 @@ class AKAZEDetector(OpenCVDetector):
             cv_params['threshold'] = float(config['threshold'])
         if 'nOctaveLayers' in config:
             cv_params['nOctaveLayers'] = config['nOctaveLayers']
-        super().__init__(detector_name, logger, cv.xfeatures2d.AKAZE_create(**cv_params), config)
+        create = getattr(cv, 'AKAZE_create', None) or cv.xfeatures2d.AKAZE_create
+        super().__init__(detector_name, logger, create(**cv_params), config)
 
 
 class BRISKDetector(OpenCVDetector):

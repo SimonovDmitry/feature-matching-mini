@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from stitching.panorama_stitcher import PanoramaStitcher
+from stitching.panorama_utils.feature_extractor import FeatureExtractor, PipelineFeatureExtractor
 from stitching.read_write_data import YamlReader
 
 
@@ -31,3 +32,25 @@ def test_src_sift_stitches_overlapping_images_and_drops_disconnected_frame():
 
     with pytest.raises(ValueError, match='at least two overlapping images'):
         stitcher.stitch([unrelated, unrelated])
+
+
+@pytest.mark.parametrize(('name', 'dtype'), [
+    ('orb', np.uint8),
+    ('sift', np.float32),
+    ('brisk', np.uint8),
+    ('akaze', np.uint8),
+])
+def test_legacy_feature_name_produces_opencv_image_features(name, dtype):
+    texture = np.random.default_rng(42).integers(0, 256, (80, 100, 3), dtype=np.uint8)
+    image = cv2.resize(texture, (400, 320))
+    extractor = FeatureExtractor.create(name, {'features': name}, logging.getLogger(__name__))
+
+    features = extractor.extract(image)
+
+    assert isinstance(extractor, PipelineFeatureExtractor)
+    assert isinstance(features, cv2.detail.ImageFeatures)
+    assert features.img_size == (400, 320)
+    assert features.keypoints
+    descriptors = features.descriptors.get()
+    assert descriptors.shape[0] == len(features.keypoints)
+    assert descriptors.dtype == dtype

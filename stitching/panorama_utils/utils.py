@@ -3,20 +3,7 @@ from importlib import import_module
 import cv2
 import numpy as np
 
-
-SRC_DESCRIPTOR_ONLY = {'brief', 'freak', 'daisy', 'latch', 'beblid', 'teblid', 'vgg', 'boostdesc',
-                       'tfeat', 'hardnet'}
-SRC_DETECTOR_ONLY = {'fast', 'kaze', 'gftt', 'mser', 'agast', 'blob', 'star', 'harrislaplace', 'msd'}
-SRC_DETECTOR_DESCRIPTOR = {'d2net', 'xfeat', 'r2d2', 'disk_opencv', 'aliked_opencv',
-                           'disk', 'aliked', 'superpoint_lightglue', 'disk_lightglue', 'sift_lightglue',
-                           'aliked_lightglue', 'doghardnet_lightglue'}
-SRC_PIPELINES = {'loftr', 'roma'}
-
-SRC_EXTRACTOR_NAMES = SRC_DESCRIPTOR_ONLY | SRC_DETECTOR_ONLY | SRC_DETECTOR_DESCRIPTOR | SRC_PIPELINES
-SRC_MATCHER_NAMES = {'bf', 'flann', 'lightglue', 'lightglue_opencv', 'superglue', 'loftr', 'roma'}
-
-DEFAULT_DETECTOR = 'sift'
-DEFAULT_DESCRIPTOR = 'sift'
+from src.algorithms import ALL_DESCRIPTORS, ALL_DETECTORS
 
 
 def import_src(*backends):
@@ -62,29 +49,22 @@ def resolve_src_names(parameters):
     Primary config keys are `detector` and `descriptor`. Legacy keys
     `features` / `src_detector` / `src_descriptor` are still supported.
     """
-    features = parameters.get('features', 'pipeline')
-
+    features = _src_name(parameters.get('features', 'pipeline'))
     detector = parameters.get('detector')
     descriptor = parameters.get('descriptor')
-    if detector is not None or descriptor is not None:
-        detector = detector or parameters.get('src_detector', DEFAULT_DETECTOR)
+
+    if detector is not None or descriptor is not None or features == 'pipeline':
+        detector = detector or parameters.get('src_detector', 'sift')
         descriptor = descriptor or parameters.get('src_descriptor', detector)
         return _src_name(detector), _src_name(descriptor)
 
-    if features == 'pipeline':
-        detector = parameters.get('src_detector', DEFAULT_DETECTOR)
-        descriptor = parameters.get('src_descriptor', detector)
-        return _src_name(detector), _src_name(descriptor)
-
-    if features in SRC_DESCRIPTOR_ONLY:
-        return _src_name(parameters.get('src_detector', DEFAULT_DETECTOR)), features
-
-    if features in SRC_DETECTOR_ONLY:
-        return features, _src_name(parameters.get('src_descriptor', DEFAULT_DESCRIPTOR))
-
     if features == 'superpoint' and resolve_src_matcher(parameters) == 'lightglue':
         return 'superpoint_lightglue', 'superpoint_lightglue'
-    return _src_name(features), _src_name(features)
+    if features in ALL_DESCRIPTORS and features not in ALL_DETECTORS:
+        return _src_name(parameters.get('src_detector', 'sift')), features
+    if features in ALL_DETECTORS and features not in ALL_DESCRIPTORS:
+        return features, _src_name(parameters.get('src_descriptor', 'sift'))
+    return features, features
 
 
 def resolve_src_matcher(parameters):

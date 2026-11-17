@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from stitching.panorama_utils.matchers import MatcherWrapper, PipelineMatcher  # noqa: E402
 from stitching.panorama_utils.feature_extractor import FeatureExtractor, PipelineFeatureExtractor  # noqa: E402
-from stitching.panorama_utils.utils import resolve_src_matcher, src_features_to_image_features  # noqa: E402
+from stitching.panorama_utils.utils import src_features_to_image_features  # noqa: E402
 from stitching.panorama_utils.wave_corrector import WaveCorrector  # noqa: E402
 from stitching.panorama_utils.homography_estimator import HomographyEstimator  # noqa: E402
 from stitching.panorama_utils.image_transformer import ImageTransformer  # noqa: E402
@@ -36,8 +36,7 @@ class DetailedPanoramaStitcher(PanoramaStitcher):
 
     def _get_feature_extractor(self):
         name = self.parameters.get('features', 'pipeline')
-        if ('detector' in self.parameters or 'descriptor' in self.parameters
-                or (name == 'superpoint' and resolve_src_matcher(self.parameters) == 'lightglue')):
+        if 'detector' in self.parameters or 'descriptor' in self.parameters:
             name = 'pipeline'
         self.logger.info(f'Create feature extractor: {name}')
         self.features = FeatureExtractor.create(name, self.parameters, self.logger)

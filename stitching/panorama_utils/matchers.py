@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 
+from src.algorithms import ALL_MATCHERS, DNN_PIPELINES
+
 from stitching.panorama_utils.utils import (
-    SRC_MATCHER_NAMES,
-    SRC_PIPELINES,
     image_features_to_src_dict,
     import_src,
     resolve_src_matcher,
@@ -36,7 +36,10 @@ class MatcherWrapper(ABC):
     def create(matcher_name, parameters, logger):
         matcher_cls = MatcherWrapper._registry.get(matcher_name)
         if matcher_cls is None:
-            raise ValueError(f'Matcher {matcher_name} not implemented')
+            if resolve_src_matcher({'matcher': matcher_name}) not in ALL_MATCHERS:
+                raise ValueError(f'Matcher {matcher_name} not implemented')
+            matcher_cls = PipelineMatcher
+            parameters = {**parameters, 'matcher': matcher_name}
         if logger is not None:
             logger.info(f'Matcher: {matcher_name} ({matcher_cls.__name__})')
         return matcher_cls(parameters, logger)
@@ -125,12 +128,12 @@ class PipelineMatcher(MatcherWrapper):
                                     descriptor_backend, matcher_backend)
         _, Descriptor, Matcher = import_src(descriptor_backend, matcher_backend)
         descriptor = self._descriptor
-        if descriptor is None and self.matcher_name not in SRC_PIPELINES:
+        if descriptor is None and self.matcher_name not in DNN_PIPELINES:
             descriptor = Descriptor.create(self.descriptor_name, self.logger, descriptor_cfg)
         self._matcher = Matcher.create(self.matcher_name, self.logger, matcher_cfg, descriptor)
 
     def _to_src_dict(self, features_cv, idx):
-        if self.matcher_name in SRC_PIPELINES:
+        if self.matcher_name in DNN_PIPELINES:
             if self._images is None:
                 raise ValueError(f'Dense matcher {self.matcher_name!r} requires the input images')
             return {'image': self._images[idx]}
@@ -191,7 +194,7 @@ class PipelineMatcher(MatcherWrapper):
             return matches_info
         if isinstance(matches[0], (list, tuple)):
             matches = [row[0] for row in matches if row]
-        if self.matcher_name in SRC_PIPELINES:
+        if self.matcher_name in DNN_PIPELINES:
             keypoints0 = self._keypoint_coordinates(out['keypoints0'])
             keypoints1 = self._keypoint_coordinates(out['keypoints1'])
             map0 = self._canonical_keypoints(i, keypoints0)
@@ -241,7 +244,7 @@ class PipelineMatcher(MatcherWrapper):
             feats_left = self._to_src_dict(features[i], i)
             feats_right = self._to_src_dict(features[j], j)
             out = None
-            if self.matcher_name in SRC_PIPELINES or (features[i].keypoints and features[j].keypoints):
+            if self.matcher_name in DNN_PIPELINES or (features[i].keypoints and features[j].keypoints):
                 out = self._matcher.match(feats_left, feats_right)
             matches_info = self._match_pair(features[i], features[j], out, i, j)
             pairwise_matches[i * n + j] = matches_info
@@ -267,7 +270,3 @@ class PipelineMatcher(MatcherWrapper):
                         pairwise_matches[i * n + j] = self._empty_matches_info()
         self._store_canonical_keypoints(features)
         return pairwise_matches
-
-
-for _src_matcher_name in SRC_MATCHER_NAMES:
-    MatcherWrapper.register(_src_matcher_name)(PipelineMatcher)

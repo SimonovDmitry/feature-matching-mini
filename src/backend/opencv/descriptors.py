@@ -51,7 +51,8 @@ class ORBDescriptor(OpenCVDescriptor):
 class AKAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
-        super().__init__(descriptor_name, logger, cv.xfeatures2d.AKAZE_create(**cv_params), config)
+        create = getattr(cv, 'AKAZE_create', None) or cv.xfeatures2d.AKAZE_create
+        super().__init__(descriptor_name, logger, create(**cv_params), config)
 
 
 class BRISKDescriptor(OpenCVDescriptor):
