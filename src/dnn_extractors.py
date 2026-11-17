@@ -3,12 +3,6 @@ import numpy as np
 
 from src.detectors import Detector
 from src.descriptors import Descriptor
-import src.backend.torch.model_wrapper  # noqa: E402, F401
-import src.backend.torch.inference_api  # noqa: E402, F401
-import src.backend.torch.io_adapter  # noqa: E402, F401
-import src.backend.executorch.model_wrapper  # noqa: E402, F401
-import src.backend.executorch.io_adapter  # noqa: E402, F401
-import src.backend.executorch.inference_api  # noqa: E402, F401
 from src.backend.io_adapter_base import IOAdapter
 from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_wrapper_base import ModelWrapper
@@ -60,9 +54,7 @@ class DNNFeatureExtractors(Detector, Descriptor):
             self._logger.error("Input image is None. Detection aborted.")
             return {'keypoints': (), 'descriptors': ()}
 
-        self._logger.info(
-            f"Running inference with {self._detector_name} on {self._backend} backend"
-        )
+        self._logger.info(f"Running inference with {self._detector_name} on {self._backend} backend")
         inputs = {'image': img, **DNNFeatureExtractors._model_components}
         if features is not None:
             inputs.update(features)
@@ -86,35 +78,19 @@ class DNNFeatureExtractors(Detector, Descriptor):
         oris = outputs.get('oris')
 
         if scales is not None:
-            scales = scales[:, mask]
+            outputs['scales'] = scales[:, mask]
         if oris is not None:
-            oris = oris[:, mask]
+            outputs['oris'] = oris[:, mask]
 
         if self._nfeatures is not None and len(kp) > self._nfeatures:
-            indices = np.argsort(-sc, kind='stable')[:self._nfeatures]
+            indices = np.argsort(sc)[::-1][:self._nfeatures]
             kp = kp[indices]
             des = des[indices]
-            sc = sc[indices]
 
             if scales is not None:
-                scales = scales[:, indices]
+                outputs['scales'] = scales[:, mask]
             if oris is not None:
-                oris = oris[:, indices]
-
-        order = np.argsort(-sc, kind='stable')
-        if (order != np.arange(len(sc))).any():
-            kp = kp[order]
-            des = des[order]
-            sc = sc[order]
-            if scales is not None:
-                scales = scales[:, order]
-            if oris is not None:
-                oris = oris[:, order]
-
-        if scales is not None:
-            outputs['scales'] = scales
-        if oris is not None:
-            outputs['oris'] = oris
+                outputs['oris'] = oris[:, mask]
 
         height, width = img.shape[:2]
         extracted = {'keypoints': kp, 'descriptors': des, 'scores': sc,
