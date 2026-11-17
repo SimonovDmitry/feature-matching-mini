@@ -39,47 +39,9 @@ class MatcherWrapper(ABC):
             if resolve_src_matcher({'matcher': matcher_name}) not in ALL_MATCHERS:
                 raise ValueError(f'Matcher {matcher_name} not implemented')
             matcher_cls = PipelineMatcher
-            parameters = {**parameters, 'matcher': matcher_name}
         if logger is not None:
             logger.info(f'Matcher: {matcher_name} ({matcher_cls.__name__})')
-        return matcher_cls(parameters, logger)
-
-
-class OpenCVDetailMatcher(MatcherWrapper):
-    def __init__(self, parameters, logger):
-        super().__init__(parameters, logger)
-        self.matcher = None
-
-    def apply2(self, features):
-        pairs = self.matcher.apply2(features)
-        self.matcher.collectGarbage()
-        return pairs
-
-
-@MatcherWrapper.register('affine')
-class AffineBestOf2NearestMatcher(OpenCVDetailMatcher):
-    def __init__(self, parameters, logger):
-        super().__init__(parameters, logger)
-        self.matcher = cv2.detail_AffineBestOf2NearestMatcher(False,
-                                                              self.params['try_cuda'],
-                                                              self.params['match_conf'])
-
-
-@MatcherWrapper.register('2nearest')
-class BestOf2NearestMatcher(OpenCVDetailMatcher):
-    def __init__(self, parameters, logger):
-        super().__init__(parameters, logger)
-        self.matcher = cv2.detail_BestOf2NearestMatcher(self.params['try_cuda'],
-                                                        self.params['match_conf'])
-
-
-@MatcherWrapper.register('2nearest_range')
-class BestOf2NearestRangeMatcher(OpenCVDetailMatcher):
-    def __init__(self, parameters, logger):
-        super().__init__(parameters, logger)
-        self.matcher = cv2.detail_BestOf2NearestRangeMatcher(self.params['range_width'],
-                                                             self.params['try_cuda'],
-                                                             self.params['match_conf'])
+        return matcher_cls({**parameters, 'matcher': matcher_name}, logger)
 
 
 @MatcherWrapper.register('pipeline')
@@ -121,7 +83,7 @@ class PipelineMatcher(MatcherWrapper):
             return
         _, self.descriptor_name = resolve_src_names(self.params)
         descriptor_cfg = src_stage_config(self.params, 'descriptor', self.descriptor_name)
-        matcher_cfg = src_stage_config(self.params, 'matcher', self.matcher_name)
+        matcher_cfg = self._matcher_config()
         descriptor_backend = descriptor_cfg['backend']
         matcher_backend = matcher_cfg['backend']
         validate_descriptor_matcher(self.descriptor_name, self.matcher_name,
@@ -131,6 +93,12 @@ class PipelineMatcher(MatcherWrapper):
         if descriptor is None and self.matcher_name not in DNN_PIPELINES:
             descriptor = Descriptor.create(self.descriptor_name, self.logger, descriptor_cfg)
         self._matcher = Matcher.create(self.matcher_name, self.logger, matcher_cfg, descriptor)
+
+    def _matcher_config(self):
+        return src_stage_config(self.params, 'matcher', self.matcher_name)
+
+    def _match_features(self, left, right):
+        return self._matcher.match(left, right)
 
     def _to_src_dict(self, features_cv, idx):
         if self.matcher_name in DNN_PIPELINES:
@@ -170,25 +138,32 @@ class PipelineMatcher(MatcherWrapper):
             self._canonical[idx] = canon
         return index_map
 
-    def _estimate_homography(self, features_left, features_right, points_left, points_right, matches_info):
-        if len(points_left) < 4:
-            return
+    @staticmethod
+    def _center_points(features, points):
         # OpenCV's panorama estimator expects homographies relative to the image centers.
-        left = np.asarray(points_left, dtype=np.float32) - np.asarray(features_left.img_size, dtype=np.float32) / 2
-        right = np.asarray(points_right, dtype=np.float32) - np.asarray(features_right.img_size, dtype=np.float32) / 2
-        homography, inliers = cv2.findHomography(left, right, cv2.RANSAC, 3.0)
-        if homography is None or np.linalg.matrix_rank(homography) < 3:
+        return points - np.asarray(features.img_size, dtype=np.float32) / 2
+
+    @staticmethod
+    def _store_geometry(matches_info, transform, inliers):
+        if transform is None or np.linalg.matrix_rank(transform) < 3:
             return
-        matches_info.H = homography
+        matches_info.H = transform
         matches_info.inliers_mask = inliers.ravel()
         matches_info.num_inliers = int(np.count_nonzero(inliers))
         matches_info.confidence = matches_info.num_inliers / (8.0 + 0.3 * len(matches_info.matches))
+
+    def _estimate_geometry(self, features_left, features_right, points_left, points_right, matches_info):
+        if len(points_left) < 4:
+            return
+        left = self._center_points(features_left, points_left)
+        right = self._center_points(features_right, points_right)
+        homography, inliers = cv2.findHomography(left, right, cv2.RANSAC, 3.0)
+        self._store_geometry(matches_info, homography, inliers)
 
     def _match_pair(self, features_left, features_right, out, i, j):
         matches_info = cv2.detail.MatchesInfo()
         matches_info.src_img_idx = i
         matches_info.dst_img_idx = j
-        matches_info.H = np.eye(3, dtype=np.float64)
         matches = out.get('matches') if out else None
         if matches is None or len(matches) == 0:
             return matches_info
@@ -209,7 +184,7 @@ class PipelineMatcher(MatcherWrapper):
             matches_info.matches = list(matches)
 
         matches_info.inliers_mask = np.zeros(len(matches), dtype=np.uint8)
-        self._estimate_homography(features_left, features_right,
+        self._estimate_geometry(features_left, features_right,
                                   keypoints0[[m.queryIdx for m in matches]],
                                   keypoints1[[m.trainIdx for m in matches]], matches_info)
         return matches_info
@@ -225,27 +200,17 @@ class PipelineMatcher(MatcherWrapper):
             return [(i, i + 1) for i in range(n - 1)]
         return [(i, j) for i in range(n) for j in range(i + 1, n)]
 
-    @staticmethod
-    def _empty_matches_info():
-        matches_info = cv2.detail.MatchesInfo()
-        matches_info.src_img_idx = -1
-        matches_info.dst_img_idx = -1
-        matches_info.confidence = 0
-        return matches_info
-
     def apply2(self, features):
         self._lazy_init()
         self._canonical.clear()
         n = len(features)
-        pairwise_matches = [cv2.detail.MatchesInfo()] * n * n
-        for i in range(0, n):
-            pairwise_matches[i * n + i] = self._empty_matches_info()
+        pairwise_matches = [cv2.detail.MatchesInfo() for _ in range(n * n)]
         for i, j in self._iter_pairs(n):
             feats_left = self._to_src_dict(features[i], i)
             feats_right = self._to_src_dict(features[j], j)
-            out = None
-            if self.matcher_name in DNN_PIPELINES or (features[i].keypoints and features[j].keypoints):
-                out = self._matcher.match(feats_left, feats_right)
+            if self.matcher_name not in DNN_PIPELINES and not (features[i].keypoints and features[j].keypoints):
+                continue
+            out = self._match_features(feats_left, feats_right)
             matches_info = self._match_pair(features[i], features[j], out, i, j)
             pairwise_matches[i * n + j] = matches_info
             self.logger.info(f'Pair ({i}, {j}): matches={len(matches_info.matches)}, '
@@ -256,17 +221,70 @@ class PipelineMatcher(MatcherWrapper):
             matches_info_inv.dst_img_idx = i
             matches_info_inv.matches = [cv2.DMatch(m.trainIdx, m.queryIdx, m.distance)
                                         for m in matches_info.matches]
-            matches_info_inv.H = np.linalg.inv(matches_info.H)
+            if matches_info.H is not None:
+                matches_info_inv.H = np.linalg.inv(matches_info.H)
             if matches_info.matches:
                 matches_info_inv.inliers_mask = matches_info.inliers_mask
             matches_info_inv.num_inliers = matches_info.num_inliers
             matches_info_inv.confidence = matches_info.confidence
             pairwise_matches[j * n + i] = matches_info_inv
-        if self.params.get('sequential_matching'):
-            computed = set(self._iter_pairs(n))
-            for i in range(n):
-                for j in range(n):
-                    if i != j and (i, j) not in computed and (j, i) not in computed:
-                        pairwise_matches[i * n + j] = self._empty_matches_info()
         self._store_canonical_keypoints(features)
         return pairwise_matches
+
+
+@MatcherWrapper.register('2nearest')
+@MatcherWrapper.register('2nearest_range')
+@MatcherWrapper.register('affine')
+class TwoNearestMatcher(PipelineMatcher):
+    """OpenCV panorama matching policies using the src FLANN matcher."""
+
+    def __init__(self, parameters, logger):
+        super().__init__(parameters, logger)
+        self.mode = self.matcher_name
+        self.matcher_name = 'flann'
+        self.distance_ratio = 1.0 - parameters['match_conf']
+
+    def _matcher_config(self):
+        return {'backend': 'opencv', 'mode': 'knn', 'k': 2}
+
+    def _iter_pairs(self, n):
+        width = self.params['range_width'] if self.mode == '2nearest_range' else n
+        return ((i, j) for i in range(n) for j in range(i + 1, min(n, i + width + 1)))
+
+    def _ratio_matches(self, query, train):
+        if query['descriptors'] is None or train['descriptors'] is None:
+            return []
+        if not len(query['descriptors']) or len(train['descriptors']) < 2:
+            return []
+        neighbors = self._matcher.match(query, train)['matches']
+        return [row[0] for row in neighbors
+                if len(row) >= 2 and row[0].distance < self.distance_ratio * row[1].distance]
+
+    def _match_features(self, left, right):
+        matches = self._ratio_matches(left, right)
+        seen = {(m.queryIdx, m.trainIdx) for m in matches}
+        for match in self._ratio_matches(right, left):
+            if (match.trainIdx, match.queryIdx) not in seen:
+                matches.append(cv2.DMatch(match.trainIdx, match.queryIdx, match.distance))
+        return {'matches': matches}
+
+    def _estimate_geometry(self, features_left, features_right, points_left, points_right, matches_info):
+        if len(points_left) < 6:
+            return
+        if self.mode == 'affine':
+            affine, inliers = cv2.estimateAffinePartial2D(points_left, points_right)
+            if affine is not None:
+                self._store_geometry(matches_info, np.vstack((affine, [0, 0, 1])), inliers)
+            return
+
+        left = self._center_points(features_left, points_left)
+        right = self._center_points(features_right, points_right)
+        homography, inliers = cv2.findHomography(left, right, cv2.RANSAC, 3.0)
+        self._store_geometry(matches_info, homography, inliers)
+        if matches_info.confidence > 3.0:
+            matches_info.confidence = 0.0
+        if matches_info.num_inliers >= 6:
+            mask = inliers.ravel().astype(bool)
+            refined, _ = cv2.findHomography(left[mask], right[mask], cv2.RANSAC, 3.0)
+            if refined is not None and np.linalg.matrix_rank(refined) == 3:
+                matches_info.H = refined
