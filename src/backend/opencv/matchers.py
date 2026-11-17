@@ -3,7 +3,7 @@ import cv2 as cv
 from src.matchers import Matcher
 
 
-class OpenCVMatcher(Matcher, register=False):
+class OpenCVMatcher(Matcher):
     _MODE = {'simple', 'knn'}
 
     def __init__(self, matcher_name, logger, config, descriptor_class):
@@ -37,6 +37,7 @@ class OpenCVMatcher(Matcher, register=False):
         return {'matches': matches}
 
 
+@Matcher.register("bf")
 class BFMatcher(OpenCVMatcher):
     def __init__(self, matcher_name, logger, config, descriptor_class):
         super().__init__(matcher_name, logger, config, descriptor_class)
@@ -45,6 +46,7 @@ class BFMatcher(OpenCVMatcher):
         return cv.BFMatcher(self._descriptor_class.default_norm)
 
 
+@Matcher.register("flann")
 class FLANNMatcher(OpenCVMatcher):
     def __init__(self, matcher_name, logger, config, descriptor_class):
         super().__init__(matcher_name, logger, config, descriptor_class)

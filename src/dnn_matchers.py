@@ -5,6 +5,7 @@ from src.backend.model_wrapper_base import ModelWrapper
 from src.backend.model_paths import ONNX_MATCHER_MODELS
 
 
+@Matcher.register("dnn")
 class DNNMatcher(Matcher):
     _model_wrapper = None
     _model_components = None

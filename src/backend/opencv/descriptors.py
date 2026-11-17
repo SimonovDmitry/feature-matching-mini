@@ -3,7 +3,7 @@ import cv2 as cv
 from src.descriptors import Descriptor
 
 
-class OpenCVDescriptor(Descriptor, register=False):
+class OpenCVDescriptor(Descriptor):
     def __init__(self, descriptor_name, logger, extractor, config):
         super().__init__(logger, descriptor_name)
         self._extractor = extractor
@@ -32,6 +32,7 @@ class OpenCVDescriptor(Descriptor, register=False):
         return {'keypoints': kp, 'descriptors': des}
 
 
+@Descriptor.register("sift")
 class SIFTDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
@@ -40,6 +41,7 @@ class SIFTDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.SIFT_create(**cv_params), config)
 
 
+@Descriptor.register("orb")
 class ORBDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
@@ -48,6 +50,7 @@ class ORBDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.ORB_create(**cv_params), config)
 
 
+@Descriptor.register("akaze")
 class AKAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
@@ -55,6 +58,7 @@ class AKAZEDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, create(**cv_params), config)
 
 
+@Descriptor.register("brisk")
 class BRISKDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
@@ -63,12 +67,14 @@ class BRISKDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.xfeatures2d.BRISK_create(**cv_params), config)
 
 
+@Descriptor.register("kaze")
 class KAZEDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
         super().__init__(descriptor_name, logger, cv.xfeatures2d.KAZE_create(**cv_params), config)
 
 
+@Descriptor.register("brief")
 class BRIEFDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
@@ -77,18 +83,21 @@ class BRIEFDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.xfeatures2d.BriefDescriptorExtractor_create(**cv_params), config)
 
 
+@Descriptor.register("freak")
 class FREAKDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
         super().__init__(descriptor_name, logger, cv.xfeatures2d.FREAK_create(**cv_params), config)
 
 
+@Descriptor.register("daisy")
 class DAISYDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
         super().__init__(descriptor_name, logger, cv.xfeatures2d.DAISY_create(**cv_params), config)
 
 
+@Descriptor.register("latch")
 class LATCHDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
@@ -97,6 +106,7 @@ class LATCHDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.xfeatures2d.LATCH_create(**cv_params), config)
 
 
+@Descriptor.register("beblid")
 class BEBLIDDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         scale_factor = config.get('scale_factor', 0.75)
@@ -106,6 +116,7 @@ class BEBLIDDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.xfeatures2d.BEBLID_create(**cv_params), config)
 
 
+@Descriptor.register("teblid")
 class TEBLIDDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         scale_factor = config.get('scale_factor', 0.75)
@@ -115,12 +126,14 @@ class TEBLIDDescriptor(OpenCVDescriptor):
         super().__init__(descriptor_name, logger, cv.xfeatures2d.TEBLID_create(**cv_params), config)
 
 
+@Descriptor.register("vgg")
 class VGGDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}
         super().__init__(descriptor_name, logger, cv.xfeatures2d.VGG_create(**cv_params), config)
 
 
+@Descriptor.register("boostdesc")
 class BoostDescDescriptor(OpenCVDescriptor):
     def __init__(self, descriptor_name, logger, config):
         cv_params = {}

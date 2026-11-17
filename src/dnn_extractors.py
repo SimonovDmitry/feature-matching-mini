@@ -8,6 +8,8 @@ from src.backend.inference_api_base import InferenceAPI
 from src.backend.model_wrapper_base import ModelWrapper
 
 
+@Descriptor.register("dnnfeatureextractors")
+@Detector.register("dnnfeatureextractors")
 class DNNFeatureExtractors(Detector, Descriptor):
     _model_wrapper = None
     _model_components = None

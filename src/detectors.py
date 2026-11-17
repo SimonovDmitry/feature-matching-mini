@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.algorithms import ALL_DETECTORS, DNN_DESCRIPTORS, DNN_DETECTORS, DNN_PIPELINES
+from src.algorithms import DNN_DESCRIPTORS, DNN_DETECTORS, DNN_PIPELINES
 
 
 class Detector(ABC):
@@ -10,23 +10,13 @@ class Detector(ABC):
         self._detector_name = detector_name
         self._logger = logger
 
-    def __init_subclass__(cls, register=True, **kwargs):
-        super().__init_subclass__(**kwargs)
+    @classmethod
+    def register(cls, name):
+        def decorator(subclass):
+            cls._METHODS[name.lower()] = subclass
+            return subclass
 
-        if hasattr(cls, '_EXTRACTOR_CLASSES'):
-            for key in cls._EXTRACTOR_CLASSES.keys():
-                Detector._METHODS[key] = cls
-
-        elif register:
-            key = cls.__name__.replace("Detector", "").lower()
-
-            for key_ in ALL_DETECTORS:
-                if key_.replace("_", "") == key:
-                    key = key_
-                    break
-
-            if key:
-                Detector._METHODS[key] = cls
+        return decorator
 
     @staticmethod
     def create(detector_name, logger, config=None):

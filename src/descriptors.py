@@ -10,22 +10,13 @@ class Descriptor(ABC):
         self._descriptor_name = descriptor_name
         self._logger = logger
 
-    def __init_subclass__(cls, register=True, **kwargs):
-        super().__init_subclass__(**kwargs)
+    @classmethod
+    def register(cls, name):
+        def decorator(subclass):
+            cls._METHODS[name.lower()] = subclass
+            return subclass
 
-        if hasattr(cls, '_EXTRACTOR_CLASSES'):
-            for key in cls._EXTRACTOR_CLASSES.keys():
-                Descriptor._METHODS[key] = cls
-
-        elif register:
-            key = cls.__name__.replace("Descriptor", "").lower()
-
-            for key_ in DNN_DESCRIPTORS:
-                if key_.replace("_", "") == key:
-                    key = key_
-                    break
-            if key:
-                Descriptor._METHODS[key] = cls
+        return decorator
 
     @staticmethod
     def create(descriptor_name, logger, config=None):

@@ -3,7 +3,7 @@ import cv2 as cv
 from src.detectors import Detector
 
 
-class OpenCVDetector(Detector, register=False):
+class OpenCVDetector(Detector):
     def __init__(self, detector_name, logger, extractor, config):
         super().__init__(logger, detector_name)
         self._extractor = extractor
@@ -27,6 +27,7 @@ class OpenCVDetector(Detector, register=False):
         return {'keypoints': kp}
 
 
+@Detector.register("sift")
 class SIFTDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -37,6 +38,7 @@ class SIFTDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.SIFT_create(**cv_params), config)
 
 
+@Detector.register("orb")
 class ORBDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -47,6 +49,7 @@ class ORBDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.ORB_create(**cv_params), config)
 
 
+@Detector.register("fast")
 class FASTDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -55,6 +58,7 @@ class FASTDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.FastFeatureDetector_create(**cv_params), config)
 
 
+@Detector.register("akaze")
 class AKAZEDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -66,6 +70,7 @@ class AKAZEDetector(OpenCVDetector):
         super().__init__(detector_name, logger, create(**cv_params), config)
 
 
+@Detector.register("brisk")
 class BRISKDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -74,6 +79,7 @@ class BRISKDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.xfeatures2d.BRISK_create(**cv_params), config)
 
 
+@Detector.register("kaze")
 class KAZEDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -84,6 +90,7 @@ class KAZEDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.xfeatures2d.KAZE_create(**cv_params), config)
 
 
+@Detector.register("gftt")
 class GFTTDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -94,12 +101,14 @@ class GFTTDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.GFTTDetector_create(**cv_params), config)
 
 
+@Detector.register("mser")
 class MSERDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
         super().__init__(detector_name, logger, cv.MSER_create(**cv_params), config)
 
 
+@Detector.register("agast")
 class AGASTDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -108,12 +117,14 @@ class AGASTDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.xfeatures2d.AgastFeatureDetector_create(**cv_params), config)
 
 
+@Detector.register("blob")
 class BlobDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
         super().__init__(detector_name, logger, cv.SimpleBlobDetector_create(**cv_params), config)
 
 
+@Detector.register("star")
 class StarDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -122,6 +133,7 @@ class StarDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.xfeatures2d.StarDetector_create(**cv_params), config)
 
 
+@Detector.register("harrislaplace")
 class HarrisLaplaceDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}
@@ -132,6 +144,7 @@ class HarrisLaplaceDetector(OpenCVDetector):
         super().__init__(detector_name, logger, cv.xfeatures2d.HarrisLaplaceFeatureDetector_create(**cv_params), config)
 
 
+@Detector.register("msd")
 class MSDDetector(OpenCVDetector):
     def __init__(self, detector_name, logger, config):
         cv_params = {}

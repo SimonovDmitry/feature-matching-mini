@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.algorithms import ALL_MATCHERS, DNN_PIPELINES, DNN_MATCHERS, get_default_backend
+from src.algorithms import DNN_PIPELINES, DNN_MATCHERS, get_default_backend
 
 
 class Matcher(ABC):
@@ -14,22 +14,13 @@ class Matcher(ABC):
         self._descriptor_class = descriptor_class
         self._logger = logger
 
-    def __init_subclass__(cls, register=True, **kwargs):
-        super().__init_subclass__(**kwargs)
+    @classmethod
+    def register(cls, name):
+        def decorator(subclass):
+            cls._METHODS[name.lower()] = subclass
+            return subclass
 
-        if hasattr(cls, '_MATCHER_CLASSES'):
-            for key in cls._MATCHER_CLASSES:
-                Matcher._METHODS[key] = cls
-
-        elif register:
-            key = cls.__name__.replace("Matcher", "").lower()
-
-            for key_ in ALL_MATCHERS:
-                if key_.replace("_", "") == key:
-                    key = key_
-                    break
-            if key:
-                Matcher._METHODS[key] = cls
+        return decorator
 
     @staticmethod
     def create(matcher_name, logger, config, descriptor_class):
