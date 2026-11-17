@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 
 class HPatchesTask(ABC):
     _TASKS = {}
-    _img_indices = [2, 3, 4, 5, 6]
 
     def __init__(self, logger):
         self._logger = logger
@@ -175,8 +174,7 @@ class MatchingAPTask(BaseMatchingTask):
                                      f"Skipping for threshold {self._eval_thresholds}px")
                 continue
 
-            for i in self._img_indices:
-                data = matching_data[seq].get(i)
+            for i, data in matching_data[seq].items():
                 if not data or data['matches'] is None or len(data['matches']) == 0:
                     self._logger.warning(f"Image pair 1-{i} in scene '{seq}' has no matching data. "
                                          f"Skipping for all thresholds.")
@@ -231,8 +229,7 @@ class MatchingScoreTask(BaseMatchingTask):
                                      f"Skipping for threshold {self._eval_thresholds}px")
                 continue
 
-            for i in self._img_indices:
-                data = matching_data[seq].get(i)
+            for i, data in matching_data[seq].items():
                 if not data or data['matches'] is None or len(data['matches']) == 0:
                     self._logger.warning(f"Image pair 1-{i} in scene '{seq}' has no matching data. "
                                          f"Skipping for all thresholds.")
@@ -298,12 +295,12 @@ class HomographyAUCTask(HPatchesTask):
     def __init__(self, logger, config):
         super().__init__(logger)
 
-        self._eval_thresholds = config.pop('eval_thresholds', [5.0])
+        self._eval_thresholds = config.get('eval_thresholds', [5.0])
         if not isinstance(self._eval_thresholds, list):
             self._eval_thresholds = [self._eval_thresholds]
 
-        self._homography_threshold = config.pop('homography_threshold', 3.0)
-        self._homography_method = config.pop('homography_method', "ransac")
+        self._homography_threshold = config.get('homography_threshold', 3.0)
+        self._homography_method = config.get('homography_method', "ransac")
 
     def eval_task(self, matching_data, split):
         results = {threshold: {seq: {} for seq in split} for threshold in self._eval_thresholds}
@@ -316,8 +313,7 @@ class HomographyAUCTask(HPatchesTask):
                                          f" Skipping for threshold {threshold}px")
                     continue
 
-                for i in self._img_indices:
-                    data = matching_data[seq].get(i)
+                for i, data in matching_data[seq].items():
                     if not data or data['matches'] is None or len(data['matches']) == 0:
                         self._logger.warning(f"Image pair 1-{i} in scene '{seq}' has no matching data. "
                                              f"Skipping for all thresholds.")
