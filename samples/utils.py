@@ -239,7 +239,7 @@ def performance_tests_parser():
 def build_hpatches_dataset_config(args):
     config = dict()
     if args.path is not None:
-        config['path'] = args.path
+        config['raw_data_path'] = args.path
     if args.num_scenes is not None:
         config['num_scenes'] = args.num_scenes
     if args.scenes_batch_size is not None:
