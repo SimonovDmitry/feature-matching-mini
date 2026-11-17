@@ -184,9 +184,11 @@ class PipelineMatcher(MatcherWrapper):
             matches_info.matches = list(matches)
 
         matches_info.inliers_mask = np.zeros(len(matches), dtype=np.uint8)
-        self._estimate_geometry(features_left, features_right,
-                                  keypoints0[[m.queryIdx for m in matches]],
-                                  keypoints1[[m.trainIdx for m in matches]], matches_info)
+        self._estimate_geometry(
+            features_left, features_right,
+            keypoints0[[m.queryIdx for m in matches]],
+            keypoints1[[m.trainIdx for m in matches]], matches_info,
+        )
         return matches_info
 
     def _store_canonical_keypoints(self, features):
