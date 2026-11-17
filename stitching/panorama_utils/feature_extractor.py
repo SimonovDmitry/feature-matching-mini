@@ -8,7 +8,7 @@ from stitching.panorama_utils.utils import (
     SRC_PIPELINES,
     import_src,
     resolve_src_names,
-    src_config,
+    src_stage_config,
     src_features_to_image_features,
     validate_detector_descriptor,
 )
@@ -141,25 +141,33 @@ class PipelineFeatureExtractor(FeatureExtractor):
     def __init__(self, parameters, logger):
         super().__init__(parameters, logger)
         self.detector_name, self.descriptor_name = resolve_src_names(parameters)
-        self.cfg = src_config(parameters)
+        self.descriptor = None
         self.is_pipeline = self.detector_name in SRC_PIPELINES
         if not self.is_pipeline:
-            Detector, Descriptor, _ = import_src()
-            validate_detector_descriptor(self.detector_name, self.descriptor_name)
-            detector_cfg = dict(self.cfg.get('detector', {}) or {})
-            descriptor_cfg = dict(self.cfg.get('descriptor', {}) or {})
-            self.logger.info(
-                f'Src feature extractor: detector={self.detector_name} descriptor={self.descriptor_name}')
-            self.detector = Detector.create(self.detector_name, self.logger, detector_cfg)
-            self.descriptor = Descriptor.create(self.descriptor_name, self.logger, descriptor_cfg)
+            detector_cfg = src_stage_config(parameters, 'detector', self.detector_name)
+            descriptor_cfg = src_stage_config(parameters, 'descriptor', self.descriptor_name)
+            detector_backend = detector_cfg['backend']
+            descriptor_backend = descriptor_cfg['backend']
+            validate_detector_descriptor(self.detector_name, self.descriptor_name,
+                                         detector_backend, descriptor_backend)
+            Detector, Descriptor, _ = import_src(detector_backend, descriptor_backend)
+            self.detector = Detector.create(self.detector_name, logger, detector_cfg)
+            self.descriptor = Descriptor.create(self.descriptor_name, logger, descriptor_cfg)
 
-    def extract(self, image):
+    def extract_src(self, image):
         if self.is_pipeline:
-            return src_features_to_image_features({'keypoints': (), 'descriptors': ()},
-                                                  image, 80)
+            return {'keypoints': (), 'descriptors': ()}
         features = self.detector.detect(image)
         features = self.descriptor.compute(image, features)
-        return src_features_to_image_features(features, image, 80)
+        height, width = image.shape[:2]
+        features.setdefault('extractor_name', self.descriptor_name)
+        features.setdefault('height', height)
+        features.setdefault('width', width)
+        features.setdefault('image_size', np.array([[width, height]]))
+        return features
+
+    def extract(self, image):
+        return src_features_to_image_features(self.extract_src(image), image)
 
 
 for _src_extractor_name in SRC_EXTRACTOR_NAMES:

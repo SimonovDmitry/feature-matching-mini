@@ -9,7 +9,7 @@ from stitching.panorama_utils.utils import (
     import_src,
     resolve_src_matcher,
     resolve_src_names,
-    src_config,
+    src_stage_config,
     validate_descriptor_matcher,
 )
 
@@ -102,48 +102,49 @@ class PipelineMatcher(MatcherWrapper):
     def __init__(self, parameters, logger):
         super().__init__(parameters, logger)
         self.matcher_name = resolve_src_matcher(parameters)
-        self.cfg = src_config(parameters)
         self._matcher = None
         self._images = None
+        self._source_features = None
+        self._descriptor = None
         self._canonical = {}
-        self._canonical_list = {}
 
-    def set_images(self, images):
+    def set_images(self, images, source_features=None, descriptor=None):
         self._images = images
+        self._source_features = source_features
+        self._descriptor = descriptor
 
     def _lazy_init(self):
         if self._matcher is not None:
             return
-        _, Descriptor, Matcher = import_src()
-        self.detector_name, self.descriptor_name = resolve_src_names(self.params)
-        validate_descriptor_matcher(self.descriptor_name, self.matcher_name)
-        descriptor_cfg = dict(self.cfg.get('descriptor', {}) or {})
-        matcher_cfg = dict(self.cfg.get('matcher', {}) or {})
-        self.logger.info(f'Src matcher: {self.matcher_name} '
-                         f'(descriptor={self.descriptor_name})')
-        descriptor_class = Descriptor.create(self.descriptor_name, self.logger, descriptor_cfg)
-        self._matcher = Matcher.create(self.matcher_name, self.logger, matcher_cfg, descriptor_class)
+        _, self.descriptor_name = resolve_src_names(self.params)
+        descriptor_cfg = src_stage_config(self.params, 'descriptor', self.descriptor_name)
+        matcher_cfg = src_stage_config(self.params, 'matcher', self.matcher_name)
+        descriptor_backend = descriptor_cfg['backend']
+        matcher_backend = matcher_cfg['backend']
+        validate_descriptor_matcher(self.descriptor_name, self.matcher_name,
+                                    descriptor_backend, matcher_backend)
+        _, Descriptor, Matcher = import_src(descriptor_backend, matcher_backend)
+        descriptor = self._descriptor
+        if descriptor is None and self.matcher_name not in SRC_PIPELINES:
+            descriptor = Descriptor.create(self.descriptor_name, self.logger, descriptor_cfg)
+        self._matcher = Matcher.create(self.matcher_name, self.logger, matcher_cfg, descriptor)
 
     def _to_src_dict(self, features_cv, idx):
         if self.matcher_name in SRC_PIPELINES:
-            if self._images is None or idx >= len(self._images):
-                self.logger.error(f'No image available for dense matcher pair index {idx}')
-                return {'image': None, 'keypoints': (), 'descriptors': ()}
-            return {'image': self._images[idx], 'keypoints': (), 'descriptors': ()}
-        return image_features_to_src_dict(features_cv)
+            if self._images is None:
+                raise ValueError(f'Dense matcher {self.matcher_name!r} requires the input images')
+            return {'image': self._images[idx]}
+        if self._source_features is not None:
+            return self._source_features[idx]
+        features = image_features_to_src_dict(features_cv)
+        features['extractor_name'] = self.descriptor_name
+        return features
 
-    def _rescale_keypoints(self, keypoints, idx):
-        if self.matcher_name != 'loftr':
-            return keypoints
-        image = self._images[idx]
-        height, width = image.shape[:2]
-        scale = min(640.0 / max(height, width), 1.0)
-        new_h = (int(height * scale) // 8) * 8
-        new_w = (int(width * scale) // 8) * 8
-        keypoints = keypoints.copy()
-        keypoints[:, 0] *= width / new_w
-        keypoints[:, 1] *= height / new_h
-        return keypoints
+    @staticmethod
+    def _keypoint_coordinates(keypoints):
+        if len(keypoints) and isinstance(keypoints[0], cv2.KeyPoint):
+            return cv2.KeyPoint_convert(keypoints)
+        return np.asarray(keypoints, dtype=np.float32).reshape(-1, 2)
 
     def _canonical_keypoints(self, idx, keypoints):
         if idx not in self._canonical:
@@ -166,68 +167,48 @@ class PipelineMatcher(MatcherWrapper):
             self._canonical[idx] = canon
         return index_map
 
-    def _estimate_homography(self, keypoints_left, keypoints_right, matches_info):
-        matches_info.H = np.eye(3, dtype=np.float64)
-        matches_info.num_inliers = 0
-        matches_info.confidence = 0
-        cv_matches = matches_info.matches
-        if len(cv_matches) < 4:
+    def _estimate_homography(self, features_left, features_right, points_left, points_right, matches_info):
+        if len(points_left) < 4:
             return
-        try:
-            pts1 = keypoints_left
-            pts2 = keypoints_right
-            H, inliers_mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 3.0)
-            matches_info.H = H
-            matches_info.inliers_mask = inliers_mask.reshape(-1)
-            matches_info.num_inliers = int(np.count_nonzero(inliers_mask))
-            matches_info.confidence = matches_info.num_inliers / (8.0 + 0.3 * len(matches_info.matches))
-        except cv2.error:
-            pass
+        # OpenCV's panorama estimator expects homographies relative to the image centers.
+        left = np.asarray(points_left, dtype=np.float32) - np.asarray(features_left.img_size, dtype=np.float32) / 2
+        right = np.asarray(points_right, dtype=np.float32) - np.asarray(features_right.img_size, dtype=np.float32) / 2
+        homography, inliers = cv2.findHomography(left, right, cv2.RANSAC, 3.0)
+        if homography is None or np.linalg.matrix_rank(homography) < 3:
+            return
+        matches_info.H = homography
+        matches_info.inliers_mask = inliers.ravel()
+        matches_info.num_inliers = int(np.count_nonzero(inliers))
+        matches_info.confidence = matches_info.num_inliers / (8.0 + 0.3 * len(matches_info.matches))
 
     def _match_pair(self, features_left, features_right, out, i, j):
         matches_info = cv2.detail.MatchesInfo()
         matches_info.src_img_idx = i
         matches_info.dst_img_idx = j
-        matches_info.matches = []
         matches_info.H = np.eye(3, dtype=np.float64)
-        matches_info.num_inliers = 0
-        matches_info.confidence = 0
-        if out is None or len(out.get('matches', ())) == 0:
+        matches = out.get('matches') if out else None
+        if matches is None or len(matches) == 0:
             return matches_info
-        matches = out['matches']
-        if len(matches) > 0 and isinstance(matches[0], (list, tuple)):
-            matches = [match[0] for match in matches]
-        scores = out.get('scores')
+        if isinstance(matches[0], (list, tuple)):
+            matches = [row[0] for row in matches if row]
         if self.matcher_name in SRC_PIPELINES:
-            keypoints0 = self._rescale_keypoints(np.asarray(out['keypoints0'], dtype=np.float32), i)
-            keypoints1 = self._rescale_keypoints(np.asarray(out['keypoints1'], dtype=np.float32), j)
+            keypoints0 = self._keypoint_coordinates(out['keypoints0'])
+            keypoints1 = self._keypoint_coordinates(out['keypoints1'])
             map0 = self._canonical_keypoints(i, keypoints0)
             map1 = self._canonical_keypoints(j, keypoints1)
-            cv_matches = []
-            keypoints0_filtered = []
-            keypoints1_filtered = []
-            for match_idx, match in enumerate(matches):
-                score = float(scores[match_idx]) if scores is not None else 1.0
-                cv_matches.append(cv2.DMatch(int(map0[int(match.queryIdx)]),
-                                             int(map1[int(match.trainIdx)]),
-                                             float(1.0 - score)))
-                keypoints0_filtered.append(keypoints0[int(match.queryIdx)])
-                keypoints1_filtered.append(keypoints1[int(match.trainIdx)])
-            matches_info.matches = list(cv_matches)
-            self._estimate_homography(np.float32(keypoints0_filtered),
-                                      np.float32(keypoints1_filtered), matches_info)
-            return matches_info
+            matches_info.matches = [
+                cv2.DMatch(int(map0[m.queryIdx]), int(map1[m.trainIdx]), m.distance) for m in matches
+            ]
+        else:
+            keypoints0 = self._keypoint_coordinates(features_left.keypoints)
+            keypoints1 = self._keypoint_coordinates(features_right.keypoints)
+            matches = [m for m in matches if 0 <= m.queryIdx < len(keypoints0) and 0 <= m.trainIdx < len(keypoints1)]
+            matches_info.matches = list(matches)
 
-        cv_matches = list(matches)
-        matches_info.matches = cv_matches
-        pts1 = []
-        pts2 = []
-        for match in cv_matches:
-            if match.queryIdx < len(features_left.keypoints) and match.trainIdx < len(features_right.keypoints):
-                pts1.append(features_left.keypoints[match.queryIdx].pt)
-                pts2.append(features_right.keypoints[match.trainIdx].pt)
-        if len(pts1) >= 4:
-            self._estimate_homography(np.float32(pts1), np.float32(pts2), matches_info)
+        matches_info.inliers_mask = np.zeros(len(matches), dtype=np.uint8)
+        self._estimate_homography(features_left, features_right,
+                                  keypoints0[[m.queryIdx for m in matches]],
+                                  keypoints1[[m.trainIdx for m in matches]], matches_info)
         return matches_info
 
     def _store_canonical_keypoints(self, features):
@@ -251,6 +232,7 @@ class PipelineMatcher(MatcherWrapper):
 
     def apply2(self, features):
         self._lazy_init()
+        self._canonical.clear()
         n = len(features)
         pairwise_matches = [cv2.detail.MatchesInfo()] * n * n
         for i in range(0, n):
@@ -258,7 +240,9 @@ class PipelineMatcher(MatcherWrapper):
         for i, j in self._iter_pairs(n):
             feats_left = self._to_src_dict(features[i], i)
             feats_right = self._to_src_dict(features[j], j)
-            out = self._matcher.match(feats_left, feats_right)
+            out = None
+            if self.matcher_name in SRC_PIPELINES or (features[i].keypoints and features[j].keypoints):
+                out = self._matcher.match(feats_left, feats_right)
             matches_info = self._match_pair(features[i], features[j], out, i, j)
             pairwise_matches[i * n + j] = matches_info
             self.logger.info(f'Pair ({i}, {j}): matches={len(matches_info.matches)}, '
@@ -270,6 +254,8 @@ class PipelineMatcher(MatcherWrapper):
             matches_info_inv.matches = [cv2.DMatch(m.trainIdx, m.queryIdx, m.distance)
                                         for m in matches_info.matches]
             matches_info_inv.H = np.linalg.inv(matches_info.H)
+            if matches_info.matches:
+                matches_info_inv.inliers_mask = matches_info.inliers_mask
             matches_info_inv.num_inliers = matches_info.num_inliers
             matches_info_inv.confidence = matches_info.confidence
             pairwise_matches[j * n + i] = matches_info_inv
