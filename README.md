@@ -1,7 +1,5 @@
 # Репозиторий мини-проекта "Сопоставление признаков на изображениях"
 
-[![Quality evaluation smoke test](https://github.com/itlab-vision/feature-matching-mini/actions/workflows/quality-evaluation-smoke.yml/badge.svg)](https://github.com/itlab-vision/feature-matching-mini/actions/workflows/quality-evaluation-smoke.yml)
-
 ## Структура репозитория:
 - Директория `src` содержит исходный код проекта, в котором представлена реализация 
   детекторов, дескрипторов и сопоставителей, а также модули для вычисления метрик
