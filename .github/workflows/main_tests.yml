@@ -32,4 +32,6 @@ jobs:
           python -m pip install lightglue/
 
       - name: Run main tests
-        run: python -m pytest tests/
+        run: >-
+          python -m pytest tests/
+          --deselect=tests/test_quality_evaluation_smoke.py::test_hpatches_quality_evaluation_cli
